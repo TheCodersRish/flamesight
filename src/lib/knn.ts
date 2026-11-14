@@ -27,6 +27,7 @@ export interface SimResult {
   p: number; pData: number; prior: number; priorW: number;
   confidence: number; confidenceLabel: 'High' | 'Medium' | 'Low';
   neighbors: Neighbor[];
+  nearby: Neighbor[];
   flags: string[];
 }
 
@@ -86,5 +87,5 @@ export function predict(x: SimInput): SimResult {
   if (atm < 0.48 || atm > 3.3) { conf *= 0.8; flags.push(`Pressure ${x.psi.toFixed(1)} psi is outside the tested pressure range (≈7–48 psi).`); }
   if (nb[0] && nb[0].d > 1.5) flags.push('Nearest NASA test is far from these conditions; treat as a rough estimate.');
   conf = Math.max(0.05, Math.min(0.97, conf));
-  return { verdict, p, pData, prior, priorW, confidence: conf, confidenceLabel: conf >= 0.66 ? 'High' : conf >= 0.4 ? 'Medium' : 'Low', neighbors: nb.slice(0, 3), flags };
+  return { verdict, p, pData, prior, priorW, confidence: conf, confidenceLabel: conf >= 0.66 ? 'High' : conf >= 0.4 ? 'Medium' : 'Low', neighbors: nb.slice(0, 3), nearby: nb, flags };
 }

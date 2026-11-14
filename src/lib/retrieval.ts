@@ -4,8 +4,7 @@ import { rangeMatch, SCALES } from './scoring';
 
 // ---------------------------------------------------------------------------
 // Local "Fire Safety Analyst": BM25 retrieval over the catalog + facts computed from the test tables.
-// Works with no API key and no network. If /api/ask is configured (GEMINI_API_KEY on the server),
-// the retrieved passages are sent there for a Gemini summary. The key never reaches the browser.
+// The analyst answers in the browser. No API key and no network call.
 // ---------------------------------------------------------------------------
 
 export interface Passage { id: string; accession: string; kind: 'summary' | 'fact'; text: string; kw?: string }

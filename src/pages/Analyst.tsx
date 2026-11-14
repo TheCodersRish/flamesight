@@ -1,98 +1,98 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { answerLocal, askRemote, SAMPLE_QUESTIONS, type Answer } from '../lib/retrieval';
-import { Card, PageHeader, Pill, SourceChip } from '../components/ui';
-
-interface Turn { a: Answer; ai: string | null; aiState: 'pending' | 'done' | 'off' }
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import Deck, { FlameStage } from '../components/Deck';
+import Flame from '../components/Flame';
+import { SourceChip } from '../components/ui';
+import { narrateLocal } from '../lib/narrate';
+import { answerLocal, SAMPLE_QUESTIONS, type Answer } from '../lib/retrieval';
 
 export default function Analyst() {
   const [sp] = useSearchParams();
   const [q, setQ] = useState('');
-  const [turns, setTurns] = useState<Turn[]>([]);
-  const [useAI, setUseAI] = useState(true);
-  const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
+  const [turns, setTurns] = useState<Answer[]>([]);
   const asked = useRef<string | null>(null);
-
-  const ask = async (question: string) => {
+  const ask = (question: string) => {
     const text = question.trim();
     if (!text) return;
-    const a = answerLocal(text);
-    const turn: Turn = { a, ai: null, aiState: useAI && aiAvailable !== false && a.hits.length ? 'pending' : 'off' };
-    setTurns(t => [turn, ...t]);
+    setTurns(t => [answerLocal(text), ...t]);
     setQ('');
-    if (turn.aiState === 'pending') {
-      const ctl = new AbortController();
-      const to = window.setTimeout(() => ctl.abort(), 25000);
-      const ai = await askRemote(text, a, ctl.signal);
-      window.clearTimeout(to);
-      setAiAvailable(!!ai);
-      setTurns(ts => ts.map(x => (x === turn ? { ...x, ai, aiState: 'done' } : x)));
-    }
   };
-
   useEffect(() => {
     const qq = sp.get('q');
-    if (qq && asked.current !== qq) { asked.current = qq; void ask(qq); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (qq && asked.current !== qq) { asked.current = qq; ask(qq); }
   }, [sp]);
+  const latest = turns[0];
+  const spoken = latest ? narrateLocal(latest) : 'Ask about oxygen, pressure, smoke, suppressant gas, or a habitat. The answer is assembled on this device from the NASA catalog.';
+  const bars = useMemo(() => (latest?.hits || []).map(h => ({
+    name: h.inv.hasAcronym ? h.inv.acronym : h.inv.accession,
+    match: Math.round(h.score),
+  })), [latest]);
 
   return (
-    <div>
-      <PageHeader kicker="Fire Safety Analyst" title="Ask a question. Get an answer from NASA data.">
-        The analyst searches the 24 investigations and facts computed from their test tables, then asks Gemini to summarize those NASA sources. The search itself stays in the browser. The key never leaves the server.
-      </PageHeader>
-      <Card>
-        <form onSubmit={e => { e.preventDefault(); void ask(q); }} className="flex flex-col gap-3 sm:flex-row">
-          <label htmlFor="q" className="sr-only">Your question</label>
-          <input id="q" value={q} onChange={e => setQ(e.target.value)} placeholder="e.g. Which gas puts out fuel fires best in microgravity?"
-            className="flex-1 rounded-xl border border-white/10 bg-space-900 px-4 py-3 text-white placeholder:text-slate-500 focus:border-micro-500 focus:outline-none" />
-          <button className="rounded-xl bg-gradient-to-r from-flame-500 to-flame-600 px-6 py-3 font-medium text-white shadow-glow hover:brightness-110">Ask</button>
-        </form>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {SAMPLE_QUESTIONS.map(s => <button key={s} onClick={() => void ask(s)} className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-300 ring-1 ring-white/10 hover:text-white">{s}</button>)}
+    <Deck
+      experimentsTitle="Sources"
+      graphsTitle="How well they match"
+      outcomeTitle="Answer"
+      stage={(
+        <FlameStage title="Analyst" caption="Answers come from the NASA catalog on this device. No API key." controls={(
+          <form className="flex gap-2 sm:col-span-2" onSubmit={e => { e.preventDefault(); ask(q); }}>
+            <label htmlFor="q" className="sr-only">Your question</label>
+            <input id="q" value={q} onChange={e => setQ(e.target.value)} placeholder="Which gas puts out fuel fires best in microgravity?" className="min-w-0 flex-1 rounded border border-cyan-200/20 bg-space-950 px-2 py-1.5 text-sm text-white placeholder:text-slate-500" />
+            <button className="rounded bg-flame-500/80 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-white">Ask</button>
+          </form>
+        )}>
+          <Flame gravity={0.15} o2={0.62} flow={0.25} dilution={0.1} className="h-full w-full" label="Analyst flame" />
+        </FlameStage>
+      )}
+      experiments={(
+        <>
+          <div className="mb-2 flex flex-wrap gap-1">
+            {SAMPLE_QUESTIONS.map(s => <button key={s} type="button" onClick={() => ask(s)} className="rounded bg-white/5 px-2 py-1 text-left text-[11px] text-slate-300 hover:text-white">{s}</button>)}
+          </div>
+          {latest ? (
+            <ol className="space-y-2">
+              {latest.hits.map((h, i) => (
+                <li key={h.inv.accession}>
+                  <Link to={`/explorer/${h.inv.accession}`} className="block rounded px-1 py-1 hover:bg-white/5">
+                    <span className="font-mono text-[10px] text-cyan-200/70">{i + 1}. {h.inv.accession}</span>
+                    <span className="block text-xs text-white">{h.inv.hasAcronym ? h.inv.acronym : h.inv.title}</span>
+                    <span className="block text-[11px] text-slate-400">{h.inv.role}</span>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          ) : <p className="text-xs text-slate-400">Matched investigations show up here.</p>}
+        </>
+      )}
+      graphs={bars.length ? (
+        <div className="h-48 w-full">
+          <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-100/80">Retrieval score</p>
+          <ResponsiveContainer>
+            <BarChart data={bars} layout="vertical" margin={{ left: 4, right: 8, top: 4, bottom: 4 }}>
+              <XAxis type="number" stroke="#475569" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+              <YAxis type="category" dataKey="name" width={72} stroke="#475569" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+              <Tooltip />
+              <Bar dataKey="match" name="Match" fill="#67e8f9" radius={[0, 3, 3, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-        <label className="mt-3 flex items-center gap-2 text-xs text-slate-400">
-          <input type="checkbox" checked={useAI} onChange={e => setUseAI(e.target.checked)} />
-          Ask Gemini to summarize the matched NASA sources {aiAvailable === false && <Pill>Gemini unavailable: local sources only</Pill>}{aiAvailable && <Pill tone="green">Gemini connected</Pill>}
-        </label>
-      </Card>
-
-      <div className="mt-6 space-y-4">
-        <AnimatePresence initial={false}>
-          {turns.map((t, i) => (
-            <motion.div key={`${t.a.question}-${turns.length - i}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-              <Card>
-                <p className="text-sm text-slate-400">You asked</p>
-                <p className="text-lg font-medium text-white">{t.a.question}</p>
-                {t.aiState === 'pending' && <p className="mt-3 animate-pulse text-sm text-slate-400">Checking for an AI summary…</p>}
-                {t.ai && (
-                  <div className="mt-3 rounded-xl bg-micro-500/10 p-4 ring-1 ring-micro-500/30">
-                    <p className="text-[11px] uppercase tracking-widest text-micro-300">AI summary, grounded on the sources below</p>
-                    <p className="mt-1 whitespace-pre-line text-sm text-slate-100">{t.ai}</p>
-                  </div>
-                )}
-                <p className="mt-3 text-slate-200">{t.a.intro}</p>
-                {t.a.caveats.map(c => <p key={c} className="mt-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-500/30">⚠ {c}</p>)}
-                <ol className="mt-3 space-y-3">
-                  {t.a.hits.map((h, k) => (
-                    <li key={h.inv.accession} className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <Link to={`/explorer/${h.inv.accession}`} className="font-semibold text-white hover:underline">{k + 1}. {h.inv.hasAcronym ? h.inv.acronym : h.inv.title}</Link>
-                        <SourceChip acc={h.inv.accession} compact />
-                      </div>
-                      <p className="mt-1 text-sm text-slate-300">{h.inv.summary.split(/(?<=\.)\s/)[0]} <span className="text-flame-200">{h.inv.why}</span></p>
-                      {h.passages.filter(p => p.kind === 'fact').slice(0, 2).map(p => <p key={p.id} className="mt-2 border-l-2 border-micro-500 pl-3 text-xs text-slate-300">{p.text}</p>)}
-                    </li>
-                  ))}
-                </ol>
-                <p className="mt-3 text-[11px] text-slate-500">Retrieval: BM25 keyword search + oxygen/pressure matching over the NASA PSI catalog and computed test facts. Answers quote the data; they are not safety advice.</p>
-              </Card>
-            </motion.div>
+      ) : <p className="text-xs text-slate-400">Ask a question to see how strongly each investigation matches.</p>}
+      outcome={(
+        <>
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-200/70">Local analyst</p>
+          {latest && <p className="mt-1 text-xs text-slate-400">You asked: {latest.question}</p>}
+          <p className="mt-2 text-sm text-slate-100">{spoken}</p>
+          {latest?.caveats.map(c => <p key={c} className="mt-2 text-xs text-amber-200">⚠ {c}</p>)}
+          {latest?.hits.map(h => (
+            <div key={h.inv.accession} className="mt-2 border-l border-cyan-200/30 pl-2">
+              <div className="flex items-center gap-2"><SourceChip acc={h.inv.accession} compact /><span className="text-[11px] text-slate-300">{h.inv.why}</span></div>
+              {h.passages.filter(p => p.kind === 'fact').slice(0, 1).map(p => <p key={p.id} className="mt-1 text-[11px] text-slate-400">{p.text}</p>)}
+            </div>
           ))}
-        </AnimatePresence>
-        {turns.length === 0 && <p className="text-center text-sm text-slate-500">Try one of the sample questions above.</p>}
-      </div>
-    </div>
+          <p className="mt-2 text-[11px] text-slate-500">BM25 search plus oxygen and pressure matching, all in the browser. Nothing is sent to an API.</p>
+        </>
+      )}
+    />
   );
 }

@@ -67,5 +67,66 @@ export const GRAVITY: Record<Gravity, { label: string; g: number; flame: number;
   earth: { label: 'Earth (1 g)', g: 1, flame: 1, extrapolated: true },
 };
 
+export const EDGE_CASES: Scenario[] = [
+  {
+    id: 'still', name: 'Still cabin air', short: 'Still air', icon: '🌬️',
+    o2: 0.21, psi: 14.7, flow: 0, gravity: 'micro',
+    blurb: 'ISS oxygen and pressure with the fans off. In microgravity a flame with no airflow is fed only by diffusion.',
+    facts: ['21% O₂ at 14.7 psi, the ISS cabin. Flow set to 0 cm/s as an edge case, not a measured habitat spec.'],
+    assumptions: ['Zero ventilation is an edge case. Real cabins keep some airflow.'],
+    roleBoost: ['Suppression', 'Detection'],
+  },
+  {
+    id: 'vent', name: 'High ventilation', short: 'High flow', icon: '💨',
+    o2: 0.21, psi: 14.7, flow: 40, gravity: 'micro',
+    blurb: 'The same cabin air pushed faster than the SAFFIRE test flow. Forced flow can stretch a flame or blow it out.',
+    facts: ['SAFFIRE used about 20–30 cm/s. 40 cm/s is above that, an edge case.'],
+    assumptions: ['40 cm/s is not a published habitat requirement. It stresses the flow match.'],
+    roleBoost: ['Prevention', 'Detection'],
+  },
+  {
+    id: 'lean', name: 'Oxygen-lean cabin', short: 'Lean O₂', icon: '🫁',
+    o2: 0.15, psi: 14.7, flow: 10, gravity: 'micro',
+    blurb: 'Sea-level pressure with oxygen pulled down toward where many FLEX droplets went out.',
+    facts: ['FLEX tested from about 12% O₂. 15% is inside that range and below normal air.'],
+    assumptions: ['A 15% cabin is an edge case for suppression, not a habitat preset.'],
+    roleBoost: ['Suppression'],
+  },
+  {
+    id: 'rich-low', name: 'Rich and thin', short: '34% / 8.2', icon: '🛸',
+    o2: 0.34, psi: 8.2, flow: 15, gravity: 'moon',
+    blurb: 'The highest-oxygen, lowest-pressure exploration atmosphere listed in the ACME BRE objectives, on the Moon.',
+    facts: ['8.2 psia / 34% O₂ is a NASA-considered atmosphere in ACME BRE objectives (PSI-20).'],
+    assumptions: ['Moon gravity is extrapolated. No partial-gravity combustion data is in PSI.'],
+    roleBoost: ['Exploration atmospheres', 'Prevention'],
+  },
+  {
+    id: 'hypobaric', name: 'High cabin pressure', short: 'High P', icon: '🧪',
+    o2: 0.21, psi: 30, flow: 20, gravity: 'earth',
+    blurb: 'Normal oxygen at roughly two atmospheres. Pressure this high is outside most PSI flame tables.',
+    facts: ['PSI droplet tests cluster near 0.5–3 atm. 30 psi is about 2 atm, near the top of that span.'],
+    assumptions: ['Earth gravity here is an extrapolation from microgravity tests.'],
+    roleBoost: ['Prevention'],
+  },
+];
+
 export const psiToAtm = (psi: number) => psi / 14.696;
-export const scenarioById = (id: string) => SCENARIOS.find(s => s.id === id) || SCENARIOS[0];
+export const scenarioById = (id: string) => [...SCENARIOS, ...EDGE_CASES].find(s => s.id === id) || SCENARIOS[0];
+
+export function makeAtmosphere(p: { o2: number; psi: number; flow: number; gravity: Gravity }): Scenario {
+  const g = GRAVITY[p.gravity];
+  return {
+    id: 'custom',
+    name: 'Custom environment',
+    short: 'Custom',
+    icon: '✦',
+    o2: p.o2,
+    psi: p.psi,
+    flow: p.flow,
+    gravity: p.gravity,
+    blurb: 'An atmosphere you set. The ranking uses the same oxygen, pressure, flow, role, and data formula as the presets.',
+    facts: [`${Math.round(p.o2 * 100)}% O₂ at ${p.psi.toFixed(1)} psi, ${p.flow} cm/s, ${g.label}.`],
+    assumptions: [g.extrapolated ? 'Moon, Mars, and Earth results are extrapolated. PSI has no partial-gravity combustion tests.' : 'Scored against microgravity tests in PSI.'],
+    roleBoost: p.o2 >= 0.28 ? ['Exploration atmospheres', 'Prevention'] : ['Prevention', 'Suppression'],
+  };
+}

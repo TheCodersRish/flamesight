@@ -1,13 +1,18 @@
-import type { ReactElement, ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import Deck, { FlameStage } from '../components/Deck';
+import Flame from '../components/Flame';
+import { insightFocus, useBurn, type InsightId } from '../lib/burnSession';
 import { insights, stats } from '../lib/data';
-import { Card, PageHeader, SourceChip, Takeaway } from '../components/ui';
+import { GRAVITY } from '../lib/scenarios';
+import { Card, SourceChip, Takeaway } from '../components/ui';
 
 const axis = { stroke: '#475569', tick: { fill: '#94a3b8', fontSize: 11 } };
 const OUT_COLORS = { Extinction: '#5cb8ff', Disruption: '#facc15', Completion: '#ff7a1a' };
 const pct = (a: number, b: number) => (b ? Math.round((100 * a) / b) : 0);
 
-function Chart({ title, h = 'h-72', children }: { title: string; h?: string; children: ReactElement }) {
+function Chart({ title, h = 'h-44', children }: { title: string; h?: string; children: ReactElement }) {
   return (<div><h3 className="mb-2 text-sm font-medium text-slate-200">{title}</h3><div className={`${h} w-full`}><ResponsiveContainer>{children}</ResponsiveContainer></div></div>);
 }
 function Section({ id, kicker, title, cites, children }: { id: string; kicker: string; title: string; cites: string[]; children: ReactNode }) {
@@ -24,7 +29,18 @@ function Section({ id, kicker, title, cites, children }: { id: string; kicker: s
   );
 }
 
+const SECTIONS = [['flex', 'FLEX suppression'], ['bass', 'BASS / SAFFIRE solids'], ['cfig', 'CFI-G high oxygen'], ['psi117', 'PSI-117 pressure']] as const;
+
 export default function Insights() {
+  const { input } = useBurn();
+  const focus = insightFocus(input);
+  const sig = [input.fuel, input.o2, input.psi, input.flow, input.gravity, input.diluent].join('|');
+  const [section, setSection] = useState<InsightId>(focus.id);
+  const [seen, setSeen] = useState(sig);
+  if (seen !== sig) {
+    setSeen(sig);
+    setSection(focus.id);
+  }
   const f = insights.flex;
   const dilPct = f.byDiluent.map(d => ({ group: d.group, Extinction: pct(d.Extinction, d.total), Disruption: pct(d.Disruption, d.total), Completion: pct(d.Completion, d.total), n: d.total }));
   const o2Pct = f.byO2.map(d => ({ bin: d.bin, Extinction: pct(d.Extinction, d.total), Disruption: pct(d.Disruption, d.total), Completion: pct(d.Completion, d.total), n: d.total }));
@@ -48,15 +64,29 @@ export default function Insights() {
   const sil = insights.saffire2.filter(s => /Silicone/i.test(s.material));
 
   return (
-    <div className="space-y-6">
-      <PageHeader kicker="Insights" title="What the NASA data actually shows">
-        Four charts straight from the test tables. Each takeaway is computed from the same rows you see in the Explorer.
-      </PageHeader>
-      <nav className="flex flex-wrap gap-2 text-sm" aria-label="Insight sections">
-        {[['flex', 'FLEX suppression'], ['bass', 'BASS / SAFFIRE solids'], ['cfig', 'CFI-G high oxygen'], ['psi117', 'PSI-117 pressure']].map(([id, l]) => <a key={id} href={`#/insights`} onClick={e => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }); }} className="glass rounded-lg px-3 py-1 text-slate-300 hover:text-white">{l}</a>)}
-      </nav>
+    <Deck
+      experimentsTitle="Which chart"
+      graphsTitle="NASA data"
+      outcomeTitle="Takeaway"
+      stage={(
+        <FlameStage title="Insights" caption={focus.why}>
+          <Flame gravity={GRAVITY[input.gravity].flame} o2={Math.max(0, Math.min(1, (input.o2 - 0.12) / 0.6))} flow={Math.max(0, Math.min(1, input.flow / 40))} dilution={input.diluent === 'none' ? 0 : 0.55} className="h-full w-full" label="Insights flame for the current Will It Burn settings" />
+        </FlameStage>
+      )}
+      experiments={(
+        <div className="flex flex-col gap-1" role="tablist" aria-label="Insight sections">
+          {SECTIONS.map(([id, label]) => (
+            <button key={id} type="button" role="tab" aria-selected={section === id} onClick={() => setSection(id)} className={`rounded px-2 py-1.5 text-left text-xs ${section === id ? 'bg-cyan-300/15 text-white' : 'text-slate-300 hover:text-white'}`}>{label}</button>
+          ))}
+          <p className="mt-3 text-sm text-slate-200">{focus.why}</p>
+          <p className="mt-1 text-xs text-slate-400">{Math.round(input.o2 * 100)}% oxygen · {input.psi.toFixed(1)} psi · {input.flow} cm/s · {GRAVITY[input.gravity].label}{input.fuel !== 'any' ? ` · ${input.fuel}` : ''}</p>
+          <Link to="/" className="mt-2 inline-block text-xs text-cyan-200 hover:text-white">Change these in Will It Burn</Link>
+        </div>
+      )}
+      graphs={(
+        <div className="space-y-4">
 
-      <Section id="flex" kicker="Suppression" title={`FLEX: how ${stats.flex.tests} droplet fires ended`} cites={['PSI-69']}>
+      {section === 'flex' && <Section id="flex" kicker="Suppression" title={`FLEX: how ${stats.flex.tests} droplet fires ended`} cites={['PSI-69']}>
         <div className="grid gap-6 lg:grid-cols-3">
           <Chart title="All FLEX outcomes">
             <PieChart><Pie data={f.outcomes} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={2} label={(e: { name: string; value: number }) => `${e.value}`}>
@@ -73,9 +103,9 @@ export default function Insights() {
         </div>
         <p className="mt-2 text-[11px] text-slate-500">Groups: {f.byDiluent.map(d => `${d.group} n=${d.total}`).join(' · ')} · O₂ bins: {f.byO2.map(d => `${d.bin} n=${d.total}`).join(' · ')}</p>
         <Takeaway>Flames self-extinguished in {pct(co2.Extinction, co2.total)}% of FLEX tests with CO₂ added and {pct(he.Extinction, he.total)}% with helium, versus {pct(none.Extinction, none.total)}% with neither; at {lowO2.bin} O₂, {pct(lowO2.Extinction, lowO2.total)}% self-extinguished compared with {pct(hiO2.Extinction, hiO2.total)}% above 21%.</Takeaway>
-      </Section>
+      </Section>}
 
-      <Section id="bass" kicker="Prevention · solids" title="BASS / BASS-II: what was burned, and at what oxygen" cites={['PSI-26', 'PSI-25', 'PSI-99']}>
+      {section === 'bass' && <Section id="bass" kicker="Prevention · solids" title="BASS / BASS-II: what was burned, and at what oxygen" cites={['PSI-26', 'PSI-25', 'PSI-99']}>
         <div className="grid gap-6 lg:grid-cols-2">
           <Chart title="Tests by material family">
             <BarChart data={b.materials} layout="vertical" margin={{ left: 20 }}><CartesianGrid stroke="#1e293b" /><XAxis type="number" {...axis} /><YAxis type="category" dataKey="material" width={120} {...axis} /><Tooltip /><Legend />
@@ -94,18 +124,18 @@ export default function Insights() {
             <tbody>{insights.saffire2.map(s => <tr key={s.id} className="border-t border-white/5"><td className="px-3 py-1.5 font-mono">{s.id.replace('SAFFIRE-II ', '')}</td><td className="px-3 py-1.5">{s.material}</td><td className="px-3 py-1.5">{s.thickness}</td><td className="px-3 py-1.5">{s.ug}</td><td className="px-3 py-1.5">{s.ugSpread}</td><td className="px-3 py-1.5">{s.oneG}</td><td className="px-3 py-1.5">{s.oneGSpread}</td></tr>)}</tbody></table>
         </div>
         <Takeaway>BASS-II ran {b.belowAir} of its {b.withO2} tests below normal air oxygen (range {b.o2Range[0]}–{b.o2Range[1]}%) to find where flames go out, but never above {b.o2Range[1]}%; and in SAFFIRE-II all {sil.length} silicone samples showed ~0 burn length in microgravity even though some burned completely in the 1-g test, while SIBAL fabric burned the full 29 cm ({sibal.map(s => s.ugSpread).join(', ')}) — Earth screening and orbit do not always agree.</Takeaway>
-      </Section>
+      </Section>}
 
-      <Section id="cfig" kicker="High oxygen (Moon base, suits)" title="ACME CFI-G: normal vs inverse flames across O₂" cites={['PSI-159']}>
+      {section === 'cfig' && <Section id="cfig" kicker="High oxygen (Moon base, suits)" title="ACME CFI-G: normal vs inverse flames across O₂" cites={['PSI-159']}>
         <Chart title="Share of tests reaching hot ignition (%), by O₂ bin">
           <BarChart data={cf}><CartesianGrid stroke="#1e293b" /><XAxis dataKey="bin" {...axis} /><YAxis {...axis} unit="%" domain={[0, 100]} /><Tooltip formatter={(v: number, n: string, p) => [`${v}% (n=${(p.payload as Record<string, number>)[`${n}_n`]})`, `${n} flames`]} /><Legend />
             <Bar dataKey="Normal" name="Normal" fill="#ff9f43" radius={[4, 4, 0, 0]} /><Bar dataKey="Inverse" name="Inverse" fill="#5cb8ff" radius={[4, 4, 0, 0]} /></BarChart>
         </Chart>
         <p className="mt-2 text-[11px] text-slate-500">n per bin — normal: {insights.cfig.byO2.map(r => `${r.bin} ${r.Normal_n}`).join(', ')} · inverse: {insights.cfig.byO2.map(r => `${r.bin} ${r.Inverse_n}`).join(', ')}. Normal flames were not tested above 45% O₂. Small bins (n &lt; 10) are noisy.</p>
         <Takeaway>Hot ignition rose with oxygen: normal flames ignited in {cfLo?.Normal_ign}% of {cfLo?.Normal_n} tests at 20–25% O₂ but {cfNm?.Normal_ign}% of {cfNm?.Normal_n} at 35–45%, and inverse flames ignited in {cfHi?.Inverse_ign}% of {cfHi?.Inverse_n} tests above 60% O₂.</Takeaway>
-      </Section>
+      </Section>}
 
-      <Section id="psi117" kicker="Low pressure" title="PSI-117: droplet extinction diameter vs pressure (n-dodecane)" cites={['PSI-117', 'PSI-69']}>
+      {section === 'psi117' && <Section id="psi117" kicker="Low pressure" title="PSI-117: droplet extinction diameter vs pressure (n-dodecane)" cites={['PSI-117', 'PSI-69']}>
         <Chart title="Flame-out droplet diameter (mm) vs pressure (atm); experiment = solid, model = dashed">
           <LineChart data={kData}><CartesianGrid stroke="#1e293b" /><XAxis dataKey="p" type="number" domain={[0.4, 3.1]} {...axis} unit=" atm" /><YAxis {...axis} unit=" mm" /><Tooltip /><Legend />
             <Line dataKey="hotExpt" name="Hot flame (expt)" stroke="#ff7a1a" strokeWidth={2.5} connectNulls dot /><Line dataKey="hotModel" name="Hot flame (model)" stroke="#ff7a1a" strokeDasharray="5 4" connectNulls dot={false} />
@@ -113,7 +143,17 @@ export default function Insights() {
         </Chart>
         <p className="mt-2 text-[11px] text-slate-500">Source file: {k.source.split(';')[0]}. Where two experimental points share a pressure, the chart shows their average.</p>
         <Takeaway>The hot flame went out at about the same droplet size at every pressure ({hot05} mm at 0.5 atm, {hot3} mm at 3 atm), but cool flames lasted to much smaller droplets as pressure rose ({cool05} mm at 0.5 atm vs {cool1} mm at 1 atm), so low-pressure habitats change how fuel fires end.</Takeaway>
-      </Section>
-    </div>
+      </Section>}
+        </div>
+      )}
+      outcome={(
+        <p className="text-sm text-slate-200">
+          {section === 'flex' && `FLEX: CO₂ and helium raised the share of droplet fires that went out on their own, and lean oxygen did the same. ${pct(co2.Extinction, co2.total)}% self-extinguished with CO₂, ${pct(he.Extinction, he.total)}% with helium, ${pct(none.Extinction, none.total)}% with neither.`}
+          {section === 'bass' && `BASS-II stayed at or below ${b.o2Range[1]}% oxygen. In SAFFIRE-II, silicone showed almost no burn length in microgravity while SIBAL fabric burned the full sample. Earth screening and orbit do not always agree.`}
+          {section === 'cfig' && `Hot ignition climbed with oxygen: normal flames ignited in ${cfLo?.Normal_ign}% of tests at 20–25% O₂ and ${cfNm?.Normal_ign}% at 35–45%. Inverse flames ignited in ${cfHi?.Inverse_ign}% of tests above 60% O₂.`}
+          {section === 'psi117' && `Hot-flame extinction diameter stayed near ${hot05} mm at 0.5 atm and ${hot3} mm at 3 atm. Cool flames lasted to smaller droplets as pressure rose (${cool05} mm at 0.5 atm, ${cool1} mm at 1 atm).`}
+        </p>
+      )}
+    />
   );
 }
