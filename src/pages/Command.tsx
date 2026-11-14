@@ -85,7 +85,7 @@ export default function Command() {
       `  Score: ${Math.round(result.p * 100)} / 100`,
       `  Confidence: ${result.confidenceLabel}`,
       '',
-      'Plain English',
+      'Simpler wording',
       plainBurn(x, result),
       '',
       'Technical notes',
@@ -106,10 +106,10 @@ export default function Command() {
       </div>
     <Deck
       stage={(
-        <FlameStage title="Will it burn?" caption="The flame is a teaching picture of the settings below—not a real fire simulation. Results compare your setup to the closest NASA tests." controls={(
+        <FlameStage title="Will it burn?" caption="The flame is an illustration of the settings below. It is not a combustion simulation." controls={(
           <>
             <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-              <span className="text-xs text-slate-400">How is it fed?</span>
+              <span className="text-xs text-slate-400">Feeding mode</span>
               <Link
                 to={fluidPhysicsHref(feed.mechId)}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-micro-500/20 px-2.5 py-1 text-xs font-medium text-micro-100 ring-1 ring-micro-400/50 hover:bg-micro-500/30"
@@ -186,7 +186,7 @@ export default function Command() {
         <>
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => setPlain(p => !p)} className={`rounded-lg px-2.5 py-1 text-xs ${plain ? 'bg-cyan-500/20 text-cyan-100' : 'bg-white/5 text-slate-300'}`} aria-pressed={plain}>
-              {plain ? 'Plain English on' : 'Plain English off'}
+              {plain ? 'Simpler wording on' : 'Simpler wording off'}
             </button>
             <button type="button" onClick={onSave} className="rounded-lg bg-white/10 px-2.5 py-1 text-xs text-white hover:bg-white/15">Save scan</button>
             <button type="button" onClick={onDownload} className="rounded-lg bg-flame-500/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-flame-500">Download report</button>

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from 'recharts';
 import Flame from '../components/Flame';
 import { byAccession, fmt, insights, loadTables, loadTests } from '../lib/data';
+import { mechById } from '../lib/microMechanisms';
 import { extinctionWalkthrough, fluidPhysicsHref, fluidPresetsFor, walkthroughKind } from '../lib/physicsBridge';
 import type { RawTable, TestRecord } from '../lib/types';
 import { Card, PageHeader, Pill, TierBadge } from '../components/ui';
@@ -200,7 +201,7 @@ export default function ExperimentDetail() {
               <p className="text-base font-semibold text-white">{step.label}</p>
               <p className="mt-1 text-sm text-slate-300">{step.blurb}</p>
               <Link to={fluidPhysicsHref(step.mech)} className="mt-3 inline-block text-sm text-micro-300 hover:underline">
-                Open {step.mech === 'radiation' ? 'glow heat loss' : step.mech} model →
+                Open {mechById(step.mech).name} model →
               </Link>
             </div>
           </div>
@@ -208,7 +209,7 @@ export default function ExperimentDetail() {
       )}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-micro-300">Plain-English summary</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-micro-300">Summary</h2>
           <p className="mt-2 text-slate-200">{inv.summary}</p>
           <h2 className="mt-5 text-sm font-semibold uppercase tracking-widest text-flame-300">Why it matters for fire safety</h2>
           <p className="mt-2 text-slate-200">{inv.why}</p>

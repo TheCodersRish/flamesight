@@ -18,29 +18,29 @@ export interface FeedChip {
   mechId: MechId;
 }
 
-/** Live “how is it fed?” from Will It Burn gravity / oxygen / fan sliders. */
+/** Live feeding-mode chip from Will It Burn gravity / oxygen / flow sliders. */
 export function feedingMode(x: Pick<SimInput, 'gravity' | 'o2' | 'flow'>): FeedChip {
   const g = GRAVITY[x.gravity as Gravity]?.g ?? 0;
   if (g >= 0.35) {
     return {
       mode: 'rising-plume',
-      label: 'Rising plume',
-      detail: 'Earth-like gravity: hot air lifts and feeds the flame.',
+      label: 'Buoyant plume',
+      detail: 'Earth-like gravity: buoyancy (rising hot air) lifts and feeds the flame.',
       mechId: 'no-buoyancy',
     };
   }
   if (x.flow >= 8) {
     return {
       mode: 'cabin-fans',
-      label: 'Cabin fans',
-      detail: `Fan push at ${x.flow} cm/s replaces the missing rising plume.`,
+      label: 'Forced ventilation',
+      detail: `Forced flow at ${x.flow} cm/s replaces the missing buoyant plume.`,
       mechId: 'forced',
     };
   }
   return {
     mode: 'slow-mixing',
-    label: 'Slow mixing',
-    detail: 'Near-still freefall air: oxygen creeps in by diffusion.',
+    label: 'Diffusion',
+    detail: 'Near-still freefall air: oxygen arrives mainly by molecular diffusion.',
     mechId: 'diffusion',
   };
 }
@@ -52,13 +52,13 @@ export interface PhysicsTag {
 }
 
 const TAG: Record<MechId, PhysicsTag> = {
-  'no-buoyancy': { id: 'no-buoyancy', short: 'Rising air gone', story: 'No rising hot-air plume—flame shape turns round.' },
-  diffusion: { id: 'diffusion', short: 'Slow mixing limit', story: 'Oxygen reaches the flame mainly by slow mixing.' },
-  forced: { id: 'forced', short: 'Fan push', story: 'Cabin ventilation stretches and feeds the freefall flame.' },
-  stefan: { id: 'stefan', short: 'Outward gas push', story: 'Fuel vapor blows outward and sets the round flame gap.' },
-  lewis: { id: 'lewis', short: 'Heat vs fuel speed', story: 'Heat and fuel travel at different speeds (Lewis number).' },
-  radiation: { id: 'radiation', short: 'Glow heat loss', story: 'Growing sphere loses glow heat until the flame goes out.' },
-  marangoni: { id: 'marangoni', short: 'Surface-tension stir', story: 'Hot/cool spots stir liquid fuel without gravity.' },
+  'no-buoyancy': { id: 'no-buoyancy', short: 'No buoyancy', story: 'Without a buoyant plume (rising hot air), the flame turns round.' },
+  diffusion: { id: 'diffusion', short: 'Diffusion limit', story: 'Oxygen reaches the flame mainly by molecular diffusion.' },
+  forced: { id: 'forced', short: 'Forced ventilation', story: 'Cabin ventilation stretches and feeds the freefall flame.' },
+  stefan: { id: 'stefan', short: 'Stefan flow', story: 'Fuel vapor blows outward and sets the spherical flame standoff.' },
+  lewis: { id: 'lewis', short: 'Lewis number', story: 'Heat and fuel species travel at different speeds (Le ≠ 1).' },
+  radiation: { id: 'radiation', short: 'Radiative loss', story: 'A growing sphere loses heat by radiation until the flame goes out.' },
+  marangoni: { id: 'marangoni', short: 'Marangoni', story: 'Surface-tension gradients stir liquid fuel when gravity cannot.' },
 };
 
 /** Map a NASA study to the freefall ideas it best illustrates. */
@@ -109,14 +109,14 @@ export function fluidPresetsFor(inv: Investigation): { label: string; to: string
   }));
   if (/flex|cool flame|cfi|psi-117/i.test(acronym + inv.title)) {
     presets.unshift({
-      label: 'Glow loss path',
+      label: 'Radiative extinction',
       to: fluidPhysicsHref('radiation'),
-      why: 'Droplet flames often end when glow heat loss overtakes chemistry.',
+      why: 'Droplet flames often end when radiative heat loss overtakes chemistry.',
     });
   }
   if (/saffire|bass/i.test(acronym)) {
     presets.unshift({
-      label: 'Cabin fans',
+      label: 'Ventilation Pe',
       to: fluidPhysicsHref('forced'),
       why: 'SAFFIRE / BASS solid burns are driven by forced ventilation in freefall.',
     });
@@ -132,33 +132,33 @@ export interface PhysicsBrief {
   links: { label: string; to: string }[];
 }
 
-/** Insights strip: expansion cooling vs steady T, and glow-loss endings. */
+/** Insights strip: adiabatic vs isothermal anchors, and radiative-extinction endings. */
 export function physicsBrief(x: SimInput): PhysicsBrief {
   const feed = feedingMode(x);
   const o2 = Math.round(x.o2 * 100);
   const glowLikely = x.gravity === 'micro' && x.flow < 15 && !/sibal|silicone|pmma|cotton|nomex|fabric/i.test(x.fuel);
   return {
     headline: glowLikely
-      ? 'Glow heat loss is the likely end for quiet droplet flames in this cabin.'
+      ? 'Radiative heat loss is the likely end for quiet droplet flames in this cabin.'
       : feed.mode === 'cabin-fans'
-        ? 'Cabin fans set the oxygen highway—expansion cooling races the forced feed.'
-        : 'With rising air gone, slow mixing and heat-path choice shape the freefall flame.',
+        ? 'Forced ventilation sets the oxygen highway—adiabatic cooling races the forced feed.'
+        : 'With buoyancy gone, diffusion and the thermodynamic path shape the freefall flame.',
     bullets: [
       feed.mode === 'rising-plume'
-        ? 'Earth-like gravity: rising hot air still cools and feeds the flame (teardrop shape).'
-        : 'Freefall: no rising plume—oxygen arrives by slow mixing or fans.',
+        ? 'Earth-like gravity: buoyancy still cools and feeds the flame (teardrop shape).'
+        : 'Freefall: no buoyant plume—oxygen arrives by diffusion or ventilation.',
       x.diluent === 'none'
-        ? `At ${o2}% oxygen, expansion cooling (no heat from walls) can shrink a round flame as products push out.`
-        : `Added ${x.diluent === 'CO2' ? 'CO₂' : 'helium'} changes heat vs fuel speed (Lewis) and often helps the flame go out.`,
+        ? `At ${o2}% oxygen, adiabatic expansion cooling (Q = 0) can shrink a spherical flame as products push out.`
+        : `Added ${x.diluent === 'CO2' ? 'CO₂' : 'helium'} shifts the Lewis number (heat vs species speed) and often helps the flame go out.`,
       glowLikely
-        ? 'For droplets, glow heat loss grows with flame size until chemistry cannot keep up (FLEX / Cool Flames).'
-        : 'Solid samples under fan push follow SAFFIRE / BASS more than droplet glow-loss endings.',
+        ? 'For droplets, radiative loss grows with flame size until chemistry cannot keep up (FLEX / Cool Flames).'
+        : 'Solid samples under forced flow follow SAFFIRE / BASS more than droplet radiative-extinction endings.',
     ],
     links: [
-      { label: 'Glow heat loss', to: fluidPhysicsHref('radiation') },
+      { label: 'Radiative heat loss', to: fluidPhysicsHref('radiation') },
       { label: feed.label, to: fluidPhysicsHref(feed.mechId) },
-      { label: 'No heat in/out path', to: '/fluid-physics?mode=thermo&theme=adiabatic' },
-      { label: 'Steady cabin temperature', to: '/fluid-physics?mode=thermo&theme=isothermal' },
+      { label: 'Adiabatic path', to: '/fluid-physics?mode=thermo&theme=adiabatic' },
+      { label: 'Isothermal path', to: '/fluid-physics?mode=thermo&theme=isothermal' },
     ],
   };
 }
@@ -174,17 +174,17 @@ export interface WalkStep {
 export function extinctionWalkthrough(kind: 'flex' | 'acme'): WalkStep[] {
   if (kind === 'acme') {
     return [
-      { label: 'Catch fire', blurb: 'High oxygen lets a hot flame start even without a rising plume.', flame: { gravity: 0, o2: 0.85, flow: 0.08, dilution: 0.05 }, mech: 'diffusion' },
-      { label: 'Oxygen & heat', blurb: 'Slow mixing and any weak flow feed the reaction zone.', flame: { gravity: 0, o2: 0.7, flow: 0.12, dilution: 0.15 }, mech: 'forced' },
-      { label: 'Lewis shift', blurb: 'Heat and fuel speeds diverge—temperature can drop toward a cooler branch.', flame: { gravity: 0, o2: 0.45, flow: 0.06, dilution: 0.4 }, mech: 'lewis' },
-      { label: 'Glow loss wins', blurb: 'Radiative cooling overtakes heat release; the bright flame fades or goes out.', flame: { gravity: 0, o2: 0.2, flow: 0.04, dilution: 0.85 }, mech: 'radiation' },
+      { label: 'Ignition', blurb: 'High oxygen lets a hot flame start even without a buoyant plume.', flame: { gravity: 0, o2: 0.85, flow: 0.08, dilution: 0.05 }, mech: 'diffusion' },
+      { label: 'Oxygen & heat', blurb: 'Diffusion and any weak ventilation feed the reaction zone.', flame: { gravity: 0, o2: 0.7, flow: 0.12, dilution: 0.15 }, mech: 'forced' },
+      { label: 'Lewis shift', blurb: 'Heat and fuel speeds diverge (Le ≠ 1)—temperature can drop toward a cooler branch.', flame: { gravity: 0, o2: 0.45, flow: 0.06, dilution: 0.4 }, mech: 'lewis' },
+      { label: 'Radiative loss wins', blurb: 'Radiative cooling overtakes heat release; the bright flame fades or extinguishes.', flame: { gravity: 0, o2: 0.2, flow: 0.04, dilution: 0.85 }, mech: 'radiation' },
     ];
   }
   return [
-    { label: 'Catch fire', blurb: 'A droplet ignites into a round freefall flame fed by slow mixing.', flame: { gravity: 0, o2: 0.75, flow: 0.05, dilution: 0.08 }, mech: 'diffusion' },
-    { label: 'Outward push', blurb: 'Fuel vapor blows products outward; the shell sits at a balance with incoming oxygen.', flame: { gravity: 0, o2: 0.6, flow: 0.1, dilution: 0.2 }, mech: 'stefan' },
-    { label: 'Flame grows', blurb: 'As the sphere grows, glowing heat loss climbs faster than chemistry can pay.', flame: { gravity: 0, o2: 0.4, flow: 0.06, dilution: 0.45 }, mech: 'radiation' },
-    { label: 'Goes out', blurb: 'Glow loss wins—self-extinction or a nearly invisible cool flame (classic FLEX ending).', flame: { gravity: 0, o2: 0.18, flow: 0.03, dilution: 0.9 }, mech: 'radiation' },
+    { label: 'Ignition', blurb: 'A droplet ignites into a spherical freefall flame fed by molecular diffusion.', flame: { gravity: 0, o2: 0.75, flow: 0.05, dilution: 0.08 }, mech: 'diffusion' },
+    { label: 'Stefan flow', blurb: 'Fuel vapor blows products outward; the shell sits at a balance with incoming oxygen.', flame: { gravity: 0, o2: 0.6, flow: 0.1, dilution: 0.2 }, mech: 'stefan' },
+    { label: 'Flame grows', blurb: 'As the sphere grows, radiative heat loss climbs faster than chemistry can pay.', flame: { gravity: 0, o2: 0.4, flow: 0.06, dilution: 0.45 }, mech: 'radiation' },
+    { label: 'Extinction', blurb: 'Radiative loss wins—self-extinction or a nearly invisible cool flame (classic FLEX ending).', flame: { gravity: 0, o2: 0.18, flow: 0.03, dilution: 0.9 }, mech: 'radiation' },
   ];
 }
 
@@ -215,28 +215,28 @@ export function analystPhysicsCitations(question: string, hitAccs: string[]): Ph
 
 export function physicsFollowUps(tags: PhysicsTag[]): string[] {
   return tags.map(t => {
-    if (t.id === 'forced') return 'Explain cabin fan push for this fuel in freefall';
-    if (t.id === 'radiation') return 'Explain glow heat loss for this droplet flame';
-    if (t.id === 'lewis') return 'Explain heat vs fuel speed (Lewis) for this suppressant';
-    if (t.id === 'stefan') return 'Explain outward gas push for this fuel';
-    if (t.id === 'diffusion') return 'Explain slow mixing when cabin fans are off';
-    if (t.id === 'marangoni') return 'Explain surface-tension stirring in a freefall liquid fire';
-    return 'Explain why freefall flames are round when rising air is gone';
+    if (t.id === 'forced') return 'Explain forced convection (ventilation) for this fuel in freefall';
+    if (t.id === 'radiation') return 'Explain radiative heat loss for this droplet flame';
+    if (t.id === 'lewis') return 'Explain the Lewis number for this suppressant';
+    if (t.id === 'stefan') return 'Explain Stefan flow for this fuel';
+    if (t.id === 'diffusion') return 'Explain molecular diffusion when ventilation is off';
+    if (t.id === 'marangoni') return 'Explain Marangoni convection in a freefall liquid fire';
+    return 'Explain why freefall flames are round when buoyancy is gone';
   });
 }
 
-/** Overview morph cycle: no rising air → slow mixing → weak cabin flow. */
+/** Overview morph cycle: no buoyancy → diffusion → weak ventilation. */
 export type TransportPhase = 'no-rising' | 'diffusion' | 'weak-flow';
 
 export function transportPhaseFlame(phase: TransportPhase, t: number): { gravity: number; o2: number; flow: number; dilution: number; label: string } {
   const w = 0.5 + 0.5 * Math.sin(t * 1.2);
   if (phase === 'no-rising') {
-    return { gravity: 0.02 + 0.08 * (1 - w), o2: 0.45 + 0.15 * w, flow: 0.02, dilution: 0.25, label: 'No rising air' };
+    return { gravity: 0.02 + 0.08 * (1 - w), o2: 0.45 + 0.15 * w, flow: 0.02, dilution: 0.25, label: 'No buoyancy' };
   }
   if (phase === 'diffusion') {
-    return { gravity: 0, o2: 0.35 + 0.25 * w, flow: 0.04, dilution: 0.45 - 0.2 * w, label: 'Slow mixing' };
+    return { gravity: 0, o2: 0.35 + 0.25 * w, flow: 0.04, dilution: 0.45 - 0.2 * w, label: 'Diffusion' };
   }
-  return { gravity: 0, o2: 0.4 + 0.3 * w, flow: 0.15 + 0.25 * w, dilution: 0.15, label: 'Weak cabin flow' };
+  return { gravity: 0, o2: 0.4 + 0.3 * w, flow: 0.15 + 0.25 * w, dilution: 0.15, label: 'Weak ventilation' };
 }
 
 export { TAG as PHYSICS_TAG_BY_ID };

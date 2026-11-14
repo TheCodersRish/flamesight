@@ -22,7 +22,7 @@ export default function SideNav() {
         <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-flame-500 to-micro-600 text-sm font-bold text-white">FS</span>
         <span>
           <span className="block text-sm font-semibold tracking-wide text-white">FlameSight</span>
-          <span className="block text-xs text-slate-400">Fire in space · plain English</span>
+          <span className="block text-xs text-slate-400">Fire in space</span>
         </span>
       </NavLink>
       {NAV.map(n => (

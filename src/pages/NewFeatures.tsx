@@ -3,46 +3,46 @@ import { Card, PageHeader, Pill, Takeaway } from '../components/ui';
 
 const FEATURE_IDEAS = [
   {
-    title: 'One shared cabin atmosphere',
+    title: 'Habitat atmosphere twin',
     impact: 'Mission planning',
     status: 'shipped' as const,
     blurb:
-      'Let planners set oxygen, pressure, and fan speed once, then watch Will It Burn?, Risk Ranking, and the round flame all update from that same cabin—one setting, three views.',
+      'Let planners dial O₂, pressure, and ventilation for a cabin, then see Will It Burn?, Risk Ranking, and a spherical flame update from the same atmosphere state—one twin, three views.',
   },
   {
-    title: 'Risk cards that name the physics',
+    title: 'Mechanism-aware risk cards',
     impact: 'Risk Ranking',
     status: 'shipped' as const,
     blurb:
-      'Tag each ranked study with the main freefall idea it shows (slow mixing limit, outward gas push, glow heat loss) so scores read as short physics stories, not just numbers.',
+      'Annotate each ranked investigation with the dominant freefall mechanism it illustrates (diffusion limit, Stefan flow, radiation extinction) so scores read as physics stories, not just numbers.',
   },
   {
     title: 'Compare two habitats side-by-side',
     impact: 'Insights',
     status: 'shipped' as const,
     blurb:
-      'Split-view Moon vs Mars (or station vs suit) on shared charts: chance of burning, top experiments, and which feeding mode wins when rising hot air is gone.',
+      'Split-view lunar vs Mars (or ISS vs suit) with shared axes: predicted burn likelihood, top experiments, and which transport regime dominates when buoyancy is gone.',
   },
   {
     title: 'Guided “why it went out” walkthrough',
     impact: 'Explorer',
     status: 'shipped' as const,
     blurb:
-      'On FLEX and ACME detail pages, a short path that scrubbing oxygen and heat loss walks the live flame from catching fire to going out by glowing heat loss—using the Fluid Physics models.',
+      'On FLEX and ACME detail pages, a short path that scrubbing oxygen and heat loss walks the live flame from ignition to radiative extinction using the Fluid Physics models.',
   },
   {
     title: 'Analyst with physics citations',
     impact: 'Analyst',
     status: 'shipped' as const,
     blurb:
-      'When the Fire Safety Analyst answers, pin the matching freefall idea (rising-air gone, fan push, Lewis, glow loss) and deep-link into that Fluid Physics panel.',
+      'When the Fire Safety Analyst answers, pin the Gr / Pe / Lewis / radiation mechanism that backs the claim and deep-link into the matching Fluid Physics panel.',
   },
   {
     title: 'Classroom lab mode',
     impact: 'Education',
     status: 'backlog' as const,
     blurb:
-      'A timed lesson: morph gravity on Overview, run one heat-and-volume path, rank a lunar preset, export a one-page PDF—built for Space Apps demos and high-school classrooms.',
+      'A timer-boxed lesson: morph gravity on Overview, run one thermodynamic path, rank a lunar preset, export a one-page PDF—built for Space Apps demos and classrooms.',
   },
 ];
 
@@ -52,58 +52,58 @@ const FLUID_PHYSICS_USES = [
     to: '/',
     status: 'shipped' as const,
     idea:
-      'Under the flame, show a live “how is it fed?” chip—rising plume vs slow mixing vs cabin fans—driven by the same gravity, oxygen, and flow sliders that already feed the closest-tests model.',
+      'Under the flame, show a live “feeding mode” chip—buoyant plume vs diffusion vs forced ventilation—driven by the same gravity, O₂, and flow sliders that already feed the k-NN model.',
   },
   {
     where: 'Overview',
     to: '/overview',
     status: 'shipped' as const,
     idea:
-      'Replace the gravity-only morph with a short cycle through no rising air → slow mixing → weak cabin flow so visitors feel transport before they open the full Fluid Physics tab.',
+      'Replace the gravity-only morph with a short cycle through no-buoyancy → diffusion → weak cabin flow so visitors feel transport before they open the full Fluid Physics tab.',
   },
   {
     where: 'Risk Ranking',
     to: '/scenarios',
     status: 'shipped' as const,
     idea:
-      'Weight experiments higher when their tested fan-push / oxygen window matches the habitat’s ventilation, not only oxygen and pressure match scores.',
+      'Weight experiments higher when their tested Pe / O₂ window matches the habitat’s ventilation Péclet number, not only O₂ and pressure match scores.',
   },
   {
     where: 'Insights',
     to: '/insights',
     status: 'shipped' as const,
     idea:
-      'Add a “physics brief” strip: expansion cooling vs steady cabin temperature, and when glow heat loss is the likely end for droplet flames.',
+      'Add a “physics brief” strip: adiabatic cooling vs isothermal cabin anchors, and when radiative extinction is the likely end state for droplet flames.',
   },
   {
     where: 'Experiments',
     to: '/explorer',
     status: 'shipped' as const,
     idea:
-      'On each study, offer “Open in Fluid Physics” presets (e.g. FLEX → glow loss / Lewis; SAFFIRE → cabin fans) so tables jump straight into the matching live sim.',
+      'On each investigation, offer “Open in Fluid Physics” presets (e.g. FLEX → radiation / Lewis; SAFFIRE → ventilation Pe) so tables jump straight into the matching live sim.',
   },
   {
     where: 'Analyst',
     to: '/analyst',
     status: 'shipped' as const,
     idea:
-      'Seed follow-up prompts from physics tags—“Explain outward gas push for this fuel”—so answers stay grounded in the same models shown on Fluid Physics.',
+      'Seed follow-up prompts from mechanism tags—“Explain Stefan flow for this fuel”—so answers stay grounded in the same models shown on Fluid Physics.',
   },
   {
     where: 'Guided demo',
     to: '/fluid-physics',
     status: 'shipped' as const,
     idea:
-      'Insert a Fluid Physics stop between Risk Ranking and Will It Burn? so the demo narrates why freefall flames are round before predicting catch fire.',
+      'Insert a Fluid Physics stop between Risk Ranking and Will It Burn? so the demo narrates why freefall flames are round before predicting ignition.',
   },
 ];
 
 export default function NewFeatures() {
   return (
     <div className="space-y-8">
-      <PageHeader kicker="New features" title="Ideas to grow FlameSight—and share freefall fire physics on every screen">
-        A living backlog for Team AstroGhosts: product ideas that deepen fire-safety storytelling in plain English, plus concrete ways to reuse the{' '}
-        <Link to="/fluid-physics" className="text-micro-300 underline hover:text-white">Fluid Physics</Link> teaching sims across the app.
+      <PageHeader kicker="New features" title="Ideas to grow FlameSight—and weave fluid physics through every screen">
+        A living backlog for Team AstroGhosts: product ideas that deepen fire-safety storytelling, plus concrete ways to reuse the{' '}
+        <Link to="/fluid-physics" className="text-micro-300 underline hover:text-white">Fluid Physics</Link> mechanisms and thermodynamic paths across the app.
       </PageHeader>
 
       <section>
@@ -124,18 +124,18 @@ export default function NewFeatures() {
           ))}
         </div>
         <Takeaway>
-          Prioritize ideas that share one cabin atmosphere across Will It Burn?, Risk Ranking, and Fluid Physics so physics and predictions never disagree.
+          Prioritize ideas that share one atmosphere state across Will It Burn?, Risk Ranking, and Fluid Physics so physics and predictions never diverge.
         </Takeaway>
       </section>
 
       <section>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
           <h2 className="text-lg font-semibold text-white">Use fluid physics throughout the app</h2>
-          <Pill tone="micro">Gases · heat · surfaces</Pill>
+          <Pill tone="micro">Transport · thermo · mechanisms</Pill>
         </div>
         <Card glow="micro">
           <p className="text-sm text-slate-300">
-            Fluid Physics already teaches freefall ideas in everyday language (no rising hot air, slow mixing, cabin fans, outward gas push) plus heat and surface effects (Lewis number, glow heat loss, surface-tension stirring), and four heat-and-volume paths.
+            Fluid Physics already teaches freefall transport (no buoyancy, diffusion, ventilation, Stefan flow) and thermal/surface effects (Lewis number, radiation, Marangoni), plus adiabatic / isothermal / isochoric / polytropic paths.
             The next step is surfacing those same models wherever users rank risks, scrub flames, or ask the analyst—so every page speaks the same physics language.
           </p>
         </Card>
@@ -156,7 +156,7 @@ export default function NewFeatures() {
           ))}
         </ul>
         <Takeaway>
-          Treat Fluid Physics as the shared engine: export mechanism tags and heat-path state into Will It Burn?, Risk Ranking, Insights, Explorer, and Analyst instead of keeping the sims only on one tab.
+          Treat Fluid Physics as the shared engine: export mechanism tags and thermo state into Command, Scenarios, Insights, Explorer, and Analyst instead of keeping the sims siloed on one tab.
         </Takeaway>
       </section>
     </div>

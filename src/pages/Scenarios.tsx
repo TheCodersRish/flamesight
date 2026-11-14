@@ -114,7 +114,7 @@ export default function Scenarios() {
   return (
     <div>
       <PageHeader kicker="Scenario Risk Ranking" title="Which NASA experiments matter most for your mission?">
-        Pick a habitat—or build your own. Each NASA fire study gets a 0–100 “how relevant is this?” score from how closely its tested oxygen, pressure, and airflow match your setting, what fire-safety job it helps with, and how much data it has. Studies whose fan-push / oxygen window matches cabin ventilation rise higher. Open “How we scored this” to change the weights.
+        Pick a habitat—or create your own scientific scenario. Each investigation gets a 0–100 relevance score from how closely its tested oxygen, pressure and airflow match the habitat, its fire-safety role, and how much data it has. Open “How we scored this” to change the weights.
       </PageHeader>
 
       <div className="mb-4 space-y-2">
@@ -360,18 +360,17 @@ export default function Scenarios() {
             <motion.aside role="dialog" aria-modal="true" aria-label="How we scored this" className="fixed right-0 top-0 z-50 h-full w-[min(100vw,440px)] overflow-y-auto border-l border-white/10 bg-space-900 p-6"
               initial={{ x: 480 }} animate={{ x: 0 }} exit={{ x: 480 }} transition={{ type: 'spring', damping: 28, stiffness: 260 }}>
               <div className="flex items-center justify-between"><h2 className="text-lg font-semibold text-white">How we scored this</h2><button onClick={() => setDrawer(false)} className="rounded-lg bg-white/10 px-2 py-1 text-sm" aria-label="Close">✕</button></div>
-              <p className="mt-3 text-sm text-slate-300">In plain English: we blend oxygen match, pressure match, airflow match, fire-safety role, and how much data the study has into a 0–100 score. Move the sliders to change how much each ingredient matters.</p>
               <p className="mt-3 rounded-lg bg-white/5 p-3 font-mono text-xs text-slate-200">score = 100 × Σ(weight × part) ÷ Σ weights</p>
               <ul className="mt-3 space-y-2 text-xs text-slate-300">
-                <li><b className="text-flame-300">Oxygen / pressure / flow match</b>: full credit (1.0) if your habitat value sits inside what the experiment actually tested; otherwise the score fades with distance (scale = the larger of {SCALES.o2 * 100} oxygen points / {SCALES.pAtm} atmospheres / {SCALES.flow} cm/s and 25% of the habitat value). Missing table values use {UNKNOWN} (unknown).</li>
-                <li><b className="text-violet-300">Fire-safety role</b>: tier 1 Core = 1.0, 2 Strong = 0.7, 3 Background = 0.4, plus 0.2 if its role is a priority for this habitat ({sc.roleBoost.join(', ')}).</li>
-                <li><b className="text-emerald-300">Data richness</b>: more tests and richer tables score higher (0.7 × log₁₀(1+tests)/log₁₀(701) + 0.15 for a test table + 0.15 for analyzed data).</li>
+                <li><b className="text-flame-300">O₂ / pressure / flow match</b>: 1.0 if the habitat value is inside the range the experiment actually tested; otherwise e^(−distance/scale), scale = the larger of {SCALES.o2 * 100} O₂ points / {SCALES.pAtm} atm / {SCALES.flow} cm/s and 25% of the habitat value. If the experiment's table doesn't list that variable, the part is {UNKNOWN} (unknown).</li>
+                <li><b className="text-violet-300">Fire-safety role</b>: tier 1 Core = 1.0, 2 Strong = 0.7, 3 Background = 0.4, +0.2 if its role is a priority for this habitat ({sc.roleBoost.join(', ')}).</li>
+                <li><b className="text-emerald-300">Data richness</b>: 0.7 × log₁₀(1+tests)/log₁₀(701) + 0.15 if it has a test table + 0.15 if it has analyzed data.</li>
               </ul>
               <div className="mt-5 space-y-4">
                 {keys.map(k => <Slider key={k} label={PART_LABEL[k]} value={w[k]} min={0} max={50} step={1} onChange={v => setW(x => ({ ...x, [k]: v }))} format={v => `${v} (${Math.round((100 * v) / tot)}%)`} />)}
               </div>
               <button onClick={() => setW(weightsFor(sc))} className="mt-4 rounded-lg bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/20">Reset to defaults</button>
-              <p className="mt-4 text-[11px] text-slate-500">Tiers are the team's judgment, not NASA's. Habitat airflow values are assumptions (marked *). Moon/Mars have no partial-gravity fire tables in PSI—those results are estimated beyond the measured data.</p>
+              <p className="mt-4 text-[11px] text-slate-500">Tiers are the team's judgment, not NASA's. Airflow values for habitats are assumptions (marked *). Moon/Mars have no partial-gravity data in PSI.</p>
               <div className="mt-3"><Pill tone="amber">Ranking updates live as you move the sliders</Pill></div>
             </motion.aside>
           </>

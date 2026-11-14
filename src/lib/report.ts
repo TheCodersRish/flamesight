@@ -45,7 +45,7 @@ function isHeading(line: string, next: string | undefined): boolean {
   if (line.includes(':') && line.length > 60) return false;
   if (line.length > 48) return false;
   // Short standalone labels, or a short line followed by indented/blank content
-  if (/^(Settings|Result|Plain English|Technical notes|Closest NASA tests|Answer|Matching investigations|Caveats|Question|Data)$/i.test(line)) {
+  if (/^(Settings|Result|Simpler wording|Plain English|Technical notes|Closest NASA tests|Answer|Matching investigations|Caveats|Question|Data)$/i.test(line)) {
     return true;
   }
   if (next !== undefined && (next === '' || next.startsWith(' ') || next.startsWith('\t') || /^[•\-]/.test(next.trim()))) {

@@ -33,10 +33,10 @@ const VIOLET = '#a78bfa';
 const BASS_COLORS = [FLAME, MICRO, EMERALD, ROSE, AMBER, VIOLET, '#2dd4bf', '#f472b6'];
 
 const SECTIONS: { id: InsightId; label: string }[] = [
-  { id: 'flex', label: 'FLEX · putting droplet fires out' },
-  { id: 'cfig', label: 'CFI-G · high oxygen' },
-  { id: 'bass', label: 'SAFFIRE / BASS · solid materials' },
-  { id: 'psi117', label: 'PSI-117 · cabin pressure' },
+  { id: 'flex', label: 'FLEX Suppression' },
+  { id: 'cfig', label: 'CFI-G High Oxygen' },
+  { id: 'bass', label: 'SAFFIRE / BASS Solids' },
+  { id: 'psi117', label: 'PSI-117 Pressure' },
 ];
 
 /** Parse SAFFIRE burn-length strings into cm. "Complete" = full ~29 cm SIBAL sample. */
@@ -223,7 +223,7 @@ export default function Insights() {
       graphsTitle="The NASA measurement"
       outcomeTitle="What to do"
       stage={(
-        <FlameStage title="Insights" caption={brief.headline || 'What NASA’s charts say about your settings—in plain English'}>
+        <FlameStage title="Insights" caption={brief.headline}>
           <Flame gravity={GRAVITY[input.gravity].flame} o2={Math.max(0, Math.min(1, (input.o2 - 0.12) / 0.6))} flow={Math.max(0, Math.min(1, input.flow / 40))} dilution={input.diluent === 'none' ? 0 : 0.55} className="h-full w-full" label="Insights flame for the current Will It Burn settings" />
         </FlameStage>
       )}
@@ -248,13 +248,13 @@ export default function Insights() {
         <div className="space-y-5">
           {section === 'flex' && (
             <>
-              <Chart title={`FLEX: share of droplet fires that went out on their own. Your gas is ${yourGas === 'No' ? 'neither carbon dioxide nor helium' : yourGas}.`}>
+              <Chart title={`FLEX: share of droplet fires that self-extinguished. Your gas is ${yourGas === 'No' ? 'neither CO₂ nor He' : yourGas}.`}>
                 <BarChart data={dilPct}>
                   <CartesianGrid stroke="#1e293b" />
                   <XAxis dataKey="group" {...axis} interval={0} tick={{ fill: '#94a3b8', fontSize: 10 }} />
                   <YAxis {...axis} unit="%" domain={[0, 100]} />
-                  <Tooltip formatter={(v: number, _n, item) => [`${v}% of ${(item?.payload as { n: number }).n} tests`, 'Went out alone']} />
-                  <Bar dataKey="wentOut" name="Went out alone" radius={[4, 4, 0, 0]}>
+                  <Tooltip formatter={(v: number, _n, item) => [`${v}% of ${(item?.payload as { n: number }).n} tests`, 'Self-extinguished']} />
+                  <Bar dataKey="wentOut" name="Self-extinguished" radius={[4, 4, 0, 0]}>
                     {dilPct.map(d => <Cell key={d.group} fill={d.group.startsWith(yourGas) ? FLAME : MICRO} />)}
                   </Bar>
                 </BarChart>
@@ -266,15 +266,15 @@ export default function Insights() {
                   <YAxis {...axis} unit="%" domain={[0, 100]} />
                   <Tooltip formatter={(v: number, name: string, item) => [`${v}% of ${(item?.payload as { n: number }).n}`, name]} />
                   <Legend />
-                  <Bar dataKey="wentOut" name="Went out alone" stackId="o" fill={MICRO} />
-                  <Bar dataKey="disruption" name="Disrupted" stackId="o" fill={FLAME} />
+                  <Bar dataKey="wentOut" name="Self-extinguished" stackId="o" fill={MICRO} />
+                  <Bar dataKey="disruption" name="Disruption" stackId="o" fill={FLAME} />
                   <Bar dataKey="burnedOut" name="Burned out" stackId="o" fill={ROSE} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </Chart>
             </>
           )}
           {section === 'cfig' && (
-            <Chart title={`CFI-G: how often a hot flame started, by oxygen. Your ${o2}% is in the ${yourCfig} bin.`}>
+            <Chart title={`CFI-G: hot-ignition rate by oxygen. Your ${o2}% is in the ${yourCfig} bin.`}>
               <BarChart data={cf}>
                 <CartesianGrid stroke="#1e293b" />
                 <XAxis dataKey="bin" {...axis} />
@@ -297,7 +297,7 @@ export default function Insights() {
           )}
           {section === 'bass' && (
             <>
-              <Chart tall title={`BASS-II: solid-material tests by starting oxygen. Your ${o2}% is in ${yourBassBin} (range ${insights.bass.o2Range[0]}–${insights.bass.o2Range[1]}%).`}>
+              <Chart tall title={`BASS-II: solid-material tests by starting O₂. Your ${o2}% is in ${yourBassBin} (range ${insights.bass.o2Range[0]}–${insights.bass.o2Range[1]}%).`}>
                 <BarChart data={bassBins}>
                   <CartesianGrid stroke="#1e293b" />
                   <XAxis dataKey="bin" {...axis} />
@@ -307,7 +307,7 @@ export default function Insights() {
                   {bassMats.map((m, i) => <Bar key={m} dataKey={m} stackId="o" fill={BASS_COLORS[i % BASS_COLORS.length]} />)}
                 </BarChart>
               </Chart>
-              <Chart tall title="SAFFIRE-II: how far the sample burned in orbit vs on Earth (cm). “Complete” means the full ~29 cm sample.">
+              <Chart tall title="SAFFIRE-II: burn length in orbit vs on Earth (cm). Complete → 29 cm full sample.">
                 <BarChart data={saff} margin={{ bottom: 8 }}>
                   <CartesianGrid stroke="#1e293b" />
                   <XAxis dataKey="id" {...axis} interval={0} tick={{ fill: '#94a3b8', fontSize: 9 }} />
@@ -322,7 +322,7 @@ export default function Insights() {
           )}
           {section === 'psi117' && (
             <>
-              <Chart title={`PSI-117: droplet size when the flame went out vs pressure. Your cabin is ${atm} atmospheres.`}>
+              <Chart title={`PSI-117: droplet extinction diameter vs pressure. Your cabin is ${atm} atm.`}>
                 <LineChart data={kData}>
                   <CartesianGrid stroke="#1e293b" />
                   <XAxis dataKey="p" type="number" domain={[0.4, 3.1]} {...axis} unit=" atm" />
@@ -334,7 +334,7 @@ export default function Insights() {
                   <Line dataKey="cool" name="Cool flame (expt)" stroke={MICRO} strokeWidth={2.5} connectNulls dot />
                 </LineChart>
               </Chart>
-              <Chart title="PSI-117: average burn-speed number K vs pressure (lab data vs model).">
+              <Chart title="PSI-117: average burning-rate constant K vs pressure (experiment vs model).">
                 <LineChart data={kRate}>
                   <CartesianGrid stroke="#1e293b" />
                   <XAxis dataKey="p" type="number" domain={[0.4, 5.2]} {...axis} unit=" atm" />
@@ -348,14 +348,14 @@ export default function Insights() {
               </Chart>
             </>
           )}
-          <p className="text-[11px] text-slate-500">Orange marks your setting where relevant. Charts come from NASA insights built from PSI tables. Educational tool—not a safety certificate.</p>
+          <p className="text-[11px] text-slate-500">Orange marks your setting where relevant. Charts read from the built NASA insights JSON (regenerated from PSI CSVs in git).</p>
         </div>
       )}
       outcome={(
         <>
           <div className="mb-2 flex flex-wrap gap-2">
             <button type="button" onClick={() => setPlain(p => !p)} className={`rounded-lg px-2.5 py-1 text-xs ${plain ? 'bg-cyan-500/20 text-cyan-100' : 'bg-white/5 text-slate-300'}`} aria-pressed={plain}>
-              {plain ? 'Plain English on' : 'Plain English off'}
+              {plain ? 'Simpler wording on' : 'Simpler wording off'}
             </button>
             <button
               type="button"
