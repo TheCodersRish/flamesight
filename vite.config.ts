@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
-import { answerWithGemini, type AskContext } from './api/gemini';
+import { answerWithGemini, type AskContext } from './lib/geminiServer';
 
 function geminiDev(key: string | undefined, model: string): Plugin {
   return {

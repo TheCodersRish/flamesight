@@ -1,4 +1,5 @@
 // Server-only Gemini call. The key is read from the environment and never sent to the browser.
+// Lives outside /api so Vercel does not treat it as its own serverless entrypoint.
 
 export interface AskContext {
   accession: string;

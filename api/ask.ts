@@ -1,9 +1,10 @@
 // POST /api/ask
 // Body: { question: string, context: { accession, name, url, text }[] }
-// Uses GEMINI_API_KEY from the server environment. The key is never sent to the browser.
-// If the key is missing or the call fails, returns an error and the app keeps its local answer.
+// Runs the Gemini model on Vercel using GEMINI_API_KEY from the server environment.
+// The key is never sent to the browser. If the key is missing or the call fails,
+// returns an error and the app keeps its local NASA-notes answer.
 
-import { answerWithGemini, type AskContext } from './gemini';
+import { answerWithGemini, type AskContext } from '../lib/geminiServer.js';
 
 interface Req { method?: string; body?: unknown }
 interface Res { status: (n: number) => Res; json: (b: unknown) => void; setHeader: (k: string, v: string) => void }
