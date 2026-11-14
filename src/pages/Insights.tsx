@@ -11,18 +11,45 @@ import { GRAVITY, psiToAtm } from '../lib/scenarios';
 
 const axis = { stroke: '#475569', tick: { fill: '#94a3b8', fontSize: 11 } };
 const pct = (a: number, b: number) => (b ? Math.round((100 * a) / b) : 0);
+const FLAME = '#ff9f43';
+const FLAME_DIM = '#fb923c';
+const MICRO = '#5cb8ff';
+const COOL = '#67e8f9';
+const EMERALD = '#34d399';
+const ROSE = '#fb7185';
+const AMBER = '#facc15';
+const VIOLET = '#a78bfa';
+const BASS_COLORS = [FLAME, MICRO, EMERALD, ROSE, AMBER, VIOLET, '#2dd4bf', '#f472b6'];
+
 const SECTIONS: { id: InsightId; label: string }[] = [
-  { id: 'flex', label: 'Will a gas put it out?' },
-  { id: 'cfig', label: 'Does more oxygen light it?' },
-  { id: 'bass', label: 'Will a solid keep burning?' },
-  { id: 'psi117', label: 'Does pressure change the end?' },
+  { id: 'flex', label: 'FLEX Suppression' },
+  { id: 'cfig', label: 'CFI-G High Oxygen' },
+  { id: 'bass', label: 'SAFFIRE / BASS Solids' },
+  { id: 'psi117', label: 'PSI-117 Pressure' },
 ];
 
-function Chart({ title, children }: { title: string; children: ReactElement }) {
+/** Parse SAFFIRE burn-length strings into cm. "Complete" = full ~29 cm SIBAL sample. */
+function burnCm(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const t = String(raw).trim();
+  if (/^complete$/i.test(t)) return 29;
+  const cm = t.match(/(\d+\.?\d*)\s*cm/i);
+  if (cm) return +cm[1];
+  if (/^~\s*0\b|^0\b/i.test(t)) return 0;
+  return null;
+}
+
+function avgAt(rows: { p: number; d: number }[], p: number): number | undefined {
+  const vals = rows.filter(r => r.p === p).map(r => r.d);
+  if (!vals.length) return undefined;
+  return +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(3);
+}
+
+function Chart({ title, children, tall }: { title: string; children: ReactElement; tall?: boolean }) {
   return (
     <div>
       <h3 className="mb-2 text-sm font-medium text-white">{title}</h3>
-      <div className="h-44 w-full"><ResponsiveContainer>{children}</ResponsiveContainer></div>
+      <div className={`${tall ? 'h-52' : 'h-44'} w-full`}><ResponsiveContainer>{children}</ResponsiveContainer></div>
     </div>
   );
 }
@@ -40,18 +67,69 @@ export default function Insights() {
   const brief = briefFor(section, input, result);
   const o2 = Math.round(input.o2 * 100);
   const f = insights.flex;
+
+  // FLEX: diluent suppression + oxygen-bin outcomes (from insights.json / build-data)
   const dilPct = f.byDiluent.map(d => ({
     group: d.group.replace(' (O2 + N2)', ''),
     wentOut: pct(d.Extinction, d.total),
+    disruption: pct(d.Disruption, d.total),
+    burnedOut: pct(d.Completion, d.total),
     n: d.total,
   }));
   const yourGas = input.diluent === 'CO2' ? 'CO2' : input.diluent === 'He' ? 'Helium' : 'No';
-  const cf = insights.cfig.byO2.map(r => ({ bin: String(r.bin), Normal: Number(r.Normal_ign) || 0, Inverse: Number(r.Inverse_ign) || 0 }));
+  const flexO2 = f.byO2.map(d => ({
+    bin: d.bin,
+    wentOut: pct(d.Extinction, d.total),
+    disruption: pct(d.Disruption, d.total),
+    burnedOut: pct(d.Completion, d.total),
+    n: d.total,
+  }));
+  const yourFlexO2 = o2 <= 15 ? '≤15%' : o2 <= 18 ? '16–18%' : o2 <= 21 ? '19–21%' : '>21%';
+
+  // CFI-G: ignition % only where that flame type was tested (null → omit as 0 with n=0 tooltip)
+  const cf = insights.cfig.byO2.map(r => {
+    const bin = String(r.bin);
+    const nN = Number(r.Normal_n) || 0;
+    const nI = Number(r.Inverse_n) || 0;
+    return {
+      bin,
+      Normal: nN ? Number(r.Normal_ign) || 0 : null,
+      Inverse: nI ? Number(r.Inverse_ign) || 0 : null,
+      nN,
+      nI,
+    };
+  });
   const yourCfig = o2 < 20 ? '<20%' : o2 <= 25 ? '20–25%' : o2 <= 35 ? '25–35%' : o2 <= 45 ? '35–45%' : o2 <= 60 ? '45–60%' : '>60%';
+
+  // BASS-II stacked counts by O₂ bin + material
+  const bassBins = insights.bass.o2Bins;
+  const bassMats = Array.from(new Set(bassBins.flatMap(r => Object.keys(r).filter(k => k !== 'bin' && k !== 'total'))));
+  const yourBassBin = o2 < 15 ? '<15%' : o2 < 17 ? '15–17%' : o2 < 19 ? '17–19%' : o2 < 21 ? '19–21%' : '≥21%';
+
+  // SAFFIRE-II orbit vs Earth burn length (cm)
+  const saff = insights.saffire2.map((s, i) => {
+    const label = (s.material && !/not listed/i.test(s.material) ? s.material : s.id.replace('SAFFIRE-II ', '')).replace('Cotton-Fiberglass (SIBAL)', 'SIBAL');
+    const short = label.length > 14 ? `${label.slice(0, 13)}…` : label;
+    return {
+      id: short,
+      full: `${s.id}: ${s.material}`,
+      orbit: burnCm(s.ug),
+      earth: burnCm(s.oneG),
+      i,
+    };
+  }).filter(s => s.orbit !== null || s.earth !== null);
+
+  // PSI-117: average duplicate cool-flame points at the same pressure
   const k = insights.psi117;
   const pressures = Array.from(new Set([...k.hotExpt, ...k.coolExpt].map(p => p.p))).sort((a, b) => a - b);
-  const at = (rows: { p: number; d: number }[], p: number) => rows.find(r => r.p === p)?.d;
-  const kData = pressures.map(p => ({ p, hot: at(k.hotExpt, p), cool: at(k.coolExpt, p) }));
+  const kData = pressures.map(p => ({ p, hot: avgAt(k.hotExpt, p), cool: avgAt(k.coolExpt, p) }));
+  const kRatePs = Array.from(new Set(k.kavgExpt.map(x => x.p))).sort((a, b) => a - b);
+  const kRate = kRatePs.map(p => {
+    const vals = k.kavgExpt.filter(x => x.p === p).map(x => x.k);
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const model = k.kbModel.find(m => m.p === p)?.k;
+    return { p, expt: +avg.toFixed(3), model: model != null ? +model.toFixed(3) : undefined };
+  });
   const atm = +psiToAtm(input.psi).toFixed(2);
 
   return (
@@ -82,71 +160,110 @@ export default function Insights() {
         </div>
       )}
       graphs={(
-        <div className="space-y-2">
+        <div className="space-y-5">
           {section === 'flex' && (
-            <Chart title={`Share of FLEX droplet fires that went out. Your gas is ${yourGas === 'No' ? 'neither' : yourGas}.`}>
-              <BarChart data={dilPct}>
-                <CartesianGrid stroke="#1e293b" />
-                <XAxis dataKey="group" {...axis} interval={0} tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                <YAxis {...axis} unit="%" domain={[0, 100]} />
-                <Tooltip formatter={(v: number, _n, item) => [`${v}% of ${(item?.payload as { n: number }).n} tests`, 'Went out']} />
-                <Bar dataKey="wentOut" name="Went out" radius={[4, 4, 0, 0]}>
-                  {dilPct.map(d => <Cell key={d.group} fill={d.group.startsWith(yourGas) ? '#ff9f43' : '#5cb8ff'} />)}
-                </Bar>
-              </BarChart>
-            </Chart>
+            <>
+              <Chart title={`FLEX: share of droplet fires that self-extinguished. Your gas is ${yourGas === 'No' ? 'neither CO₂ nor He' : yourGas}.`}>
+                <BarChart data={dilPct}>
+                  <CartesianGrid stroke="#1e293b" />
+                  <XAxis dataKey="group" {...axis} interval={0} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                  <YAxis {...axis} unit="%" domain={[0, 100]} />
+                  <Tooltip formatter={(v: number, _n, item) => [`${v}% of ${(item?.payload as { n: number }).n} tests`, 'Self-extinguished']} />
+                  <Bar dataKey="wentOut" name="Self-extinguished" radius={[4, 4, 0, 0]}>
+                    {dilPct.map(d => <Cell key={d.group} fill={d.group.startsWith(yourGas) ? FLAME : MICRO} />)}
+                  </Bar>
+                </BarChart>
+              </Chart>
+              <Chart title={`FLEX: outcomes by starting oxygen. Your ${o2}% is in ${yourFlexO2}.`}>
+                <BarChart data={flexO2}>
+                  <CartesianGrid stroke="#1e293b" />
+                  <XAxis dataKey="bin" {...axis} />
+                  <YAxis {...axis} unit="%" domain={[0, 100]} />
+                  <Tooltip formatter={(v: number, name: string, item) => [`${v}% of ${(item?.payload as { n: number }).n}`, name]} />
+                  <Legend />
+                  <Bar dataKey="wentOut" name="Self-extinguished" stackId="o" fill={MICRO} />
+                  <Bar dataKey="disruption" name="Disruption" stackId="o" fill={FLAME} />
+                  <Bar dataKey="burnedOut" name="Burned out" stackId="o" fill={ROSE} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </Chart>
+            </>
           )}
           {section === 'cfig' && (
-            <Chart title={`Hot ignition by oxygen. Your ${o2}% is in the ${yourCfig} bin.`}>
+            <Chart title={`CFI-G: hot-ignition rate by oxygen. Your ${o2}% is in the ${yourCfig} bin.`}>
               <BarChart data={cf}>
                 <CartesianGrid stroke="#1e293b" />
                 <XAxis dataKey="bin" {...axis} />
                 <YAxis {...axis} unit="%" domain={[0, 100]} />
-                <Tooltip formatter={(v: number) => [`${v}%`, 'Ignited']} />
+                <Tooltip formatter={(v, name, item) => {
+                  const p = item?.payload as { nN: number; nI: number };
+                  if (v == null || Number.isNaN(Number(v))) return ['no tests', String(name)];
+                  const n = String(name).startsWith('Normal') ? p.nN : p.nI;
+                  return [`${v}% of ${n} tests`, String(name)];
+                }} />
                 <Legend />
                 <Bar dataKey="Normal" name="Normal flame" radius={[4, 4, 0, 0]}>
-                  {cf.map(d => <Cell key={`n-${d.bin}`} fill={d.bin === yourCfig ? '#ff9f43' : '#fb923c'} />)}
+                  {cf.map(d => <Cell key={`n-${d.bin}`} fill={d.Normal == null ? 'transparent' : d.bin === yourCfig ? FLAME : FLAME_DIM} />)}
                 </Bar>
                 <Bar dataKey="Inverse" name="Inverse flame" radius={[4, 4, 0, 0]}>
-                  {cf.map(d => <Cell key={`i-${d.bin}`} fill={d.bin === yourCfig ? '#67e8f9' : '#5cb8ff'} />)}
+                  {cf.map(d => <Cell key={`i-${d.bin}`} fill={d.Inverse == null ? 'transparent' : d.bin === yourCfig ? COOL : MICRO} />)}
                 </Bar>
               </BarChart>
             </Chart>
           )}
           {section === 'bass' && (
-            <div>
-              <h3 className="mb-2 text-sm font-medium text-white">SAFFIRE-II: the same material in orbit and on Earth</h3>
-              <div className="scrollbar-thin overflow-x-auto">
-                <table className="min-w-full text-left text-xs">
-                  <thead className="text-slate-400"><tr><th className="py-1 pr-2">Material</th><th className="py-1 pr-2">Orbit burn</th><th className="py-1">Earth burn</th></tr></thead>
-                  <tbody>
-                    {insights.saffire2.map(s => (
-                      <tr key={s.id} className="border-t border-white/5">
-                        <td className="py-1 pr-2 text-slate-200">{s.material}</td>
-                        <td className="py-1 pr-2">{s.ug}</td>
-                        <td className="py-1">{s.oneG}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <>
+              <Chart tall title={`BASS-II: solid-material tests by starting O₂. Your ${o2}% is in ${yourBassBin} (range ${insights.bass.o2Range[0]}–${insights.bass.o2Range[1]}%).`}>
+                <BarChart data={bassBins}>
+                  <CartesianGrid stroke="#1e293b" />
+                  <XAxis dataKey="bin" {...axis} />
+                  <YAxis {...axis} allowDecimals={false} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  {bassMats.map((m, i) => <Bar key={m} dataKey={m} stackId="o" fill={BASS_COLORS[i % BASS_COLORS.length]} />)}
+                </BarChart>
+              </Chart>
+              <Chart tall title="SAFFIRE-II: burn length in orbit vs on Earth (cm). Complete → 29 cm full sample.">
+                <BarChart data={saff} margin={{ bottom: 8 }}>
+                  <CartesianGrid stroke="#1e293b" />
+                  <XAxis dataKey="id" {...axis} interval={0} tick={{ fill: '#94a3b8', fontSize: 9 }} />
+                  <YAxis {...axis} unit=" cm" domain={[0, 32]} />
+                  <Tooltip labelFormatter={(_, payload) => (payload?.[0]?.payload as { full?: string })?.full || ''} formatter={(v, name) => [v == null || Number.isNaN(Number(v)) ? 'not listed' : `${v} cm`, String(name)]} />
+                  <Legend />
+                  <Bar dataKey="orbit" name="Orbit (µg)" fill={MICRO} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="earth" name="Earth (1-g)" fill={FLAME} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </Chart>
+            </>
           )}
           {section === 'psi117' && (
-            <Chart title={`Droplet size at flame-out. Your pressure is ${atm} atm.`}>
-              <LineChart data={kData}>
-                <CartesianGrid stroke="#1e293b" />
-                <XAxis dataKey="p" type="number" domain={[0.4, 3.1]} {...axis} unit=" atm" />
-                <YAxis {...axis} unit=" mm" />
-                <Tooltip />
-                <Legend />
-                <ReferenceLine x={atm} stroke="#ff9f43" strokeDasharray="4 3" label={{ value: 'you', fill: '#ff9f43', fontSize: 10 }} />
-                <Line dataKey="hot" name="Hot flame" stroke="#ff7a1a" strokeWidth={2.5} connectNulls dot />
-                <Line dataKey="cool" name="Cool flame" stroke="#5cb8ff" strokeWidth={2.5} connectNulls dot />
-              </LineChart>
-            </Chart>
+            <>
+              <Chart title={`PSI-117: droplet extinction diameter vs pressure. Your cabin is ${atm} atm.`}>
+                <LineChart data={kData}>
+                  <CartesianGrid stroke="#1e293b" />
+                  <XAxis dataKey="p" type="number" domain={[0.4, 3.1]} {...axis} unit=" atm" />
+                  <YAxis {...axis} unit=" mm" domain={[0, 'auto']} />
+                  <Tooltip formatter={(v: number) => [`${v} mm`, '']} />
+                  <Legend />
+                  <ReferenceLine x={atm} stroke={FLAME} strokeDasharray="4 3" label={{ value: 'you', fill: FLAME, fontSize: 10 }} />
+                  <Line dataKey="hot" name="Hot flame (expt)" stroke={FLAME} strokeWidth={2.5} connectNulls dot />
+                  <Line dataKey="cool" name="Cool flame (expt)" stroke={MICRO} strokeWidth={2.5} connectNulls dot />
+                </LineChart>
+              </Chart>
+              <Chart title="PSI-117: average burning-rate constant K vs pressure (experiment vs model).">
+                <LineChart data={kRate}>
+                  <CartesianGrid stroke="#1e293b" />
+                  <XAxis dataKey="p" type="number" domain={[0.4, 5.2]} {...axis} unit=" atm" />
+                  <YAxis {...axis} domain={[0, 'auto']} />
+                  <Tooltip formatter={(v: number) => [v, '']} />
+                  <Legend />
+                  <ReferenceLine x={atm} stroke={FLAME} strokeDasharray="4 3" label={{ value: 'you', fill: FLAME, fontSize: 10 }} />
+                  <Line dataKey="expt" name="K experiment" stroke={FLAME} strokeWidth={2.5} connectNulls dot />
+                  <Line dataKey="model" name="K model" stroke={MICRO} strokeWidth={2} strokeDasharray="5 4" connectNulls dot />
+                </LineChart>
+              </Chart>
+            </>
           )}
-          <p className="text-[11px] text-slate-500">Orange marks your setting. Numbers are counted from the NASA test tables.</p>
+          <p className="text-[11px] text-slate-500">Orange marks your setting where relevant. Charts read from the built NASA insights JSON (regenerated from PSI CSVs in git).</p>
         </div>
       )}
       outcome={(
