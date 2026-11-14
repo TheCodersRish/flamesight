@@ -101,11 +101,20 @@ function parseReport(body: string): PdfBlock[] {
 function buildPdf(blocks: PdfBlock[]): Uint8Array {
   const pageWidth = 612; // US Letter
   const pageHeight = 792;
-  const marginX = 54;
-  const marginTop = 64;
-  const marginBottom = 54;
+  const marginX = 56;
+  const marginTop = 72;
+  const marginBottom = 56;
   const contentWidth = pageWidth - marginX * 2;
   const charWidth = 0.5; // approx for Helvetica at size 1
+
+  // Palette (RGB 0-1)
+  const flame = '0.95 0.45 0.16';
+  const flameDeep = '0.82 0.32 0.10';
+  const ink = '0.08 0.10 0.16';
+  const slate = '0.22 0.27 0.36';
+  const muted = '0.42 0.48 0.58';
+  const soft = '0.97 0.97 0.98';
+  const rule = '0.88 0.90 0.93';
 
   const pages: string[][] = [[]];
   let y = pageHeight - marginTop;
@@ -121,91 +130,135 @@ function buildPdf(blocks: PdfBlock[]): Uint8Array {
     pages[pages.length - 1].push(ops);
   };
 
-  // Brand header on first page
-  draw('0.98 0.62 0.26 rg');
-  draw(`0 ${pageHeight - 28} ${pageWidth} 28 re f`);
+  // Brand header band + accent stripe (first page content starts below)
+  draw(`${flame} rg`);
+  draw(`0 ${pageHeight - 36} ${pageWidth} 36 re f`);
+  draw(`${flameDeep} rg`);
+  draw(`0 ${pageHeight - 40} ${pageWidth} 4 re f`);
   draw('1 1 1 rg');
-  draw('BT /F2 11 Tf 54 764 Td (FlameSight) Tj ET');
-  draw('BT /F1 9 Tf 480 764 Td (Report) Tj ET');
+  draw('BT /F2 13 Tf 56 766 Td (FlameSight) Tj ET');
+  draw('BT /F1 9 Tf 470 766 Td (Fire Safety Report) Tj ET');
+
+  // Soft left rail for visual polish
+  draw(`${soft} rg`);
+  draw(`0 40 10 ${pageHeight - 80} re f`);
+
+  let sawMeta = false;
 
   for (const block of blocks) {
     if (block.kind === 'spacer') {
-      y -= 10;
+      y -= 12;
       continue;
     }
 
     if (block.kind === 'title') {
-      const lines = wrapText(block.text, Math.floor(contentWidth / (12 * charWidth)));
-      ensureSpace(lines.length * 18 + 8);
-      draw('0.06 0.09 0.16 rg');
+      const lines = wrapText(block.text, Math.floor(contentWidth / (13 * charWidth)));
+      ensureSpace(lines.length * 22 + 16);
+      draw(`${ink} rg`);
       for (const line of lines) {
-        draw(`BT /F2 16 Tf ${marginX} ${y} Td (${escapePdf(line)}) Tj ET`);
-        y -= 18;
+        draw(`BT /F2 18 Tf ${marginX} ${y} Td (${escapePdf(line)}) Tj ET`);
+        y -= 22;
       }
-      y -= 6;
-      draw('0.98 0.62 0.26 rg');
-      draw(`${marginX} ${y + 4} ${Math.min(120, contentWidth)} 2.5 re f`);
-      y -= 12;
+      y -= 4;
+      // Accent underline with short flame bar + soft rule
+      draw(`${flame} rg`);
+      draw(`${marginX} ${y + 6} 72 3 re f`);
+      draw(`${rule} rg`);
+      draw(`${marginX + 80} ${y + 7} ${contentWidth - 80} 1 re f`);
+      y -= 16;
       continue;
     }
 
     if (block.kind === 'meta') {
       const lines = wrapText(block.text, Math.floor(contentWidth / (9 * charWidth)));
-      ensureSpace(lines.length * 13 + 2);
-      draw('0.35 0.42 0.52 rg');
+      ensureSpace(lines.length * 13 + 4);
+      draw(`${muted} rg`);
       for (const line of lines) {
         draw(`BT /F1 9 Tf ${marginX} ${y} Td (${escapePdf(line)}) Tj ET`);
         y -= 13;
       }
+      sawMeta = true;
       continue;
     }
 
+    if (sawMeta) {
+      // Divider after meta block once we leave it
+      ensureSpace(14);
+      draw(`${rule} rg`);
+      draw(`${marginX} ${y + 4} ${contentWidth} 0.8 re f`);
+      y -= 10;
+      sawMeta = false;
+    }
+
     if (block.kind === 'heading') {
-      y -= 8;
-      const lines = wrapText(block.text, Math.floor(contentWidth / (11 * charWidth)));
-      ensureSpace(lines.length * 15 + 10);
-      draw('0.98 0.62 0.26 rg');
-      draw(`${marginX} ${y - 2} 3 ${lines.length * 15 + 4} re f`);
-      draw('0.10 0.14 0.22 rg');
+      y -= 10;
+      const lines = wrapText(block.text, Math.floor(contentWidth / (11.5 * charWidth)));
+      const bandH = lines.length * 16 + 14;
+      ensureSpace(bandH + 8);
+      // Soft section band
+      draw(`${soft} rg`);
+      draw(`${marginX - 8} ${y - bandH + 18} ${contentWidth + 16} ${bandH} re f`);
+      // Flame accent bar
+      draw(`${flame} rg`);
+      draw(`${marginX - 8} ${y - bandH + 18} 4 ${bandH} re f`);
+      draw(`${ink} rg`);
       for (const line of lines) {
-        draw(`BT /F2 11 Tf ${marginX + 10} ${y} Td (${escapePdf(line)}) Tj ET`);
-        y -= 15;
+        draw(`BT /F2 12 Tf ${marginX + 8} ${y} Td (${escapePdf(line)}) Tj ET`);
+        y -= 16;
       }
-      y -= 4;
+      y -= 10;
       continue;
     }
 
     if (block.kind === 'bullet') {
-      const lines = wrapText(block.text, Math.floor((contentWidth - 18) / (9.5 * charWidth)));
-      ensureSpace(lines.length * 13 + 2);
-      draw('0.98 0.62 0.26 rg');
-      draw(`${marginX + 4} ${y + 2} 3 3 re f`);
-      draw('0.18 0.24 0.33 rg');
+      const lines = wrapText(block.text, Math.floor((contentWidth - 22) / (9.5 * charWidth)));
+      ensureSpace(lines.length * 13.5 + 4);
+      // Diamond-ish bullet (rotated square look via small filled rect)
+      draw(`${flame} rg`);
+      draw(`${marginX + 2} ${y + 1.5} 4 4 re f`);
+      draw(`${slate} rg`);
       for (let li = 0; li < lines.length; li++) {
-        draw(`BT /F1 9.5 Tf ${marginX + 14} ${y} Td (${escapePdf(lines[li])}) Tj ET`);
-        y -= 13;
+        draw(`BT /F1 9.5 Tf ${marginX + 16} ${y} Td (${escapePdf(lines[li])}) Tj ET`);
+        y -= 13.5;
       }
-      y -= 2;
+      y -= 3;
       continue;
     }
 
     // body
     const lines = wrapText(block.text, Math.floor(contentWidth / (10 * charWidth)));
-    ensureSpace(lines.length * 14 + 2);
-    draw('0.18 0.24 0.33 rg');
+    ensureSpace(lines.length * 14.5 + 4);
+    draw(`${slate} rg`);
     for (const line of lines) {
       draw(`BT /F1 10 Tf ${marginX} ${y} Td (${escapePdf(line)}) Tj ET`);
-      y -= 14;
+      y -= 14.5;
     }
-    y -= 2;
+    y -= 3;
   }
 
-  // Page chrome: footer + page numbers
+  // Page chrome: header strip on continuation pages, footer rule + page numbers
   for (let p = 0; p < pages.length; p++) {
+    const chrome: string[] = [];
+
+    if (p > 0) {
+      chrome.push(`${flame} rg`);
+      chrome.push(`0 ${pageHeight - 22} ${pageWidth} 22 re f`);
+      chrome.push('1 1 1 rg');
+      chrome.push('BT /F2 9 Tf 56 778 Td (FlameSight) Tj ET');
+      chrome.push('BT /F1 8 Tf 500 778 Td (Report) Tj ET');
+      chrome.push(`${soft} rg`);
+      chrome.push(`0 40 10 ${pageHeight - 62} re f`);
+    }
+
+    chrome.push(`${rule} rg`);
+    chrome.push(`${marginX} 42 ${contentWidth} 0.75 re f`);
+    chrome.push(`${muted} rg`);
+    const disclaimer = 'NASA PSI data  ·  Educational tool, not a safety certification.';
+    chrome.push(`BT /F1 8 Tf ${marginX} 28 Td (${escapePdf(disclaimer)}) Tj ET`);
     const label = `Page ${p + 1} of ${pages.length}`;
-    pages[p].push('0.55 0.60 0.68 rg');
-    pages[p].push(`BT /F1 8 Tf ${marginX} 28 Td (${escapePdf('NASA PSI data · Educational tool, not a safety certification.')}) Tj ET`);
-    pages[p].push(`BT /F1 8 Tf ${pageWidth - marginX - label.length * 4.5} 28 Td (${escapePdf(label)}) Tj ET`);
+    chrome.push(`BT /F1 8 Tf ${pageWidth - marginX - label.length * 4.5} 28 Td (${escapePdf(label)}) Tj ET`);
+
+    pages[p] = [...chrome, ...pages[p]];
   }
 
   const encoder = new TextEncoder();
