@@ -12,7 +12,7 @@ const SYSTEM =
   'Cite sources inline like (PSI-69). If the sources do not answer the question, say so. Never invent numbers. ' +
   'Moon/Mars conditions have no partial-gravity combustion data in PSI: label any such statement as extrapolated. ' +
   'The flame animation is illustrative, not a combustion simulation. ' +
-  'Write for a general audience in 3–6 short sentences.';
+  'Write for a general audience in 3–6 short plain-English sentences. Avoid jargon when a simple word works.';
 
 export async function answerWithGemini(opts: {
   key: string;

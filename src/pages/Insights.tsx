@@ -7,6 +7,8 @@ import { SourceChip } from '../components/ui';
 import { insightFocus, useBurn, type InsightId } from '../lib/burnSession';
 import { insights } from '../lib/data';
 import { briefFor } from '../lib/insightBrief';
+import { plainInsight } from '../lib/plainEnglish';
+import { downloadReport, stamp } from '../lib/report';
 import { GRAVITY, psiToAtm } from '../lib/scenarios';
 
 const axis = { stroke: '#475569', tick: { fill: '#94a3b8', fontSize: 11 } };
@@ -60,11 +62,13 @@ export default function Insights() {
   const sig = [input.fuel, input.o2, input.psi, input.flow, input.gravity, input.diluent].join('|');
   const [section, setSection] = useState<InsightId>(focus.id);
   const [seen, setSeen] = useState(sig);
+  const [plain, setPlain] = useState(true);
   if (seen !== sig) {
     setSeen(sig);
     setSection(focus.id);
   }
-  const brief = briefFor(section, input, result);
+  const rawBrief = briefFor(section, input, result);
+  const brief = plain ? plainInsight(rawBrief) : rawBrief;
   const o2 = Math.round(input.o2 * 100);
   const f = insights.flex;
 
@@ -268,6 +272,34 @@ export default function Insights() {
       )}
       outcome={(
         <>
+          <div className="mb-2 flex flex-wrap gap-2">
+            <button type="button" onClick={() => setPlain(p => !p)} className={`rounded-lg px-2.5 py-1 text-xs ${plain ? 'bg-cyan-500/20 text-cyan-100' : 'bg-white/5 text-slate-300'}`} aria-pressed={plain}>
+              {plain ? 'Plain English on' : 'Plain English off'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const body = [
+                  'FlameSight — Insights report',
+                  `Generated: ${new Date().toLocaleString()}`,
+                  `Section: ${SECTIONS.find(s => s.id === section)?.label || section}`,
+                  `Settings: ${o2}% oxygen · ${input.psi.toFixed(1)} psi · ${input.flow} cm/s · ${GRAVITY[input.gravity].label}`,
+                  '',
+                  brief.headline,
+                  '',
+                  brief.action,
+                  '',
+                  ...brief.points.map(p => `• ${p}`),
+                  '',
+                  'Data: NASA Physical Sciences Informatics. Educational tool, not a safety certification.',
+                ].join('\n');
+                downloadReport(`flamesight-insights-${stamp()}.txt`, body);
+              }}
+              className="rounded-lg bg-flame-500/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-flame-500"
+            >
+              Download report
+            </button>
+          </div>
           <p className="text-base font-semibold text-white">{brief.headline}</p>
           <p className="mt-2 text-sm leading-relaxed text-slate-200">{brief.action}</p>
           <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-300">

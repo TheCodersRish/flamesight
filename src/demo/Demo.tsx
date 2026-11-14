@@ -18,7 +18,7 @@ function buildSteps() {
     { path: '/scenarios?s=lunar', ms: 5500, caption: 'Pick a mission: Lunar Base, 30% O₂ at 10.2 psi. Every experiment gets a transparent 0–100 relevance score.' },
     { path: `/explorer/${top.inv.accession}`, ms: 5000, caption: `Top match: ${top.inv.acronym} (${top.inv.accession}). Plain-English summary, real test table, link to NASA PSI.` },
     { path: '/?preset=lunar&demo=1', ms: 7000, caption: '“Will It Burn?” Change gravity and oxygen: the flame morphs, and the nearest NASA tests are the evidence.' },
-    { path: `/analyst?q=${encodeURIComponent(DEMO_QUESTION)}`, ms: 5500, caption: 'Ask the Fire Safety Analyst. The answer is written on this device from the NASA sources, with no API key.' },
+    { path: `/analyst?q=${encodeURIComponent(DEMO_QUESTION)}`, ms: 5500, caption: 'Ask the Fire Safety Analyst. NASA notes answer in the browser with no model download and no API key.' },
     { path: '/', ms: 2000, caption: 'FlameSight: fire-safety insights from microgravity combustion data. Built for NASA Space Apps 2026.' },
   ];
 }

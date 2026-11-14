@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import BurnCharts from '../components/BurnCharts';
 import Deck, { FlameStage } from '../components/Deck';
@@ -8,6 +8,9 @@ import { useBurn } from '../lib/burnSession';
 import { fuelOptions, invLabel } from '../lib/data';
 import { type Diluent, type SimInput } from '../lib/knn';
 import { narrateBurn } from '../lib/narrate';
+import { plainBurn } from '../lib/plainEnglish';
+import { downloadReport, stamp } from '../lib/report';
+import { loadScans, removeScan, saveScan, scanLabel, type SavedScan } from '../lib/scans';
 import { GRAVITY, SCENARIOS, scenarioById } from '../lib/scenarios';
 import type { Gravity } from '../lib/types';
 
@@ -20,6 +23,10 @@ export default function Command() {
   const preset = sp.get('preset');
   const demo = sp.get('demo') === '1';
   const started = useRef(false);
+  const [plain, setPlain] = useState(true);
+  const [scans, setScans] = useState<SavedScan[]>(() => (typeof localStorage === 'undefined' ? [] : loadScans()));
+  const [savedNote, setSavedNote] = useState('');
+
   useEffect(() => {
     if (started.current) return;
     started.current = true;
@@ -34,12 +41,59 @@ export default function Command() {
     return () => ids.forEach(window.clearTimeout);
   }, [demo, setX]);
 
-  const brief = useMemo(() => narrateBurn(x, result), [x, result]);
+  const technical = useMemo(() => narrateBurn(x, result), [x, result]);
+  const brief = plain ? plainBurn(x, result) : technical;
   const flame = {
     gravity: GRAVITY[x.gravity].flame,
     o2: clamp(((x.o2 - 0.12) / 0.55) * (0.45 + 0.55 * result.p)),
     flow: clamp(x.flow / 60),
     dilution: x.diluent === 'none' ? 0 : x.diluent === 'CO2' ? 0.65 : 0.5,
+  };
+
+  const onSave = () => {
+    const saved = saveScan({
+      label: scanLabel(x, result.verdict),
+      input: x,
+      verdict: result.verdict,
+      score: Math.round(result.p * 100),
+      confidence: result.confidenceLabel,
+      plain: plainBurn(x, result),
+    });
+    setScans(loadScans());
+    setSavedNote(`Saved “${saved.label}”. Open it anytime from Saved scans.`);
+    window.setTimeout(() => setSavedNote(''), 3500);
+  };
+
+  const onDownload = () => {
+    const body = [
+      'FlameSight — Will It Burn report',
+      `Generated: ${new Date().toLocaleString()}`,
+      '',
+      'Settings',
+      `  Fuel: ${x.fuel}`,
+      `  Oxygen: ${Math.round(x.o2 * 100)}%`,
+      `  Pressure: ${x.psi.toFixed(1)} psi`,
+      `  Airflow: ${x.flow} cm/s`,
+      `  Gravity: ${GRAVITY[x.gravity].label}`,
+      `  Extra gas: ${x.diluent === 'none' ? 'none' : x.diluent}`,
+      '',
+      'Result',
+      `  Verdict: ${result.verdict} to burn`,
+      `  Score: ${Math.round(result.p * 100)} / 100`,
+      `  Confidence: ${result.confidenceLabel}`,
+      '',
+      'Plain English',
+      plainBurn(x, result),
+      '',
+      'Technical notes',
+      technical,
+      '',
+      'Closest NASA tests',
+      ...result.neighbors.map((n, i) => `  ${i + 1}. ${invLabel(n.t.inv)} — ${n.t.fuel}, ${Math.round((n.t.o2 || 0) * 100)}% oxygen, ${n.t.outcome || 'no outcome'}`),
+      '',
+      'Data: NASA Physical Sciences Informatics. Educational tool, not a safety certification.',
+    ].join('\n');
+    downloadReport(`flamesight-burn-${stamp()}.txt`, body);
   };
 
   return (
@@ -79,22 +133,47 @@ export default function Command() {
         </FlameStage>
       )}
       experiments={(
-        <ul className="space-y-2">
-          {result.neighbors.map((n, i) => (
-            <li key={n.t.id} className="rounded-xl bg-white/5 px-3 py-2">
-              <span className="flex items-center justify-between gap-2">
-                <Link to={`/explorer/${n.t.inv}`} className="text-sm font-medium text-white hover:underline">{i + 1}. {invLabel(n.t.inv)}</Link>
-                <Pill tone={n.t.burn >= 0.8 ? 'red' : n.t.burn >= 0.5 ? 'amber' : 'micro'}>{n.t.outcome || 'no outcome'}</Pill>
-              </span>
-              <span className="mt-1 block text-xs text-slate-400">{n.t.fuel} · {Math.round(n.t.o2 * 100)}% oxygen</span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-2">
+            {result.neighbors.map((n, i) => (
+              <li key={n.t.id} className="rounded-xl bg-white/5 px-3 py-2">
+                <span className="flex items-center justify-between gap-2">
+                  <Link to={`/explorer/${n.t.inv}`} className="text-sm font-medium text-white hover:underline">{i + 1}. {invLabel(n.t.inv)}</Link>
+                  <Pill tone={n.t.burn >= 0.8 ? 'red' : n.t.burn >= 0.5 ? 'amber' : 'micro'}>{n.t.outcome || 'no outcome'}</Pill>
+                </span>
+                <span className="mt-1 block text-xs text-slate-400">{n.t.fuel} · {Math.round((n.t.o2 || 0) * 100)}% oxygen</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 border-t border-white/10 pt-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Saved scans</p>
+            {scans.length === 0 && <p className="mt-1 text-xs text-slate-500">Save a scan to revisit it later on this device.</p>}
+            <ul className="mt-2 max-h-40 space-y-1 overflow-auto">
+              {scans.map(s => (
+                <li key={s.id} className="flex items-start gap-1">
+                  <button type="button" onClick={() => setX(s.input)} className="min-w-0 flex-1 rounded-lg bg-white/5 px-2 py-1.5 text-left text-[11px] text-slate-200 hover:bg-white/10">
+                    <span className="block truncate text-white">{s.label}</span>
+                    <span className="text-slate-500">{new Date(s.savedAt).toLocaleString()}</span>
+                  </button>
+                  <button type="button" aria-label={`Delete ${s.label}`} onClick={() => { removeScan(s.id); setScans(loadScans()); }} className="rounded px-1.5 py-1 text-xs text-slate-500 hover:bg-white/10 hover:text-white">✕</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
       )}
       graphs={<BurnCharts nearby={result.nearby} o2={x.o2} p={result.p} />}
       outcome={(
         <>
-          <p className={`text-2xl font-semibold ${result.verdict === 'Likely' ? 'text-flame-300' : result.verdict === 'Borderline' ? 'text-amber-200' : 'text-cyan-200'}`}>{result.verdict} to burn</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => setPlain(p => !p)} className={`rounded-lg px-2.5 py-1 text-xs ${plain ? 'bg-cyan-500/20 text-cyan-100' : 'bg-white/5 text-slate-300'}`} aria-pressed={plain}>
+              {plain ? 'Plain English on' : 'Plain English off'}
+            </button>
+            <button type="button" onClick={onSave} className="rounded-lg bg-white/10 px-2.5 py-1 text-xs text-white hover:bg-white/15">Save scan</button>
+            <button type="button" onClick={onDownload} className="rounded-lg bg-flame-500/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-flame-500">Download report</button>
+          </div>
+          {savedNote && <p className="mt-2 text-xs text-cyan-200">{savedNote}</p>}
+          <p className={`mt-3 text-2xl font-semibold ${result.verdict === 'Likely' ? 'text-flame-300' : result.verdict === 'Borderline' ? 'text-amber-200' : 'text-cyan-200'}`}>{result.verdict} to burn</p>
           <p className="mt-1 text-sm text-slate-300">{Math.round(result.p * 100)} out of 100 · {result.confidenceLabel} confidence</p>
           <p className="mt-2 text-sm leading-relaxed text-slate-200">{brief}</p>
           <Link to="/insights" className="mt-3 inline-block text-sm text-cyan-200 hover:text-white">See the NASA chart for these settings →</Link>
