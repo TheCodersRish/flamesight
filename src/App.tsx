@@ -10,6 +10,7 @@ const Explorer = lazy(() => import('./pages/Explorer'));
 const ExperimentDetail = lazy(() => import('./pages/ExperimentDetail'));
 const Scenarios = lazy(() => import('./pages/Scenarios'));
 const Insights = lazy(() => import('./pages/Insights'));
+const FluidPhysics = lazy(() => import('./pages/FluidPhysics'));
 const Analyst = lazy(() => import('./pages/Analyst'));
 const About = lazy(() => import('./pages/About'));
 const FlameLab = lazy(() => import('./pages/FlameLab'));
@@ -33,6 +34,7 @@ function Shell() {
               <Route path="/explorer/:acc" element={<ExperimentDetail />} />
               <Route path="/scenarios" element={<Scenarios />} />
               <Route path="/insights" element={<Insights />} />
+              <Route path="/fluid-physics" element={<FluidPhysics />} />
               <Route path="/simulator" element={<Command />} />
               <Route path="/analyst" element={<Analyst />} />
               <Route path="/about" element={<About />} />

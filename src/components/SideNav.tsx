@@ -6,6 +6,7 @@ const NAV = [
   { to: '/overview', label: 'Overview' },
   { to: '/', label: 'Will It Burn?', end: true },
   { to: '/insights', label: 'Insights' },
+  { to: '/fluid-physics', label: 'Fluid Physics' },
   { to: '/explorer', label: 'Experiments' },
   { to: '/scenarios', label: 'Risk Ranking' },
   { to: '/analyst', label: 'Analyst' },
