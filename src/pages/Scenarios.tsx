@@ -2,29 +2,91 @@ import { useEffect, useMemo, useState } from 'react';
 import ScenarioIcon from '../components/ScenarioIcon';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { SCENARIOS, GRAVITY, scenarioById, psiToAtm } from '../lib/scenarios';
+import {
+  SCENARIOS, GRAVITY, scenarioById, psiToAtm, makeAtmosphere, loadCustomScenarios, saveCustomScenarios,
+  ROLE_BOOST_OPTIONS, type Scenario,
+} from '../lib/scenarios';
 import { rankForScenario, weightsFor, recommendations, SCALES, UNKNOWN, type Weights } from '../lib/scoring';
 import { Card, PageHeader, Pill, Slider, SourceChip, TierBadge } from '../components/ui';
+import type { Gravity } from '../lib/types';
 
 const PART_COLORS: Record<keyof Weights, string> = { o2: '#ff9f43', pressure: '#facc15', flow: '#5cb8ff', role: '#a78bfa', data: '#34d399' };
 const PART_LABEL: Record<keyof Weights, string> = { o2: 'O₂ match', pressure: 'Pressure match', flow: 'Flow match', role: 'Fire-safety role', data: 'Data richness' };
 
+type Draft = {
+  name: string;
+  blurb: string;
+  o2: number;
+  psi: number;
+  flow: number;
+  gravity: Gravity;
+  roleBoost: string[];
+};
+
+const blankDraft = (): Draft => ({
+  name: '',
+  blurb: '',
+  o2: 0.21,
+  psi: 14.7,
+  flow: 20,
+  gravity: 'micro',
+  roleBoost: ['Prevention', 'Suppression'],
+});
+
 export default function Scenarios() {
   const [sp, setSp] = useSearchParams();
-  const sc = scenarioById(sp.get('s') || 'iss');
+  const [custom, setCustom] = useState<Scenario[]>(() => loadCustomScenarios());
+  const sc = scenarioById(sp.get('s') || 'iss', custom);
   const [w, setW] = useState<Weights>(() => weightsFor(sc));
   useEffect(() => setW(weightsFor(sc)), [sc]);
   const [drawer, setDrawer] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [draft, setDraft] = useState<Draft>(blankDraft);
   const ranked = useMemo(() => rankForScenario(sc, w), [sc, w]);
   const recs = useMemo(() => recommendations(sc), [sc]);
   const tot = w.o2 + w.pressure + w.flow + w.role + w.data || 1;
   const keys = Object.keys(PART_LABEL) as (keyof Weights)[];
+  const isCustom = sc.id.startsWith('custom');
+
+  const persist = (next: Scenario[]) => {
+    setCustom(next);
+    saveCustomScenarios(next);
+  };
+
+  const createScenario = () => {
+    const created = makeAtmosphere({
+      name: draft.name,
+      blurb: draft.blurb,
+      o2: draft.o2,
+      psi: draft.psi,
+      flow: draft.flow,
+      gravity: draft.gravity,
+      roleBoost: draft.roleBoost.length ? draft.roleBoost : undefined,
+    });
+    persist([...custom, created]);
+    setCreating(false);
+    setDraft(blankDraft());
+    setSp({ s: created.id });
+  };
+
+  const removeScenario = (id: string) => {
+    const next = custom.filter(s => s.id !== id);
+    persist(next);
+    if (sc.id === id) setSp({ s: 'iss' });
+  };
+
+  const toggleBoost = (role: string) => {
+    setDraft(d => ({
+      ...d,
+      roleBoost: d.roleBoost.includes(role) ? d.roleBoost.filter(r => r !== role) : [...d.roleBoost, role],
+    }));
+  };
 
   return (
     <div>
       <PageHeader kicker="Scenario Risk Ranking" title="Which NASA experiments matter most for your mission?">
-        Pick a habitat. Each investigation gets a 0–100 relevance score from how closely its tested oxygen, pressure and airflow match the habitat, its fire-safety role, and how much data it has. Open “How we scored this” to change the weights.
+        Pick a habitat—or create your own scientific scenario. Each investigation gets a 0–100 relevance score from how closely its tested oxygen, pressure and airflow match the habitat, its fire-safety role, and how much data it has. Open “How we scored this” to change the weights.
       </PageHeader>
 
       <div className="mb-6 flex flex-wrap gap-2" role="tablist" aria-label="Scenario">
@@ -34,13 +96,120 @@ export default function Scenarios() {
             <ScenarioIcon id={s.id} className="mr-1 inline h-5 w-5 align-[-4px]" /> {s.name}
           </button>
         ))}
+        {custom.map(s => (
+          <button key={s.id} role="tab" aria-selected={s.id === sc.id} onClick={() => setSp({ s: s.id })}
+            className={`rounded-xl px-4 py-2 text-sm transition ${s.id === sc.id ? 'bg-gradient-to-r from-flame-500 to-flame-600 text-white shadow-glow' : 'glass text-slate-300 hover:text-white'}`}>
+            <ScenarioIcon id={s.id} className="mr-1 inline h-5 w-5 align-[-4px]" /> {s.name}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => { setDraft(blankDraft()); setCreating(true); }}
+          className="rounded-xl px-4 py-2 text-sm text-flame-300 ring-1 ring-flame-500/40 hover:bg-flame-500/10"
+        >
+          + Create scenario
+        </button>
         <button onClick={() => setDrawer(true)} className="ml-auto rounded-xl px-4 py-2 text-sm text-micro-300 ring-1 ring-micro-500/40 hover:bg-micro-500/10">⚙ How we scored this</button>
       </div>
+
+      <AnimatePresence>
+        {creating && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="mb-6"
+          >
+            <Card glow="flame">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Create a scientific scenario</h2>
+                  <p className="mt-1 text-sm text-slate-400">Set the habitat atmosphere you want to rank against. Scenarios are saved in this browser.</p>
+                </div>
+                <button type="button" onClick={() => setCreating(false)} className="rounded-lg bg-white/10 px-2 py-1 text-sm" aria-label="Close create form">✕</button>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <label className="block text-sm text-slate-300">
+                    Scenario name
+                    <input
+                      value={draft.name}
+                      onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
+                      placeholder="e.g. Deep-space transit cabin"
+                      className="mt-1 w-full rounded-xl border border-white/10 bg-space-900 px-3 py-2 text-sm text-white placeholder:text-slate-600"
+                    />
+                  </label>
+                  <label className="block text-sm text-slate-300">
+                    Scientific context <span className="text-slate-500">(optional)</span>
+                    <textarea
+                      value={draft.blurb}
+                      onChange={e => setDraft(d => ({ ...d, blurb: e.target.value }))}
+                      rows={3}
+                      placeholder="Why this atmosphere matters for fire risk…"
+                      className="mt-1 w-full rounded-xl border border-white/10 bg-space-900 px-3 py-2 text-sm text-white placeholder:text-slate-600"
+                    />
+                  </label>
+                  <fieldset>
+                    <legend className="text-sm text-slate-300">Priority fire-safety roles</legend>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {ROLE_BOOST_OPTIONS.map(role => (
+                        <button
+                          key={role}
+                          type="button"
+                          aria-pressed={draft.roleBoost.includes(role)}
+                          onClick={() => toggleBoost(role)}
+                          className={`rounded-lg px-2.5 py-1.5 text-xs ${draft.roleBoost.includes(role) ? 'bg-violet-500/30 text-white ring-1 ring-violet-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
+                        >
+                          {role}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+                <div className="space-y-4">
+                  <Slider label="Oxygen (O₂)" value={draft.o2} min={0.1} max={1} step={0.01} onChange={v => setDraft(d => ({ ...d, o2: v }))} format={v => `${Math.round(v * 100)}%`} hint="ISS 21% · Moon base 30% · suit 100%" />
+                  <Slider label="Pressure" value={draft.psi} min={2} max={45} step={0.1} onChange={v => setDraft(d => ({ ...d, psi: v }))} format={v => `${v.toFixed(1)} psi`} hint="Earth/ISS 14.7 · Moon base 10.2 · suit 4.3" />
+                  <Slider label="Airflow" value={draft.flow} min={0} max={50} step={1} onChange={v => setDraft(d => ({ ...d, flow: v }))} format={v => `${v} cm/s`} hint="SAFFIRE tests: 20–30 cm/s" />
+                  <fieldset>
+                    <legend className="text-sm text-slate-300">Gravity</legend>
+                    <div className="mt-1 grid grid-cols-2 gap-2">
+                      {(Object.keys(GRAVITY) as Gravity[]).map(g => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setDraft(d => ({ ...d, gravity: g }))}
+                          aria-pressed={draft.gravity === g}
+                          className={`rounded-lg px-2 py-1.5 text-xs ${draft.gravity === g ? 'bg-micro-500/30 text-white ring-1 ring-micro-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
+                        >
+                          {GRAVITY[g].label}{GRAVITY[g].extrapolated && g !== 'earth' ? ' *' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+              </div>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={createScenario}
+                  disabled={!draft.name.trim()}
+                  className="rounded-xl bg-gradient-to-r from-flame-500 to-flame-600 px-4 py-2 text-sm font-medium text-white shadow-glow disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Save & rank this scenario
+                </button>
+                <button type="button" onClick={() => setCreating(false)} className="rounded-xl px-4 py-2 text-sm text-slate-300 hover:text-white">Cancel</button>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1" glow="flame">
           <ScenarioIcon id={sc.id} className="h-10 w-10 text-flame-300" />
           <h2 className="mt-1 text-xl font-semibold text-white">{sc.name}</h2>
+          {isCustom && <p className="mt-1 text-xs text-flame-300/90">Your scientific scenario</p>}
+          {sc.blurb && <p className="mt-2 text-sm text-slate-300">{sc.blurb}</p>}
           <dl className="mt-3 grid grid-cols-2 gap-2 font-mono text-sm">
             <div className="rounded-lg bg-white/5 p-2"><dt className="text-[10px] uppercase text-slate-400">Oxygen</dt><dd className="text-flame-300">{Math.round(sc.o2 * 100)}%</dd></div>
             <div className="rounded-lg bg-white/5 p-2"><dt className="text-[10px] uppercase text-slate-400">Pressure</dt><dd className="text-flame-300">{sc.psi} psi <span className="text-slate-500">({psiToAtm(sc.psi).toFixed(2)} atm)</span></dd></div>
@@ -49,6 +218,15 @@ export default function Scenarios() {
           </dl>
           <ul className="mt-3 space-y-1 text-xs text-slate-400">{sc.facts.map(f => <li key={f}>• {f}</li>)}</ul>
           <ul className="mt-2 space-y-1 text-xs text-amber-300/90">{sc.assumptions.map(f => <li key={f}>* {f}</li>)}</ul>
+          {isCustom && (
+            <button
+              type="button"
+              onClick={() => removeScenario(sc.id)}
+              className="mt-4 rounded-lg bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 ring-1 ring-rose-500/30 hover:bg-rose-500/20"
+            >
+              Delete this scenario
+            </button>
+          )}
         </Card>
 
         <Card className="lg:col-span-2">

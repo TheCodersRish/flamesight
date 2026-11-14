@@ -111,22 +111,80 @@ export const EDGE_CASES: Scenario[] = [
 ];
 
 export const psiToAtm = (psi: number) => psi / 14.696;
-export const scenarioById = (id: string) => [...SCENARIOS, ...EDGE_CASES].find(s => s.id === id) || SCENARIOS[0];
 
-export function makeAtmosphere(p: { o2: number; psi: number; flow: number; gravity: Gravity }): Scenario {
+export const CUSTOM_SCENARIOS_KEY = 'flamesight-custom-scenarios';
+
+export const ROLE_BOOST_OPTIONS = [
+  'Prevention',
+  'Detection',
+  'Suppression',
+  'Exploration atmospheres',
+] as const;
+
+export function loadCustomScenarios(): Scenario[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(CUSTOM_SCENARIOS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Scenario[];
+    return Array.isArray(parsed) ? parsed.filter(s => s && typeof s.id === 'string' && s.id.startsWith('custom-')) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustomScenarios(list: Scenario[]): void {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.setItem(CUSTOM_SCENARIOS_KEY, JSON.stringify(list));
+}
+
+export const allScenarios = (custom: Scenario[] = []) => [...SCENARIOS, ...EDGE_CASES, ...custom];
+
+export const scenarioById = (id: string, custom: Scenario[] = loadCustomScenarios()) =>
+  allScenarios(custom).find(s => s.id === id) || SCENARIOS[0];
+
+export type CustomAtmosphereInput = {
+  o2: number;
+  psi: number;
+  flow: number;
+  gravity: Gravity;
+  name?: string;
+  blurb?: string;
+  roleBoost?: string[];
+  id?: string;
+};
+
+export function makeAtmosphere(p: CustomAtmosphereInput): Scenario {
   const g = GRAVITY[p.gravity];
+  const name = (p.name || 'Custom environment').trim() || 'Custom environment';
+  const short = name.length > 18 ? `${name.slice(0, 16)}…` : name;
+  const id = p.id || `custom-${Date.now().toString(36)}`;
+  const roleBoost = p.roleBoost?.length
+    ? p.roleBoost
+    : p.o2 >= 0.28
+      ? ['Exploration atmospheres', 'Prevention']
+      : ['Prevention', 'Suppression'];
+  const blurb = (p.blurb || '').trim()
+    || 'An atmosphere you set. The ranking uses the same oxygen, pressure, flow, role, and data formula as the presets.';
   return {
-    id: 'custom',
-    name: 'Custom environment',
-    short: 'Custom',
+    id,
+    name,
+    short,
     icon: '✦',
     o2: p.o2,
     psi: p.psi,
     flow: p.flow,
     gravity: p.gravity,
-    blurb: 'An atmosphere you set. The ranking uses the same oxygen, pressure, flow, role, and data formula as the presets.',
-    facts: [`${Math.round(p.o2 * 100)}% O₂ at ${p.psi.toFixed(1)} psi, ${p.flow} cm/s, ${g.label}.`],
-    assumptions: [g.extrapolated ? 'Moon, Mars, and Earth results are extrapolated. PSI has no partial-gravity combustion tests.' : 'Scored against microgravity tests in PSI.'],
-    roleBoost: p.o2 >= 0.28 ? ['Exploration atmospheres', 'Prevention'] : ['Prevention', 'Suppression'],
+    blurb,
+    facts: [
+      `User-defined scientific scenario: ${Math.round(p.o2 * 100)}% O₂ at ${p.psi.toFixed(1)} psi, ${p.flow} cm/s, ${g.label}.`,
+    ],
+    assumptions: [
+      'Atmosphere values were set by the user, not a published habitat specification.',
+      g.extrapolated
+        ? 'Moon, Mars, and Earth results are extrapolated. PSI has no partial-gravity combustion tests.'
+        : 'Scored against microgravity tests in PSI.',
+    ],
+    roleBoost,
   };
 }
