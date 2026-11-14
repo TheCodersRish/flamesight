@@ -78,7 +78,7 @@ export default function Analyst() {
       `Generated: ${new Date().toLocaleString()}`,
       '',
       `Question: ${latest.a.question}`,
-      `Answer source: ${latest.source === 'gemini' ? 'Gemini (free API key)' : 'NASA notes on this device (no API key)'}`,
+      `Answer source: ${latest.source === 'gemini' ? 'Gemini on Vercel (/api/ask)' : 'NASA notes on this device (server AI unavailable)'}`,
       '',
       'Answer',
       display,
@@ -88,7 +88,7 @@ export default function Analyst() {
       '',
       latest.a.caveats.length ? `Caveats:\n${latest.a.caveats.map(c => `  - ${c}`).join('\n')}` : '',
       '',
-      'Tip: for optional cloud wording, run: node scripts/setup-gemini-key.mjs',
+      'The live site runs the AI model on Vercel via /api/ask, then uses that answer.',
       'Data: NASA Physical Sciences Informatics. Educational tool, not a safety certification.',
     ].filter(Boolean).join('\n');
     downloadReport(`flamesight-analyst-${stamp()}.txt`, body);
@@ -100,7 +100,7 @@ export default function Analyst() {
       graphsTitle="How well they match"
       outcomeTitle="Answer"
       stage={(
-        <FlameStage title="Analyst" caption="Answers from NASA notes in this browser. No on-device model download. Optional free Gemini key via CLI." controls={(
+        <FlameStage title="Analyst" caption="Matches NASA notes in the browser, then runs the AI model on the Vercel site via /api/ask." controls={(
           <>
             <form className="flex gap-2 sm:col-span-2" onSubmit={e => { e.preventDefault(); ask(q); }}>
               <label htmlFor="q" className="sr-only">Your question</label>
@@ -108,7 +108,7 @@ export default function Analyst() {
               <button className="rounded-lg bg-flame-500 px-4 py-2 text-sm font-medium text-white">Ask</button>
             </form>
             <p className="text-[11px] leading-relaxed text-slate-400 sm:col-span-2">
-              Works with no API key. For optional clearer cloud answers, run <code className="rounded bg-white/10 px-1 text-cyan-100">node scripts/setup-gemini-key.mjs</code> to create a free Gemini key.
+              No on-device model download. The live site calls Gemini through FlameSight&apos;s Vercel <code className="rounded bg-white/10 px-1 text-cyan-100">/api/ask</code> endpoint, then shows that answer. If the server model is offline, NASA notes stay as the fallback.
             </p>
           </>
         )}>
@@ -157,17 +157,17 @@ export default function Analyst() {
             )}
           </div>
           <p className="mt-2 text-xs text-slate-400">
-            {latest?.source === 'gemini' ? 'Gemini · free API key' : 'NASA notes · no API key · no model download'}
+            {latest?.source === 'gemini' ? 'Gemini · running on Vercel' : 'NASA notes · waiting on / fallback from server AI'}
           </p>
           {latest && <p className="mt-1 text-sm text-slate-300">You asked: {latest.a.question}</p>}
           {latest && latest.state === 'loading' && (
             <p className="mt-3 text-sm text-cyan-100">
-              Checking for an optional free Gemini key…
-              <span className="mt-1 block text-xs text-slate-400">Showing NASA notes right away. Cloud wording appears only if a key is set.</span>
+              Running the AI model on the Vercel site…
+              <span className="mt-1 block text-xs text-slate-400">Showing NASA notes right away. The server answer replaces them when /api/ask responds.</span>
             </p>
           )}
           {latest && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>}
-          {!latest && <p className="mt-3 text-sm text-slate-300">Ask a question. FlameSight answers from NASA notes in this browser. No on-device model and no API key required.</p>}
+          {!latest && <p className="mt-3 text-sm text-slate-300">Ask a question. FlameSight matches NASA notes locally, then uses the AI model hosted on Vercel.</p>}
           {latest?.a.caveats.map(c => <p key={c} className="mt-2 text-xs text-amber-200">⚠ {plain ? simplifyText(c) : c}</p>)}
           {latest?.a.hits.slice(0, 3).map(h => (
             <div key={h.inv.accession} className="mt-2 border-l border-white/15 pl-2">
