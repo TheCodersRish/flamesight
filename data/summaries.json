@@ -1,0 +1,99 @@
+{
+  "_note": "Plain-English summaries written by the FlameSight team (with AI assistance) from the 'objectives' field of investigations_catalog.csv (NASA PSI). Each one restates what the objectives say; nothing here adds results that are not in the catalog or test tables.",
+  "PSI-25": {
+    "summary": "BASS-II burned solid materials (mostly thin PMMA plastic films, PMMA rods and SIBAL cotton-fiberglass fabric) inside the ISS Microgravity Science Glovebox while a gentle forced airflow blew past them. The team watched how flames ignite, grow, spread and go out in low-speed flows, and compared this with NASA's normal-gravity material flammability test (NASA-STD-6001 Test #1).",
+    "why": "Spacecraft materials are approved using an Earth-gravity test. BASS-II checks whether that test really predicts how materials burn in microgravity, where the only 'wind' is the ventilation."
+  },
+  "PSI-26": {
+    "summary": "BASS (the first Burning and Suppression of Solids experiment) burned practical, thicker solid fuels such as PMMA spheres and slabs, SIBAL fabric, Nomex and wax candles on the ISS. It also studied 'wake flames' that burn behind another object, like a fire hiding in a tight, hard-to-reach space, and began testing how well suppression works.",
+    "why": "Real spacecraft fires start on real materials in cluttered corners. BASS links the Earth flammability test to how these materials actually burn in orbit."
+  },
+  "PSI-68": {
+    "summary": "FLEX-2 extended the first FLEX droplet experiment to fuels and conditions closer to real combustors, including two-component fuel droplets (for example heptane mixed with iso-octane). Its test plan covers oxygen mole fractions of 0.17 to 0.30, pressures of 0.5 to 3 atm, nitrogen or helium atmospheres and slow flows of 0.1 to 5 cm/s.",
+    "why": "Liquid fuels and mixtures are aboard every spacecraft. FLEX-2 provides benchmark data for computer models that predict when a fuel fire keeps burning or goes out."
+  },
+  "PSI-69": {
+    "summary": "FLEX (Flame Extinguishment Experiment) ignited single methanol and heptane droplets on the ISS to map when liquid-fuel flames survive in microgravity and how well gases like CO2 and helium put them out. Its test table lists 274 tests with each test's pressure, oxygen, nitrogen, CO2 and helium fractions and how the flame ended.",
+    "why": "FLEX is the backbone for choosing fire-suppressant gases in space: it shows which oxygen and diluent mixtures let a flame live and which make it go out."
+  },
+  "PSI-98": {
+    "summary": "SAFFIRE-I lit a large (94 cm by 40.6 cm) sheet of SIBAL cotton-fiberglass fabric inside an empty Cygnus cargo spacecraft after it left the ISS. It measured how quickly a large fire grows in low gravity with air flowing at 20 cm/s, both with the flow (concurrent) and against it (opposed).",
+    "why": "It was one of the first truly large fires deliberately lit in a spacecraft, which is much closer to a real cabin fire than small lab samples."
+  },
+  "PSI-99": {
+    "summary": "SAFFIRE-II burned nine smaller samples (silicone, SIBAL fabric, PMMA and Nomex) inside Cygnus to compare low-gravity flammability limits with NASA's normal-gravity screening test. Its table lists, for each sample, the burn length in microgravity next to the burn length in the 1-g test.",
+    "why": "It directly asks the key safety question: does a material that passes the Earth test also stay safe in orbit, and vice versa?"
+  },
+  "PSI-100": {
+    "summary": "SAFFIRE-III repeated the large-scale fabric fire in Cygnus with two 94 cm long SIBAL fabric samples and 30 cm/s airflow, one burning with the flow and one against it, to measure large-fire growth and flammability limits in low gravity.",
+    "why": "Repeating a large fire with a different airflow shows how strongly ventilation drives fire growth inside a real vehicle."
+  },
+  "PSI-101": {
+    "summary": "SAME-R (Smoke Aerosol Measurement Experiment, Reflight) heated common spacecraft materials (Kapton, silicone, lampwick, Pyrell foam and Teflon) to make smoke and measured how big the smoke particles get in low gravity, and how that depends on smoke aging and flow. It reflew because grids from the first SAME came back contaminated.",
+    "why": "Smoke detectors are tuned to particle sizes. If smoke particles grow differently in microgravity, a detector designed on Earth could miss an early fire."
+  },
+  "PSI-102": {
+    "summary": "SAME measured the size of smoke particles made by heating spacecraft materials (for example Teflon) in low gravity and related it to how the smoke was made and moved, with the goal of a computer code that predicts smoke droplet growth.",
+    "why": "This is the starting point for designing smoke detectors that work in space."
+  },
+  "PSI-20": {
+    "summary": "ACME BRE (Burning Rate Emulator) used a porous gas burner fed with methane or ethylene to imitate a burning solid in still microgravity air. The objectives name the NASA-considered cabin atmospheres it targets: 14.7 psia with 21% oxygen, 10.2 psia with 26.5% oxygen, and 8.2 psia with 34% oxygen. Its table lists tests at 21% to 40% oxygen.",
+    "why": "It is the experiment most directly tied to the lower-pressure, higher-oxygen air planned for exploration vehicles and habitats."
+  },
+  "PSI-22": {
+    "summary": "ACME E-FIELD Flames placed small methane and ethylene flames in an electric field to study how the field and the flame's ions interact, how flames respond when the field changes, soot formation, and near-limit lifted flames.",
+    "why": "An electric field can push hot gases somewhat like buoyancy does, so this data can act as a stand-in for partial gravity, which has not been tested directly."
+  },
+  "PSI-39": {
+    "summary": "CFI (Cool Flames Investigation) burned n-dodecane and dodecane/iso-dodecane droplets at pressures from 0.25 to 5 atm (its table lists runs from 0.5 to 5 atm), including helium-diluted atmospheres, to study low-temperature 'cool flames', extinction, droplet size and soot.",
+    "why": "Cool flames burn at low temperature, are hard to see and can restart a hot fire. Understanding them matters for detecting and fully putting out fuel fires."
+  },
+  "PSI-47": {
+    "summary": "DAFT and DAFT-2 tested whether a modified commercial particle counter (the TSI P-Trak) works in microgravity, because the device normally relies on gravity to recycle its alcohol. It sampled Arizona road dust aerosol on the ISS to de-risk the SAME smoke experiment.",
+    "why": "Detection instruments must be proven in orbit before we trust their readings. DAFT is the 'test the smoke-measuring tool' step."
+  },
+  "PSI-62": {
+    "summary": "This ground-based modeling study developed and validated flamelet generated manifold (FGM) computer models for flames spreading in the same direction as the airflow (concurrent spread) in microgravity, comparing against BASS experiments. PSI lists metadata only for it.",
+    "why": "Better models of concurrent flame spread help predict how fast a fire could race along a material in a ventilated cabin."
+  },
+  "PSI-106": {
+    "summary": "SLICE studied the structure and stability of small gas jet flames in microgravity, including the flow speed at which a flame lifts off its burner for different fuels and burner sizes, the effect of diluting fuel with nitrogen, and flame length and heat loss compared with normal gravity. Its table lists twelve test days with methane, ethylene and ethane.",
+    "why": "Knowing when a flame stays attached or lifts off helps predict whether a leak flame would keep burning."
+  },
+  "PSI-107": {
+    "summary": "SPICE measured the 'smoke point' of small gas jet flames (ethylene, propane, propylene mixes) in a gentle co-flowing air stream in the ISS glovebox, testing three nozzle sizes and different air speeds to see how much soot each fuel makes.",
+    "why": "Soot is what makes smoke visible and what many detectors sense, so knowing how sooty flames are in microgravity supports detection."
+  },
+  "PSI-115": {
+    "summary": "This ground study used computer simulations of the SAME smoke data to explore how gravity changes the way pyrolysis smoke particles grow, and which fluid-flow effects cause the differences between microgravity and Earth smoke.",
+    "why": "It explains why smoke behaves differently in space, which feeds into better detector placement and tuning."
+  },
+  "PSI-142": {
+    "summary": "Using FLEX flight data, this ground study ran new simulations and ozone-assisted counterflow flame experiments to draw a new map of cool-flame flammability limits and to connect the limits of hot flames and cool flames.",
+    "why": "A clearer flammability map for cool flames helps make sure a 'put out' fuel fire is really out."
+  },
+  "PSI-159": {
+    "summary": "ACME CFI-G burned small gas flames (ethane, propane, butane) on a porous spherical burner, in both normal flames (fuel flowing out into oxygen) and inverse flames (oxygen flowing out into fuel), across oxygen levels from 12% up to 85% and pressures of about 0.5 to 3.3 bar, to find when cool and hot flames occur.",
+    "why": "It is the only data in this set at very high oxygen levels, like those in spacesuits or oxygen-enriched habitats."
+  },
+  "PSI-10": {
+    "summary": "ACME Flame Design measured soot-inception limits and flame temperature, size and color of spherical 'normal' and 'inverse' ethylene and methane flames, changing flow rate, nitrogen or CO2 dilution, and pressure. Its tables list oxygen fractions from about 20% to 85%.",
+    "why": "It shows how oxygen level and dilution decide whether a flame makes soot and how hot it gets, which ties to both detection and fire severity."
+  },
+  "PSI-21": {
+    "summary": "ACME CLD Flame studied weak coflow methane and ethylene flames at extreme fuel dilution: flame shape, lift-off height, temperatures, extinction limits and sooting, to give computer models hard test cases.",
+    "why": "Near-extinction flames are the hardest to model and the most important for knowing when a fire can no longer sustain itself."
+  },
+  "PSI-23": {
+    "summary": "ACME s-Flame studied spherical diffusion flames of hydrogen/methane and ethylene mixtures, in nitrogen- or helium-diluted atmospheres of about 21% or 30% oxygen near 1 atm, to test transport and chemistry models, including how the flames change over time and go out.",
+    "why": "Accurate chemistry and transport models are what let engineers simulate fires they cannot safely test."
+  },
+  "PSI-60": {
+    "summary": "This ground study combined computation and analysis of more than 1,600 SPICE flame images to work out temperatures and soot amounts, to understand why flames make so much more soot in microgravity (0 g) than on Earth (1 g).",
+    "why": "Soot levels decide smoke visibility and radiation from a fire, both important for crew safety and detection."
+  },
+  "PSI-117": {
+    "summary": "This ground study used FLEX flight data and multi-physics computer simulations to show how outside heating and small drifting flows change the behavior and fate of droplet cool flames, mapping when they ignite, oscillate, jump to hot flames or go out. Its analyzed files include droplet extinction diameters measured at 0.5 to 3 atm and burning-rate data up to 5 atm.",
+    "why": "It explains run-to-run surprises in FLEX and shows how pressure changes when a droplet flame goes out, useful for low-pressure habitats."
+  }
+}
