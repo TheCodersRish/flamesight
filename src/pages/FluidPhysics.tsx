@@ -2,7 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Flame from '../components/Flame';
 import { Card, PageHeader, Pill, Slider, Takeaway } from '../components/ui';
+import {
+  MECHANISMS,
+  PRIMARY,
+  SECONDARY,
+  evaluateMechanism,
+  mechById,
+  type MechId,
+} from '../lib/microMechanisms';
 
+type Mode = 'thermo' | 'mechanisms';
 type ThemeId = 'adiabatic' | 'isothermal' | 'isochoric' | 'polytropic';
 
 interface Theme {
@@ -68,7 +77,7 @@ const THEMES: Theme[] = [
 ];
 
 const GAMMA = 1.4;
-const R = 1; // normalized gas constant for ideal-gas charts
+const R = 1;
 const P0 = 1;
 const V0 = 1;
 const T0 = P0 * V0 / R;
@@ -78,8 +87,6 @@ function clamp(x: number, a = 0, b = 1) {
 }
 
 function stateAt(theme: ThemeId, expansion: number, heat: number, nPoly: number) {
-  // expansion: V/V0 for adiabatic/isothermal/polytropic; unused for isochoric
-  // heat: added heat factor for isochoric (0..1 → mild..hot)
   const V = theme === 'isochoric' ? V0 : V0 * expansion;
   let P: number;
   let T: number;
@@ -120,21 +127,18 @@ function curvePoints(theme: ThemeId, expansion: number, heat: number, nPoly: num
 }
 
 function flameFromState(theme: ThemeId, s: { P: number; V: number; T: number }, nPoly: number) {
-  // Always freefall (microgravity). Map thermo state → illustrative shader inputs.
   const tNorm = clamp(s.T / T0 / 2.2);
   const pNorm = clamp(s.P / P0 / 2.2);
   if (theme === 'adiabatic') {
     return { gravity: 0, o2: clamp(0.25 + 0.55 * tNorm), flow: 0.05, dilution: clamp(1 - tNorm) };
   }
   if (theme === 'isothermal') {
-    // Lower density at large V → slightly larger, softer flame fed by diffusion
     const dens = clamp(s.P / P0);
     return { gravity: 0, o2: clamp(0.35 + 0.4 * dens), flow: 0.08 + 0.15 * (1 - dens), dilution: 0.15 };
   }
   if (theme === 'isochoric') {
     return { gravity: 0, o2: clamp(0.3 + 0.65 * tNorm), flow: 0.04, dilution: clamp(0.55 - 0.45 * pNorm) };
   }
-  // polytropic: n near γ cools like adiabatic; n near 1 stays warmer
   const cool = clamp((nPoly - 1) / (GAMMA - 1));
   return {
     gravity: 0,
@@ -144,19 +148,17 @@ function flameFromState(theme: ThemeId, s: { P: number; V: number; T: number }, 
   };
 }
 
-export default function FluidPhysics() {
+function ThermoPanel() {
   const [themeId, setThemeId] = useState<ThemeId>('adiabatic');
   const [expansion, setExpansion] = useState(1.6);
   const [heat, setHeat] = useState(0.55);
   const [nPoly, setNPoly] = useState(1.3);
   const [playing, setPlaying] = useState(true);
-  // Ref so scrubbing stops the autoplay loop on the same frame (React state alone races RAF).
   const playingRef = useRef(playing);
   playingRef.current = playing;
 
   const theme = THEMES.find(t => t.id === themeId)!;
 
-  // Live “simulation clock”: gently oscillate the driven parameter so the flame breathes
   useEffect(() => {
     if (!playing) return;
     let raf = 0;
@@ -168,10 +170,8 @@ export default function FluidPhysics() {
       const t = (now - t0) / 1000;
       const wave = 0.5 + 0.5 * Math.sin(t * 0.7);
       if (themeId === 'isochoric') setHeat(0.25 + wave * 0.7);
-      else if (themeId === 'polytropic') {
-        setExpansion(1.15 + wave * 1.1);
-        // keep n user-set; optional subtle drift disabled to avoid fighting the slider
-      } else setExpansion(1.15 + wave * 1.1);
+      else if (themeId === 'polytropic') setExpansion(1.15 + wave * 1.1);
+      else setExpansion(1.15 + wave * 1.1);
     };
     raf = requestAnimationFrame(tick);
     return () => {
@@ -197,11 +197,7 @@ export default function FluidPhysics() {
   const marker = [{ v: +state.V.toFixed(3), p: +state.P.toFixed(3), t: +state.T.toFixed(3) }];
 
   return (
-    <div>
-      <PageHeader kicker="Fluid physics" title="How thermodynamic themes reshape flames in freefall">
-        Live, illustrative simulations of adiabatic, isothermal, isochoric, and polytropic paths—and what each means for spherical microgravity flames when buoyancy is gone.
-      </PageHeader>
-
+    <>
       <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Thermodynamic themes">
         {THEMES.map(t => (
           <button
@@ -244,7 +240,6 @@ export default function FluidPhysics() {
               dilution={flame.dilution}
               className="h-64 w-full sm:h-72"
               label={`${theme.name} freefall flame simulation`}
-              // Keep the illustrative flame alive while scrubbing so it tracks volume/heat instantly
               paused={false}
             />
           </div>
@@ -363,6 +358,270 @@ export default function FluidPhysics() {
           </Card>
         </div>
       </div>
+    </>
+  );
+}
+
+function MechanismsPanel() {
+  const [mechId, setMechId] = useState<MechId>('no-buoyancy');
+  const mech = mechById(mechId);
+  const [a, setA] = useState(mech.defaults.a);
+  const [b, setB] = useState(mech.defaults.b);
+  const [playing, setPlaying] = useState(true);
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
+
+  const selectMech = (id: MechId) => {
+    const m = mechById(id);
+    setMechId(id);
+    setA(m.defaults.a);
+    setB(m.defaults.b);
+    setPlaying(true);
+  };
+
+  useEffect(() => {
+    if (!playing) return;
+    let raf = 0;
+    let t0 = performance.now();
+    let alive = true;
+    const tick = (now: number) => {
+      if (!alive || !playingRef.current) return;
+      raf = requestAnimationFrame(tick);
+      const t = (now - t0) / 1000;
+      const wave = 0.5 + 0.5 * Math.sin(t * 0.65);
+      const m = mechById(mechId);
+      const spanA = m.paramA.max - m.paramA.min;
+      setA(m.paramA.min + spanA * (0.15 + 0.7 * wave));
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+    };
+  }, [playing, mechId]);
+
+  const scrubA = (v: number) => {
+    playingRef.current = false;
+    setPlaying(false);
+    setA(v);
+  };
+  const scrubB = (v: number) => {
+    playingRef.current = false;
+    setPlaying(false);
+    setB(v);
+  };
+
+  const state = useMemo(() => evaluateMechanism(mechId, a, b), [mechId, a, b]);
+  const intensityPct = Math.round(state.intensity * 100);
+
+  return (
+    <>
+      <div className="mb-3">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Primary fluid & transport</p>
+        <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Primary transport mechanisms">
+          {PRIMARY.map(m => (
+            <button
+              key={m.id}
+              type="button"
+              role="tab"
+              aria-selected={mechId === m.id}
+              onClick={() => selectMech(m.id)}
+              className={`rounded-lg px-3 py-2 text-sm ${mechId === m.id ? 'bg-micro-500/25 text-white ring-1 ring-micro-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
+            >
+              {m.name}
+            </button>
+          ))}
+        </div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Secondary thermal & surface</p>
+        <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Secondary thermal mechanisms">
+          {SECONDARY.map(m => (
+            <button
+              key={m.id}
+              type="button"
+              role="tab"
+              aria-selected={mechId === m.id}
+              onClick={() => selectMech(m.id)}
+              className={`rounded-lg px-3 py-2 text-sm ${mechId === m.id ? 'bg-flame-500/25 text-white ring-1 ring-flame-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
+            >
+              {m.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1fr_1.1fr]">
+        <Card glow={mech.group === 'primary' ? 'micro' : 'flame'}>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-semibold text-white">{mech.name}</h2>
+              <p className="font-mono text-xs text-flame-300">{mech.equation}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Pill tone={mech.group === 'primary' ? 'micro' : 'flame'}>
+                {mech.group === 'primary' ? 'Transport' : 'Thermal / surface'}
+              </Pill>
+              <Pill tone="slate">Intensity {intensityPct}</Pill>
+              <button
+                type="button"
+                onClick={() => setPlaying(p => !p)}
+                className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-slate-200 hover:bg-white/20"
+              >
+                {playing ? 'Pause live sim' : 'Play live sim'}
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-xl bg-space-950/80 ring-1 ring-white/10">
+            <Flame
+              gravity={state.flame.gravity}
+              o2={state.flame.o2}
+              flow={state.flame.flow}
+              dilution={state.flame.dilution}
+              className="h-64 w-full sm:h-72"
+              label={`${mech.name} microgravity flame simulation`}
+              paused={false}
+            />
+          </div>
+          <p className="mt-2 text-sm text-slate-300">{mech.flameNote}</p>
+
+          <div className="mt-4 space-y-3">
+            <Slider
+              label={mech.paramA.label}
+              value={a}
+              min={mech.paramA.min}
+              max={mech.paramA.max}
+              step={mech.paramA.step}
+              onChange={scrubA}
+              format={mech.paramA.format}
+              hint={mech.paramA.hint}
+            />
+            <Slider
+              label={mech.paramB.label}
+              value={b}
+              min={mech.paramB.min}
+              max={mech.paramB.max}
+              step={mech.paramB.step}
+              onChange={scrubB}
+              format={mech.paramB.format}
+              hint={mech.paramB.hint}
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-lg bg-white/5 px-2 py-2">
+              <p className="text-[10px] uppercase tracking-widest text-slate-400">{state.metricLabel}</p>
+              <p className="font-mono text-lg text-white">{state.metric.toFixed(2)}</p>
+            </div>
+            {state.extras.map(e => (
+              <div key={e.label} className="rounded-lg bg-white/5 px-2 py-2">
+                <p className="text-[10px] uppercase tracking-widest text-slate-400">{e.label}</p>
+                <p className="font-mono text-lg text-white">{e.value}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <div className="space-y-4">
+          <Card>
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">{mech.chart.title}</h2>
+            <p className="mt-1 text-xs text-slate-400">Mathematical model curve with live operating point</p>
+            <div className="mt-3 h-52 w-full">
+              <ResponsiveContainer>
+                <LineChart data={state.series} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+                  <XAxis
+                    dataKey="x"
+                    stroke="#475569"
+                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                    label={{ value: mech.chart.xLabel, position: 'insideBottom', offset: -2, fill: '#64748b', fontSize: 11 }}
+                  />
+                  <YAxis
+                    dataKey="y"
+                    stroke="#475569"
+                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                    width={48}
+                    label={{ value: mech.chart.yLabel, angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 11 }}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: '#0b1224', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: '#cbd5e1' }}
+                  />
+                  <Line type="monotone" dataKey="y" stroke="#5cb8ff" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  <Line data={state.marker} type="monotone" dataKey="y" stroke="#ff9f43" strokeWidth={0} dot={{ r: 5, fill: '#ff9f43' }} isAnimationActive={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="text-lg font-semibold text-white">{mech.tagline}</h2>
+            <p className="mt-2 text-sm text-slate-300">{mech.summary}</p>
+            <h3 className="mt-4 text-sm font-semibold text-micro-300">In freefall</h3>
+            <p className="mt-1 text-sm text-slate-300">{mech.freefall}</p>
+            <Takeaway>{mech.takeaway}</Takeaway>
+          </Card>
+
+          <Card>
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">All seven mechanisms</h2>
+            <ul className="mt-3 space-y-2 text-sm text-slate-300">
+              {MECHANISMS.map(m => (
+                <li key={m.id} className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => selectMech(m.id)}
+                    className={`shrink-0 font-medium ${mechId === m.id ? 'text-flame-300' : 'text-micro-300 hover:underline'}`}
+                  >
+                    {m.name}
+                  </button>
+                  <span className="text-slate-400">— {m.tagline}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-[11px] text-slate-500">
+              Educational models (Gr, Pe, Spalding B, Le, Q̇_rad/Q̇_chem, Ma) drive the live flame intensity. Not a certified CFD solver—use for intuition about freefall fire physics.
+            </p>
+          </Card>
+        </div>
+      </div>
+    </>
+  );
+}
+
+export default function FluidPhysics() {
+  const [mode, setMode] = useState<Mode>('mechanisms');
+
+  return (
+    <div>
+      <PageHeader
+        kicker="Fluid physics"
+        title={mode === 'thermo' ? 'How thermodynamic themes reshape flames in freefall' : 'Transport & thermal mechanisms that reshape freefall flames'}
+      >
+        {mode === 'thermo'
+          ? 'Live, illustrative simulations of adiabatic, isothermal, isochoric, and polytropic paths—and what each means for spherical microgravity flames when buoyancy is gone.'
+          : 'Primary fluid transport (no buoyancy, diffusion, ventilation, Stefan flow) and secondary thermal/surface effects (Lewis number, radiation, Marangoni)—each with a live flame sim, explanation, and mathematical model.'}
+      </PageHeader>
+
+      <div className="mb-6 flex flex-wrap gap-2" role="tablist" aria-label="Fluid physics mode">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'mechanisms'}
+          onClick={() => setMode('mechanisms')}
+          className={`rounded-lg px-4 py-2 text-sm font-medium ${mode === 'mechanisms' ? 'bg-micro-500/30 text-white ring-1 ring-micro-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
+        >
+          Transport & thermal mechanisms
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'thermo'}
+          onClick={() => setMode('thermo')}
+          className={`rounded-lg px-4 py-2 text-sm font-medium ${mode === 'thermo' ? 'bg-flame-500/30 text-white ring-1 ring-flame-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
+        >
+          Thermodynamic paths
+        </button>
+      </div>
+
+      {mode === 'mechanisms' ? <MechanismsPanel /> : <ThermoPanel />}
     </div>
   );
 }
