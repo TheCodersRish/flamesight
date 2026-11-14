@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Flame from '../components/Flame';
 import { Card, PageHeader, Pill, Slider, Takeaway } from '../components/ui';
@@ -150,6 +150,9 @@ export default function FluidPhysics() {
   const [heat, setHeat] = useState(0.55);
   const [nPoly, setNPoly] = useState(1.3);
   const [playing, setPlaying] = useState(true);
+  // Ref so scrubbing stops the autoplay loop on the same frame (React state alone races RAF).
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
 
   const theme = THEMES.find(t => t.id === themeId)!;
 
@@ -158,7 +161,9 @@ export default function FluidPhysics() {
     if (!playing) return;
     let raf = 0;
     let t0 = performance.now();
+    let alive = true;
     const tick = (now: number) => {
+      if (!alive || !playingRef.current) return;
       raf = requestAnimationFrame(tick);
       const t = (now - t0) / 1000;
       const wave = 0.5 + 0.5 * Math.sin(t * 0.7);
@@ -169,8 +174,22 @@ export default function FluidPhysics() {
       } else setExpansion(1.15 + wave * 1.1);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+    };
   }, [playing, themeId]);
+
+  const scrubExpansion = (v: number) => {
+    playingRef.current = false;
+    setPlaying(false);
+    setExpansion(v);
+  };
+  const scrubHeat = (v: number) => {
+    playingRef.current = false;
+    setPlaying(false);
+    setHeat(v);
+  };
 
   const state = useMemo(() => stateAt(themeId, expansion, heat, nPoly), [themeId, expansion, heat, nPoly]);
   const path = useMemo(() => curvePoints(themeId, expansion, heat, nPoly), [themeId, expansion, heat, nPoly]);
@@ -225,7 +244,8 @@ export default function FluidPhysics() {
               dilution={flame.dilution}
               className="h-64 w-full sm:h-72"
               label={`${theme.name} freefall flame simulation`}
-              paused={!playing}
+              // Keep the illustrative flame alive while scrubbing so it tracks volume/heat instantly
+              paused={false}
             />
           </div>
           <p className="mt-2 text-sm text-slate-300">{theme.flameNote}</p>
@@ -238,9 +258,9 @@ export default function FluidPhysics() {
                 min={0}
                 max={1}
                 step={0.01}
-                onChange={v => { setPlaying(false); setHeat(v); }}
+                onChange={scrubHeat}
                 format={v => `${Math.round(v * 100)}%`}
-                hint="Pause to scrub heat release at constant volume"
+                hint="Scrub heat release — the freefall flame updates with you"
               />
             ) : (
               <Slider
@@ -249,9 +269,9 @@ export default function FluidPhysics() {
                 min={1}
                 max={2.5}
                 step={0.01}
-                onChange={v => { setPlaying(false); setExpansion(v); }}
+                onChange={scrubExpansion}
                 format={v => v.toFixed(2)}
-                hint="Pause to scrub expansion of the hot product parcel"
+                hint="Scrub expansion — the freefall flame updates with you"
               />
             )}
             {themeId === 'polytropic' && (
