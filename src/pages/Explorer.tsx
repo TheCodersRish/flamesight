@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { investigations } from '../lib/data';
+import { fluidPresetsFor } from '../lib/physicsBridge';
 import { PageHeader, TierBadge, Pill } from '../components/ui';
 
 type Sort = 'tier' | 'tests' | 'newest' | 'size' | 'az';
@@ -68,6 +69,13 @@ export default function Explorer() {
               {i.startYear && <Pill>{i.startYear}{i.endYear && i.endYear !== i.startYear ? `–${i.endYear}` : ''}</Pill>}
             </div>
             <p className="mt-3 text-xs text-slate-400">{i.role}</p>
+            <div className="mt-3 flex flex-wrap gap-1">
+              {fluidPresetsFor(i).slice(0, 2).map(p => (
+                <Link key={p.to + p.label} to={p.to} className="rounded bg-micro-500/15 px-1.5 py-0.5 text-[10px] text-micro-200 hover:bg-micro-500/25" title={p.why}>
+                  {p.label}
+                </Link>
+              ))}
+            </div>
             <div className="mt-auto flex items-center justify-between gap-2 pt-4 text-sm">
               <span className="font-mono text-micro-300">{i.count ? `${i.count.count.toLocaleString()} ${i.count.unit}` : 'no test table'}</span>
               <span className="flex gap-2">

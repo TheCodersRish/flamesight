@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Deck, { FlameStage } from '../components/Deck';
 import Flame from '../components/Flame';
-import { SourceChip } from '../components/ui';
+import { Pill, SourceChip } from '../components/ui';
+import { analystPhysicsCitations, fluidPhysicsHref, physicsFollowUps } from '../lib/physicsBridge';
 import { plainAnalyst, simplifyText } from '../lib/plainEnglish';
 import { downloadReport, stamp } from '../lib/report';
 import { answerLocal, askRemote, SAMPLE_QUESTIONS, type Answer } from '../lib/retrieval';
@@ -64,6 +65,11 @@ export default function Analyst() {
     name: h.inv.hasAcronym ? h.inv.acronym : h.inv.accession,
     match: Math.round(h.score),
   })), [latest]);
+  const citations = useMemo(
+    () => (latest ? analystPhysicsCitations(latest.a.question, latest.a.hits.map(h => h.inv.accession)) : []),
+    [latest],
+  );
+  const followUps = useMemo(() => physicsFollowUps(citations), [citations]);
 
   const display = latest
     ? (plain
@@ -169,6 +175,29 @@ export default function Analyst() {
           {latest && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>}
           {!latest && <p className="mt-3 text-sm text-slate-300">Ask a question. FlameSight matches NASA notes on this device, then (on the live site) uses the hosted AI for a fuller answer.</p>}
           {latest?.a.caveats.map(c => <p key={c} className="mt-2 text-xs text-amber-200">⚠ {plain ? simplifyText(c) : c}</p>)}
+          {citations.length > 0 && (
+            <div className="mt-3 rounded-lg bg-micro-500/10 p-2 ring-1 ring-micro-500/25">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-micro-300">Freefall physics</p>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {citations.map(c => (
+                  <Link key={c.id} to={fluidPhysicsHref(c.id)} title={c.story}>
+                    <Pill tone="micro">{c.short}</Pill>
+                  </Link>
+                ))}
+              </div>
+              <p className="mt-1 text-[11px] text-slate-400">{citations[0]?.story}</p>
+            </div>
+          )}
+          {followUps.length > 0 && (
+            <div className="mt-2 flex flex-col gap-1">
+              <p className="text-[11px] text-slate-500">Ask next (physics-grounded)</p>
+              {followUps.map(f => (
+                <button key={f} type="button" onClick={() => ask(f)} className="rounded-lg bg-white/5 px-2 py-1 text-left text-[11px] text-slate-200 hover:bg-white/10">
+                  {f}
+                </button>
+              ))}
+            </div>
+          )}
           {latest?.a.hits.slice(0, 3).map(h => (
             <div key={h.inv.accession} className="mt-2 border-l border-white/15 pl-2">
               <SourceChip acc={h.inv.accession} compact />

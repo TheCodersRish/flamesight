@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from 'recharts';
+import Flame from '../components/Flame';
 import { byAccession, fmt, insights, loadTables, loadTests } from '../lib/data';
+import { extinctionWalkthrough, fluidPhysicsHref, fluidPresetsFor, walkthroughKind } from '../lib/physicsBridge';
 import type { RawTable, TestRecord } from '../lib/types';
 import { Card, PageHeader, Pill, TierBadge } from '../components/ui';
 
@@ -133,9 +135,22 @@ export default function ExperimentDetail() {
   const [tables, setTables] = useState<RawTable[] | null>(null);
   const [tests, setTests] = useState<TestRecord[] | null>(null);
   const [tab, setTab] = useState(0);
-  useEffect(() => { setTab(0); loadTables().then(t => setTables(t[acc] || [])); loadTests().then(setTests); }, [acc]);
+  const [walkStep, setWalkStep] = useState(0);
+  const [walkPlaying, setWalkPlaying] = useState(true);
+  const walkKind = inv ? walkthroughKind(inv.accession, inv.acronym) : null;
+  const walk = useMemo(() => (walkKind ? extinctionWalkthrough(walkKind) : null), [walkKind]);
+  useEffect(() => { setTab(0); setWalkStep(0); setWalkPlaying(true); loadTables().then(t => setTables(t[acc] || [])); loadTests().then(setTests); }, [acc]);
+  useEffect(() => {
+    if (!walk || !walkPlaying) return;
+    const len = walk.length;
+    const id = window.setInterval(() => setWalkStep(s => (s + 1) % len), 2200);
+    return () => window.clearInterval(id);
+  }, [walk, walkPlaying]);
   if (!inv) return <p>Unknown investigation. <Link className="underline" to="/explorer">Back to Explorer</Link></p>;
   const e = inv.envelope;
+  const presets = fluidPresetsFor(inv);
+  const step = walk?.[walkStep];
+
   return (
     <div>
       <Link to="/explorer" className="text-sm text-slate-400 hover:text-white">← All experiments</Link>
@@ -144,6 +159,53 @@ export default function ExperimentDetail() {
           <div className="flex flex-wrap gap-2"><TierBadge tier={inv.tier} label={inv.tierLabel} /><Pill tone="flame">{inv.role}</Pill>{inv.start && <Pill>{inv.start}{inv.end ? ` → ${inv.end}` : ''}</Pill>}<Pill>{fmt.num(inv.sizeGB, 1)} GB · {inv.files?.toLocaleString()} files</Pill></div>
         </PageHeader>
       </div>
+      <div className="mb-4 flex flex-wrap gap-2">
+        <span className="text-xs text-slate-400 self-center">Open in Fluid Physics:</span>
+        {presets.map(p => (
+          <Link key={p.to + p.label} to={p.to} title={p.why} className="rounded-lg bg-micro-500/20 px-3 py-1.5 text-xs text-micro-100 ring-1 ring-micro-500/40 hover:bg-micro-500/30">
+            {p.label} →
+          </Link>
+        ))}
+      </div>
+      {walk && step && (
+        <Card className="mb-4" glow="flame">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-flame-300">Why it went out</h2>
+              <p className="mt-1 text-sm text-slate-300">Guided path: oxygen & heat → glow loss, using the Fluid Physics models.</p>
+            </div>
+            <button type="button" onClick={() => setWalkPlaying(p => !p)} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-slate-200 hover:bg-white/20">
+              {walkPlaying ? 'Pause' : 'Play'}
+            </button>
+          </div>
+          <div className="mt-3 grid gap-4 md:grid-cols-[1fr_1.1fr]">
+            <div className="overflow-hidden rounded-xl bg-space-950/80 ring-1 ring-white/10">
+              <Flame {...step.flame} className="h-48 w-full" label={`Walkthrough: ${step.label}`} />
+            </div>
+            <div>
+              <div className="mb-2 flex flex-wrap gap-1.5" role="tablist" aria-label="Extinction walkthrough steps">
+                {walk.map((s, i) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    role="tab"
+                    aria-selected={i === walkStep}
+                    onClick={() => { setWalkPlaying(false); setWalkStep(i); }}
+                    className={`rounded-lg px-2.5 py-1 text-xs ${i === walkStep ? 'bg-flame-500/30 text-white ring-1 ring-flame-400' : 'bg-white/5 text-slate-400 hover:text-white'}`}
+                  >
+                    {i + 1}. {s.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-base font-semibold text-white">{step.label}</p>
+              <p className="mt-1 text-sm text-slate-300">{step.blurb}</p>
+              <Link to={fluidPhysicsHref(step.mech)} className="mt-3 inline-block text-sm text-micro-300 hover:underline">
+                Open {step.mech === 'radiation' ? 'glow heat loss' : step.mech} model →
+              </Link>
+            </div>
+          </div>
+        </Card>
+      )}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-micro-300">Plain-English summary</h2>

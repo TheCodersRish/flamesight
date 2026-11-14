@@ -1,15 +1,24 @@
-import { useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Deck, { FlameStage } from '../components/Deck';
 import Flame from '../components/Flame';
-import { SourceChip } from '../components/ui';
+import { Pill, SourceChip } from '../components/ui';
 import { insightFocus, useBurn, type InsightId } from '../lib/burnSession';
 import { insights } from '../lib/data';
 import { briefFor } from '../lib/insightBrief';
+import { predict } from '../lib/knn';
+import { feedingMode, physicsBrief } from '../lib/physicsBridge';
 import { plainInsight } from '../lib/plainEnglish';
 import { downloadReport, stamp } from '../lib/report';
-import { GRAVITY, psiToAtm } from '../lib/scenarios';
+import { GRAVITY, psiToAtm, scenarioById } from '../lib/scenarios';
+import { rankForScenario } from '../lib/scoring';
+
+const COMPARE_PRESETS: [string, string][] = [
+  ['lunar', 'mars'],
+  ['iss', 'suit'],
+  ['lunar', 'iss'],
+];
 
 const axis = { stroke: '#475569', tick: { fill: '#94a3b8', fontSize: 11 } };
 const pct = (a: number, b: number) => (b ? Math.round((100 * a) / b) : 0);
@@ -63,12 +72,28 @@ export default function Insights() {
   const [section, setSection] = useState<InsightId>(focus.id);
   const [seen, setSeen] = useState(sig);
   const [plain, setPlain] = useState(true);
+  const [comparePair, setComparePair] = useState(0);
+  const [showCompare, setShowCompare] = useState(false);
   if (seen !== sig) {
     setSeen(sig);
     setSection(focus.id);
   }
   const rawBrief = briefFor(section, input, result);
   const brief = plain ? plainInsight(rawBrief) : rawBrief;
+  const phys = useMemo(() => physicsBrief(input), [input]);
+  const feed = useMemo(() => feedingMode(input), [input]);
+  const compare = useMemo(() => {
+    const [aId, bId] = COMPARE_PRESETS[comparePair];
+    const left = scenarioById(aId);
+    const right = scenarioById(bId);
+    const side = (sc: typeof left) => {
+      const burn = predict({ fuel: input.fuel, o2: sc.o2, psi: sc.psi, flow: sc.flow, gravity: sc.gravity, diluent: input.diluent });
+      const top = rankForScenario(sc).slice(0, 3);
+      const feedMode = feedingMode({ gravity: sc.gravity, o2: sc.o2, flow: sc.flow });
+      return { sc, burn, top, feedMode };
+    };
+    return { left: side(left), right: side(right) };
+  }, [comparePair, input.fuel, input.diluent]);
   const o2 = Math.round(input.o2 * 100);
   const f = insights.flex;
 
@@ -137,6 +162,62 @@ export default function Insights() {
   const atm = +psiToAtm(input.psi).toFixed(2);
 
   return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="shrink-0 space-y-2 border-b border-white/10 px-3 py-2 lg:px-4">
+        <div className="rounded-xl bg-micro-500/10 px-3 py-2 ring-1 ring-micro-500/25">
+          <div className="flex flex-wrap items-center gap-2">
+            <Pill tone="micro">Physics brief</Pill>
+            <Pill tone="slate">{feed.label}</Pill>
+            <p className="text-xs text-slate-200">{phys.headline}</p>
+          </div>
+          <ul className="mt-1.5 hidden space-y-0.5 text-[11px] text-slate-400 sm:block">
+            {phys.bullets.slice(0, 2).map(b => <li key={b}>• {b}</li>)}
+          </ul>
+          <div className="mt-1.5 flex flex-wrap gap-2 text-[11px]">
+            {phys.links.map(l => (
+              <Link key={l.to} to={l.to} className="text-micro-300 hover:underline">{l.label} →</Link>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={showCompare}
+            onClick={() => setShowCompare(v => !v)}
+            className={`rounded-lg px-3 py-1.5 text-xs ${showCompare ? 'bg-flame-500/30 text-white ring-1 ring-flame-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
+          >
+            Compare habitats
+          </button>
+          {showCompare && COMPARE_PRESETS.map((pair, i) => (
+            <button
+              key={pair.join('-')}
+              type="button"
+              onClick={() => setComparePair(i)}
+              className={`rounded-lg px-2.5 py-1 text-[11px] ${comparePair === i ? 'bg-white/15 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              {scenarioById(pair[0]).short} vs {scenarioById(pair[1]).short}
+            </button>
+          ))}
+        </div>
+        {showCompare && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {[compare.left, compare.right].map(side => (
+              <div key={side.sc.id} className="rounded-xl bg-white/5 px-3 py-2 ring-1 ring-white/10">
+                <p className="font-semibold text-white">{side.sc.name}</p>
+                <p className="font-mono text-[11px] text-flame-300">{Math.round(side.sc.o2 * 100)}% O₂ · {side.sc.psi} psi · {side.sc.flow} cm/s</p>
+                <p className="mt-1 text-xs text-slate-300">
+                  Chance of burning: <span className="text-white">{Math.round(side.burn.p * 100)}</span>/100 · {side.burn.verdict}
+                </p>
+                <p className="text-[11px] text-micro-300">Feeding: {side.feedMode.label}</p>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Top: {side.top.map(t => t.inv.acronym).join(' · ')}
+                </p>
+                <Link to={`/scenarios?s=${side.sc.id}`} className="mt-1 inline-block text-[11px] text-cyan-200 hover:underline">Rank this habitat →</Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     <Deck
       experimentsTitle="For this test"
       graphsTitle="The NASA measurement"
@@ -311,5 +392,6 @@ export default function Insights() {
         </>
       )}
     />
+    </div>
   );
 }

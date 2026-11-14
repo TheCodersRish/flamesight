@@ -46,7 +46,15 @@ export function scoreInvestigation(inv: Investigation, sc: Scenario, w: Weights)
   const o2 = rangeMatch(sc.o2, inv.envelope.o2, SCALES.o2);
   const p = rangeMatch(psiToAtm(sc.psi), inv.envelope.pAtm, SCALES.pAtm);
   const f = rangeMatch(sc.flow, inv.envelope.flow, SCALES.flow);
-  const parts: ScoreParts = { o2: o2.s, pressure: p.s, flow: f.s, role: roleScore(inv, sc), data: dataScore(inv), known: { o2: o2.known, pressure: p.known, flow: f.known } };
+  // When the habitat's fan-push and oxygen both sit in the tested window, credit flow harder
+  // so ventilation-matched studies (SAFFIRE-style) rise above O₂/pressure-only matches.
+  let flowPart = f.s;
+  if (o2.known && f.known && o2.s >= 0.85 && f.s >= 0.85) {
+    flowPart = Math.min(1, f.s + 0.12);
+  } else if (f.known && sc.flow >= 8 && f.s >= 0.7) {
+    flowPart = Math.min(1, f.s + 0.06);
+  }
+  const parts: ScoreParts = { o2: o2.s, pressure: p.s, flow: flowPart, role: roleScore(inv, sc), data: dataScore(inv), known: { o2: o2.known, pressure: p.known, flow: f.known } };
   const tot = w.o2 + w.pressure + w.flow + w.role + w.data || 1;
   const score = (100 * (w.o2 * parts.o2 + w.pressure * parts.pressure + w.flow * parts.flow + w.role * parts.role + w.data * parts.data)) / tot;
   return { inv, score, parts };

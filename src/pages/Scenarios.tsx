@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import ScenarioIcon from '../components/ScenarioIcon';
+import CabinStrip from '../components/CabinStrip';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useBurn } from '../lib/burnSession';
+import { physicsTagsFor, fluidPhysicsHref } from '../lib/physicsBridge';
 import {
   SCENARIOS, GRAVITY, scenarioById, psiToAtm, makeAtmosphere, loadCustomScenarios, saveCustomScenarios,
   ROLE_BOOST_OPTIONS, type Scenario,
@@ -35,6 +38,7 @@ const blankDraft = (): Draft => ({
 
 export default function Scenarios() {
   const [sp, setSp] = useSearchParams();
+  const { input: cabin, setInput: setCabin } = useBurn();
   const [custom, setCustom] = useState<Scenario[]>(() => loadCustomScenarios());
   const sc = scenarioById(sp.get('s') || 'iss', custom);
   const [w, setW] = useState<Weights>(() => weightsFor(sc));
@@ -43,8 +47,31 @@ export default function Scenarios() {
   const [showAll, setShowAll] = useState(false);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<Draft>(blankDraft);
-  const ranked = useMemo(() => rankForScenario(sc, w), [sc, w]);
-  const recs = useMemo(() => recommendations(sc), [sc]);
+  const [rankLive, setRankLive] = useState(false);
+  const cabinDiffers = Math.abs(cabin.o2 - sc.o2) > 0.005 || Math.abs(cabin.psi - sc.psi) > 0.05 || Math.abs(cabin.flow - sc.flow) > 0.5 || cabin.gravity !== sc.gravity;
+
+  const applyScenarioCabin = (s: Scenario) => {
+    setCabin(prev => ({ ...prev, o2: s.o2, psi: s.psi, flow: s.flow, gravity: s.gravity }));
+    setRankLive(false);
+  };
+
+  const rankScenario = useMemo((): Scenario => {
+    if (!rankLive) return sc;
+    return {
+      ...sc,
+      id: `${sc.id}-live`,
+      name: 'Shared cabin (Will It Burn)',
+      o2: cabin.o2,
+      psi: cabin.psi,
+      flow: cabin.flow,
+      gravity: cabin.gravity,
+      blurb: 'Ranked against the shared cabin from Will It Burn.',
+      facts: [`Live cabin: ${Math.round(cabin.o2 * 100)}% O₂ · ${cabin.psi.toFixed(1)} psi · ${cabin.flow} cm/s`],
+      assumptions: ['Oxygen, pressure, and fan speed come from the shared Will It Burn cabin.'],
+    };
+  }, [rankLive, sc, cabin]);
+  const ranked = useMemo(() => rankForScenario(rankScenario, w), [rankScenario, w]);
+  const recs = useMemo(() => recommendations(rankScenario), [rankScenario]);
   const tot = w.o2 + w.pressure + w.flow + w.role + w.data || 1;
   const keys = Object.keys(PART_LABEL) as (keyof Weights)[];
   const isCustom = sc.id.startsWith('custom');
@@ -68,6 +95,7 @@ export default function Scenarios() {
     setCreating(false);
     setDraft(blankDraft());
     setSp({ s: created.id });
+    applyScenarioCabin(created);
   };
 
   const removeScenario = (id: string) => {
@@ -86,19 +114,42 @@ export default function Scenarios() {
   return (
     <div>
       <PageHeader kicker="Scenario Risk Ranking" title="Which NASA experiments matter most for your mission?">
-        Pick a habitat—or build your own. Each NASA fire study gets a 0–100 “how relevant is this?” score from how closely its tested oxygen, pressure, and airflow match your setting, what fire-safety job it helps with, and how much data it has. Open “How we scored this” to change the weights. Plain English first; the formula is still there if you want it.
+        Pick a habitat—or build your own. Each NASA fire study gets a 0–100 “how relevant is this?” score from how closely its tested oxygen, pressure, and airflow match your setting, what fire-safety job it helps with, and how much data it has. Studies whose fan-push / oxygen window matches cabin ventilation rise higher. Open “How we scored this” to change the weights.
       </PageHeader>
+
+      <div className="mb-4 space-y-2">
+        <CabinStrip />
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <button
+            type="button"
+            onClick={() => { applyScenarioCabin(sc); }}
+            className="rounded-lg bg-white/5 px-3 py-1.5 text-xs text-slate-200 hover:bg-white/10"
+          >
+            Push this habitat into shared cabin
+          </button>
+          {(cabinDiffers || rankLive) && (
+            <button
+              type="button"
+              onClick={() => setRankLive(v => !v)}
+              aria-pressed={rankLive}
+              className={`rounded-lg px-3 py-1.5 text-xs ${rankLive ? 'bg-micro-500/30 text-white ring-1 ring-micro-400' : 'bg-white/5 text-micro-300 hover:bg-white/10'}`}
+            >
+              {rankLive ? 'Ranking shared cabin' : 'Rank with shared Will It Burn cabin'}
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="mb-6 flex flex-wrap gap-2" role="tablist" aria-label="Scenario">
         {SCENARIOS.map(s => (
-          <button key={s.id} role="tab" aria-selected={s.id === sc.id} onClick={() => setSp({ s: s.id })}
-            className={`rounded-xl px-4 py-2 text-sm transition ${s.id === sc.id ? 'bg-gradient-to-r from-flame-500 to-flame-600 text-white shadow-glow' : 'glass text-slate-300 hover:text-white'}`}>
+          <button key={s.id} role="tab" aria-selected={s.id === sc.id && !rankLive} onClick={() => { setSp({ s: s.id }); applyScenarioCabin(s); }}
+            className={`rounded-xl px-4 py-2 text-sm transition ${s.id === sc.id && !rankLive ? 'bg-gradient-to-r from-flame-500 to-flame-600 text-white shadow-glow' : 'glass text-slate-300 hover:text-white'}`}>
             <ScenarioIcon id={s.id} className="mr-1 inline h-5 w-5 align-[-4px]" /> {s.name}
           </button>
         ))}
         {custom.map(s => (
-          <button key={s.id} role="tab" aria-selected={s.id === sc.id} onClick={() => setSp({ s: s.id })}
-            className={`rounded-xl px-4 py-2 text-sm transition ${s.id === sc.id ? 'bg-gradient-to-r from-flame-500 to-flame-600 text-white shadow-glow' : 'glass text-slate-300 hover:text-white'}`}>
+          <button key={s.id} role="tab" aria-selected={s.id === sc.id && !rankLive} onClick={() => { setSp({ s: s.id }); applyScenarioCabin(s); }}
+            className={`rounded-xl px-4 py-2 text-sm transition ${s.id === sc.id && !rankLive ? 'bg-gradient-to-r from-flame-500 to-flame-600 text-white shadow-glow' : 'glass text-slate-300 hover:text-white'}`}>
             <ScenarioIcon id={s.id} className="mr-1 inline h-5 w-5 align-[-4px]" /> {s.name}
           </button>
         ))}
@@ -232,12 +283,21 @@ export default function Scenarios() {
         <Card className="lg:col-span-2">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-flame-300">Top 3 must-reads for {sc.name}</h2>
           <ol className="mt-3 grid gap-3 md:grid-cols-3">
-            {ranked.slice(0, 3).map((r, i) => (
+            {ranked.slice(0, 3).map((r, i) => {
+              const tags = physicsTagsFor(r.inv);
+              return (
               <li key={r.inv.accession} className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
                 <div className="flex items-center justify-between"><span className="font-mono text-2xl text-flame-300">#{i + 1}</span><span className="font-mono text-xl text-white">{r.score.toFixed(0)}</span></div>
                 <Link to={`/explorer/${r.inv.accession}`} className="mt-1 block font-semibold text-white hover:underline">{r.inv.acronym}</Link>
                 <p className="text-xs text-slate-400">{r.inv.role}</p>
-                <p className="mt-2 line-clamp-3 text-xs text-slate-300">{r.inv.why}</p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {tags.map(t => (
+                    <Link key={t.id} to={fluidPhysicsHref(t.id)} title={t.story} className="rounded-md bg-micro-500/15 px-1.5 py-0.5 text-[10px] text-micro-200 ring-1 ring-micro-500/30 hover:bg-micro-500/25">
+                      {t.short}
+                    </Link>
+                  ))}
+                </div>
+                <p className="mt-2 line-clamp-2 text-xs text-slate-300">{tags[0]?.story || r.inv.why}</p>
                 <ul className="mt-3 space-y-1 text-[11px]">
                   {(['o2', 'pressure', 'flow'] as const).map(k => {
                     const v = r.parts[k], known = r.parts.known[k];
@@ -246,7 +306,8 @@ export default function Scenarios() {
                   <li className="flex justify-between gap-2"><span className="text-slate-400">Tests</span><span className="text-slate-200">{r.inv.count ? `${r.inv.count.count.toLocaleString()} ${r.inv.count.unit}` : '—'}</span></li>
                 </ul>
               </li>
-            ))}
+              );
+            })}
           </ol>
         </Card>
       </div>
@@ -275,7 +336,12 @@ export default function Scenarios() {
               <span className="font-mono text-sm text-slate-500">{i + 1}</span>
               <div className="min-w-0">
                 <Link to={`/explorer/${r.inv.accession}`} className="block truncate font-medium text-white hover:underline">{r.inv.acronym}</Link>
-                <div className="flex items-center gap-1"><TierBadge tier={r.inv.tier} label={r.inv.tierLabel} /></div>
+                <div className="flex flex-wrap items-center gap-1">
+                  <TierBadge tier={r.inv.tier} label={r.inv.tierLabel} />
+                  {physicsTagsFor(r.inv).slice(0, 2).map(t => (
+                    <Link key={t.id} to={fluidPhysicsHref(t.id)} className="rounded bg-white/5 px-1 text-[10px] text-micro-300 hover:text-white">{t.short}</Link>
+                  ))}
+                </div>
               </div>
               <div className="col-span-3 flex h-3 overflow-hidden rounded-full bg-white/5 md:col-span-1" role="img" aria-label={`Score ${r.score.toFixed(0)} of 100`}>
                 {keys.map(k => <div key={k} title={`${PART_LABEL[k]}: ${(r.parts[k] * 100).toFixed(0)}% × weight ${w[k]}${k in r.parts.known && !r.parts.known[k as 'o2' | 'pressure' | 'flow'] ? ' (not in table → 0.25)' : ''}`} style={{ width: `${(100 * w[k] * r.parts[k]) / tot}%`, background: PART_COLORS[k] }} />)}

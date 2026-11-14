@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import BurnCharts from '../components/BurnCharts';
+import CabinStrip from '../components/CabinStrip';
 import Deck, { FlameStage } from '../components/Deck';
 import Flame from '../components/Flame';
 import { Pill, Slider } from '../components/ui';
@@ -8,6 +9,7 @@ import { useBurn } from '../lib/burnSession';
 import { fuelOptions, invLabel } from '../lib/data';
 import { type Diluent, type SimInput } from '../lib/knn';
 import { narrateBurn } from '../lib/narrate';
+import { feedingMode, fluidPhysicsHref } from '../lib/physicsBridge';
 import { plainBurn } from '../lib/plainEnglish';
 import { downloadReport, stamp } from '../lib/report';
 import { loadScans, removeScan, saveScan, scanLabel, type SavedScan } from '../lib/scans';
@@ -43,6 +45,7 @@ export default function Command() {
 
   const technical = useMemo(() => narrateBurn(x, result), [x, result]);
   const brief = plain ? plainBurn(x, result) : technical;
+  const feed = useMemo(() => feedingMode(x), [x]);
   const flame = {
     gravity: GRAVITY[x.gravity].flame,
     o2: clamp(((x.o2 - 0.12) / 0.55) * (0.45 + 0.55 * result.p)),
@@ -97,10 +100,26 @@ export default function Command() {
   };
 
   return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="shrink-0 px-3 pt-3 lg:px-4">
+        <CabinStrip compact />
+      </div>
     <Deck
       stage={(
         <FlameStage title="Will it burn?" caption="The flame is a teaching picture of the settings below—not a real fire simulation. Results compare your setup to the closest NASA tests." controls={(
           <>
+            <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+              <span className="text-xs text-slate-400">How is it fed?</span>
+              <Link
+                to={fluidPhysicsHref(feed.mechId)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-micro-500/20 px-2.5 py-1 text-xs font-medium text-micro-100 ring-1 ring-micro-400/50 hover:bg-micro-500/30"
+                title={feed.detail}
+              >
+                {feed.label}
+                <span className="font-normal text-slate-400">· open model</span>
+              </Link>
+              <span className="text-[11px] text-slate-500">{feed.detail}</span>
+            </div>
             <label className="text-xs text-slate-300 sm:col-span-2">
               Fuel
               <select value={x.fuel} onChange={e => set('fuel', e.target.value)} className="mt-1 w-full rounded border border-cyan-200/20 bg-space-950 px-2 py-1 text-sm text-white">
@@ -177,8 +196,10 @@ export default function Command() {
           <p className="mt-1 text-sm text-slate-300">{Math.round(result.p * 100)} out of 100 · {result.confidenceLabel} confidence</p>
           <p className="mt-2 text-sm leading-relaxed text-slate-200">{brief}</p>
           <Link to="/insights" className="mt-3 inline-block text-sm text-cyan-200 hover:text-white">See the NASA chart for these settings →</Link>
+          <Link to="/scenarios" className="mt-2 block text-sm text-micro-300 hover:text-white">Rank risks with this same cabin →</Link>
         </>
       )}
     />
+    </div>
   );
 }

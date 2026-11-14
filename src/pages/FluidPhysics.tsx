@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Flame from '../components/Flame';
 import { Card, PageHeader, Pill, Slider, Takeaway } from '../components/ui';
@@ -13,6 +14,9 @@ import {
 
 type Mode = 'thermo' | 'mechanisms';
 type ThemeId = 'adiabatic' | 'isothermal' | 'isochoric' | 'polytropic';
+
+const MECH_IDS = new Set(MECHANISMS.map(m => m.id));
+const THEME_IDS = new Set<ThemeId>(['adiabatic', 'isothermal', 'isochoric', 'polytropic']);
 
 interface Theme {
   id: ThemeId;
@@ -148,14 +152,18 @@ function flameFromState(theme: ThemeId, s: { P: number; V: number; T: number }, 
   };
 }
 
-function ThermoPanel() {
-  const [themeId, setThemeId] = useState<ThemeId>('adiabatic');
+function ThermoPanel({ initialTheme }: { initialTheme?: ThemeId }) {
+  const [themeId, setThemeId] = useState<ThemeId>(initialTheme && THEME_IDS.has(initialTheme) ? initialTheme : 'adiabatic');
   const [expansion, setExpansion] = useState(1.6);
   const [heat, setHeat] = useState(0.55);
   const [nPoly, setNPoly] = useState(1.3);
   const [playing, setPlaying] = useState(true);
   const playingRef = useRef(playing);
   playingRef.current = playing;
+
+  useEffect(() => {
+    if (initialTheme && THEME_IDS.has(initialTheme)) setThemeId(initialTheme);
+  }, [initialTheme]);
 
   const theme = THEMES.find(t => t.id === themeId)!;
 
@@ -362,8 +370,9 @@ function ThermoPanel() {
   );
 }
 
-function MechanismsPanel() {
-  const [mechId, setMechId] = useState<MechId>('no-buoyancy');
+function MechanismsPanel({ initialMech }: { initialMech?: MechId }) {
+  const startId = initialMech && MECH_IDS.has(initialMech) ? initialMech : 'no-buoyancy';
+  const [mechId, setMechId] = useState<MechId>(startId);
   const mech = mechById(mechId);
   const [a, setA] = useState(mech.defaults.a);
   const [b, setB] = useState(mech.defaults.b);
@@ -378,6 +387,12 @@ function MechanismsPanel() {
     setB(m.defaults.b);
     setPlaying(true);
   };
+
+  useEffect(() => {
+    if (initialMech && MECH_IDS.has(initialMech) && initialMech !== mechId) selectMech(initialMech);
+    // Only react to URL-driven preset changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialMech]);
 
   useEffect(() => {
     if (!playing) return;
@@ -587,7 +602,26 @@ function MechanismsPanel() {
 }
 
 export default function FluidPhysics() {
-  const [mode, setMode] = useState<Mode>('mechanisms');
+  const [sp, setSp] = useSearchParams();
+  const modeParam = sp.get('mode');
+  const mechParam = sp.get('mech');
+  const themeParam = sp.get('theme');
+  const initialMode: Mode = modeParam === 'thermo' ? 'thermo' : 'mechanisms';
+  const [mode, setMode] = useState<Mode>(initialMode);
+  const initialMech = mechParam && MECH_IDS.has(mechParam as MechId) ? (mechParam as MechId) : undefined;
+  const initialTheme = themeParam && THEME_IDS.has(themeParam as ThemeId) ? (themeParam as ThemeId) : undefined;
+
+  useEffect(() => {
+    if (modeParam === 'thermo' || modeParam === 'mechanisms') setMode(modeParam);
+  }, [modeParam]);
+
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    const nextSp = new URLSearchParams(sp);
+    nextSp.set('mode', next);
+    if (next === 'mechanisms' && !nextSp.get('mech')) nextSp.delete('theme');
+    setSp(nextSp, { replace: true });
+  };
 
   return (
     <div>
@@ -605,7 +639,7 @@ export default function FluidPhysics() {
           type="button"
           role="tab"
           aria-selected={mode === 'mechanisms'}
-          onClick={() => setMode('mechanisms')}
+          onClick={() => switchMode('mechanisms')}
           className={`rounded-lg px-4 py-2 text-sm font-medium ${mode === 'mechanisms' ? 'bg-micro-500/30 text-white ring-1 ring-micro-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
         >
           What moves gases & heat
@@ -614,14 +648,14 @@ export default function FluidPhysics() {
           type="button"
           role="tab"
           aria-selected={mode === 'thermo'}
-          onClick={() => setMode('thermo')}
+          onClick={() => switchMode('thermo')}
           className={`rounded-lg px-4 py-2 text-sm font-medium ${mode === 'thermo' ? 'bg-flame-500/30 text-white ring-1 ring-flame-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
         >
           Heat & volume paths
         </button>
       </div>
 
-      {mode === 'mechanisms' ? <MechanismsPanel /> : <ThermoPanel />}
+      {mode === 'mechanisms' ? <MechanismsPanel initialMech={initialMech} /> : <ThermoPanel initialTheme={initialTheme} />}
     </div>
   );
 }
