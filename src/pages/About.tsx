@@ -63,6 +63,7 @@ export default function About() {
       <Card>
         <h2 className="text-lg font-semibold text-white">Team</h2>
         <p className="mt-2 text-slate-300">Team AstroGhosts, NASA Space Apps 2026 (Dallas local event).</p>
+        <p className="mt-2 text-sm text-slate-300">Live site: <a className="underline text-micro-300 hover:text-white" href="https://flamesight.vercel.app" target="_blank" rel="noreferrer">https://flamesight.vercel.app</a></p>
         <p className="mt-3 text-xs text-slate-500">Not affiliated with or endorsed by NASA. No NASA logos are used.</p>
       </Card>
     </div>
