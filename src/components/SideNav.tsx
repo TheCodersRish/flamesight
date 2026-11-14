@@ -10,6 +10,7 @@ const NAV = [
   { to: '/explorer', label: 'Experiments' },
   { to: '/scenarios', label: 'Risk Ranking' },
   { to: '/analyst', label: 'Analyst' },
+  { to: '/new-features', label: 'New Features' },
   { to: '/about', label: 'About' },
 ];
 

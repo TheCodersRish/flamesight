@@ -13,6 +13,7 @@ const Insights = lazy(() => import('./pages/Insights'));
 const FluidPhysics = lazy(() => import('./pages/FluidPhysics'));
 const Analyst = lazy(() => import('./pages/Analyst'));
 const About = lazy(() => import('./pages/About'));
+const NewFeatures = lazy(() => import('./pages/NewFeatures'));
 const FlameLab = lazy(() => import('./pages/FlameLab'));
 
 const DECK = new Set(['/', '/insights', '/analyst', '/simulator']);
@@ -38,6 +39,7 @@ function Shell() {
               <Route path="/simulator" element={<Command />} />
               <Route path="/analyst" element={<Analyst />} />
               <Route path="/about" element={<About />} />
+              <Route path="/new-features" element={<NewFeatures />} />
               <Route path="/flame-lab" element={<FlameLab />} />
               <Route path="*" element={<Command />} />
             </Routes>
