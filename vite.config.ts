@@ -51,6 +51,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     plugins: [react(), geminiDev(env.GEMINI_API_KEY, env.GEMINI_MODEL || 'gemini-3-flash-preview')],
+    optimizeDeps: { exclude: ['@huggingface/transformers'] },
     server: { host: true, port: 5173, strictPort: true },
     base: './',
     build: {

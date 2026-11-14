@@ -1,38 +1,34 @@
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Deck, { FlameStage } from '../components/Deck';
 import Flame from '../components/Flame';
+import { SourceChip } from '../components/ui';
 import { insightFocus, useBurn, type InsightId } from '../lib/burnSession';
-import { insights, stats } from '../lib/data';
-import { GRAVITY } from '../lib/scenarios';
-import { Card, SourceChip, Takeaway } from '../components/ui';
+import { insights } from '../lib/data';
+import { briefFor } from '../lib/insightBrief';
+import { GRAVITY, psiToAtm } from '../lib/scenarios';
 
 const axis = { stroke: '#475569', tick: { fill: '#94a3b8', fontSize: 11 } };
-const OUT_COLORS = { Extinction: '#5cb8ff', Disruption: '#facc15', Completion: '#ff7a1a' };
 const pct = (a: number, b: number) => (b ? Math.round((100 * a) / b) : 0);
+const SECTIONS: { id: InsightId; label: string }[] = [
+  { id: 'flex', label: 'Will a gas put it out?' },
+  { id: 'cfig', label: 'Does more oxygen light it?' },
+  { id: 'bass', label: 'Will a solid keep burning?' },
+  { id: 'psi117', label: 'Does pressure change the end?' },
+];
 
-function Chart({ title, h = 'h-44', children }: { title: string; h?: string; children: ReactElement }) {
-  return (<div><h3 className="mb-2 text-sm font-medium text-slate-200">{title}</h3><div className={`${h} w-full`}><ResponsiveContainer>{children}</ResponsiveContainer></div></div>);
-}
-function Section({ id, kicker, title, cites, children }: { id: string; kicker: string; title: string; cites: string[]; children: ReactNode }) {
+function Chart({ title, children }: { title: string; children: ReactElement }) {
   return (
-    <Card className="scroll-mt-24">
-      <section id={id} aria-labelledby={`${id}-h`}>
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div><p className="font-mono text-xs uppercase tracking-widest text-flame-400">{kicker}</p><h2 id={`${id}-h`} className="text-xl font-semibold text-white">{title}</h2></div>
-          <div className="flex flex-wrap gap-1">{cites.map(c => <SourceChip key={c} acc={c} compact />)}</div>
-        </div>
-        <div className="mt-4">{children}</div>
-      </section>
-    </Card>
+    <div>
+      <h3 className="mb-2 text-sm font-medium text-white">{title}</h3>
+      <div className="h-44 w-full"><ResponsiveContainer>{children}</ResponsiveContainer></div>
+    </div>
   );
 }
 
-const SECTIONS = [['flex', 'FLEX suppression'], ['bass', 'BASS / SAFFIRE solids'], ['cfig', 'CFI-G high oxygen'], ['psi117', 'PSI-117 pressure']] as const;
-
 export default function Insights() {
-  const { input } = useBurn();
+  const { input, result } = useBurn();
   const focus = insightFocus(input);
   const sig = [input.fuel, input.o2, input.psi, input.flow, input.gravity, input.diluent].join('|');
   const [section, setSection] = useState<InsightId>(focus.id);
@@ -41,118 +37,129 @@ export default function Insights() {
     setSeen(sig);
     setSection(focus.id);
   }
+  const brief = briefFor(section, input, result);
+  const o2 = Math.round(input.o2 * 100);
   const f = insights.flex;
-  const dilPct = f.byDiluent.map(d => ({ group: d.group, Extinction: pct(d.Extinction, d.total), Disruption: pct(d.Disruption, d.total), Completion: pct(d.Completion, d.total), n: d.total }));
-  const o2Pct = f.byO2.map(d => ({ bin: d.bin, Extinction: pct(d.Extinction, d.total), Disruption: pct(d.Disruption, d.total), Completion: pct(d.Completion, d.total), n: d.total }));
-  const none = f.byDiluent.find(d => d.group.startsWith('No'))!, co2 = f.byDiluent.find(d => d.group.startsWith('CO2'))!, he = f.byDiluent.find(d => d.group.startsWith('Helium'))!;
-  const lowO2 = f.byO2[0], hiO2 = f.byO2[f.byO2.length - 1];
-
-  const cf = insights.cfig.byO2.map(r => ({ ...r, Normal: r.Normal_ign, Inverse: r.Inverse_ign }));
-  const cfHi = insights.cfig.byO2.find(r => r.bin === '>60%');
-  const cfLo = insights.cfig.byO2.find(r => r.bin === '20–25%');
-  const cfNm = insights.cfig.byO2.find(r => r.bin === '35–45%');
-
+  const dilPct = f.byDiluent.map(d => ({
+    group: d.group.replace(' (O2 + N2)', ''),
+    wentOut: pct(d.Extinction, d.total),
+    n: d.total,
+  }));
+  const yourGas = input.diluent === 'CO2' ? 'CO2' : input.diluent === 'He' ? 'Helium' : 'No';
+  const cf = insights.cfig.byO2.map(r => ({ bin: String(r.bin), Normal: Number(r.Normal_ign) || 0, Inverse: Number(r.Inverse_ign) || 0 }));
+  const yourCfig = o2 < 20 ? '<20%' : o2 <= 25 ? '20–25%' : o2 <= 35 ? '25–35%' : o2 <= 45 ? '35–45%' : o2 <= 60 ? '45–60%' : '>60%';
   const k = insights.psi117;
-  const ps = Array.from(new Set([...k.hotExpt, ...k.hotModel, ...k.coolExpt, ...k.coolModel].map(x => x.p))).sort((a, b) => a - b);
-  const avg = (a: { p: number; d: number }[], p: number) => { const v = a.filter(x => x.p === p).map(x => x.d); return v.length ? +(v.reduce((s, x) => s + x, 0) / v.length).toFixed(2) : undefined; };
-  const kData = ps.map(p => ({ p, hotExpt: avg(k.hotExpt, p), hotModel: avg(k.hotModel, p), coolExpt: avg(k.coolExpt, p), coolModel: avg(k.coolModel, p) }));
-  const cool05 = avg(k.coolExpt, 0.5), cool1 = avg(k.coolExpt, 1), hot05 = avg(k.hotExpt, 0.5), hot3 = avg(k.hotExpt, 3);
-
-  const b = insights.bass;
-  const bMats = Array.from(new Set(b.o2Bins.flatMap(r => Object.keys(r).filter(k => k !== 'bin' && k !== 'total'))));
-  const sibal = insights.saffire2.filter(s => /SIBAL/i.test(s.material));
-  const sil = insights.saffire2.filter(s => /Silicone/i.test(s.material));
+  const pressures = Array.from(new Set([...k.hotExpt, ...k.coolExpt].map(p => p.p))).sort((a, b) => a - b);
+  const at = (rows: { p: number; d: number }[], p: number) => rows.find(r => r.p === p)?.d;
+  const kData = pressures.map(p => ({ p, hot: at(k.hotExpt, p), cool: at(k.coolExpt, p) }));
+  const atm = +psiToAtm(input.psi).toFixed(2);
 
   return (
     <Deck
-      experimentsTitle="Which chart"
-      graphsTitle="NASA data"
-      outcomeTitle="Takeaway"
+      experimentsTitle="For this test"
+      graphsTitle="The NASA measurement"
+      outcomeTitle="What to do"
       stage={(
-        <FlameStage title="Insights" caption={focus.why}>
+        <FlameStage title="Insights" caption={brief.headline}>
           <Flame gravity={GRAVITY[input.gravity].flame} o2={Math.max(0, Math.min(1, (input.o2 - 0.12) / 0.6))} flow={Math.max(0, Math.min(1, input.flow / 40))} dilution={input.diluent === 'none' ? 0 : 0.55} className="h-full w-full" label="Insights flame for the current Will It Burn settings" />
         </FlameStage>
       )}
       experiments={(
-        <div className="flex flex-col gap-1" role="tablist" aria-label="Insight sections">
-          {SECTIONS.map(([id, label]) => (
-            <button key={id} type="button" role="tab" aria-selected={section === id} onClick={() => setSection(id)} className={`rounded px-2 py-1.5 text-left text-xs ${section === id ? 'bg-cyan-300/15 text-white' : 'text-slate-300 hover:text-white'}`}>{label}</button>
-          ))}
-          <p className="mt-3 text-sm text-slate-200">{focus.why}</p>
-          <p className="mt-1 text-xs text-slate-400">{Math.round(input.o2 * 100)}% oxygen · {input.psi.toFixed(1)} psi · {input.flow} cm/s · {GRAVITY[input.gravity].label}{input.fuel !== 'any' ? ` · ${input.fuel}` : ''}</p>
-          <Link to="/" className="mt-2 inline-block text-xs text-cyan-200 hover:text-white">Change these in Will It Burn</Link>
+        <div>
+          <p className="text-sm text-white">{o2}% oxygen · {input.psi.toFixed(1)} psi · {input.flow} cm/s · {GRAVITY[input.gravity].label}</p>
+          <p className="mt-1 text-xs text-slate-400">{input.fuel === 'any' ? 'Any fuel' : input.fuel} · {input.diluent === 'none' ? 'no suppressant gas' : input.diluent === 'CO2' ? 'CO₂ added' : 'helium added'}</p>
+          <div className="mt-3 flex flex-col gap-1" role="tablist" aria-label="Which question">
+            {SECTIONS.map(s => (
+              <button key={s.id} type="button" role="tab" aria-selected={section === s.id} onClick={() => setSection(s.id)} className={`rounded-lg px-2 py-1.5 text-left text-sm ${section === s.id ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white'}`}>
+                {s.label}{s.id === focus.id ? ' · best match' : ''}
+              </button>
+            ))}
+          </div>
+          <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-300">
+            {brief.points.slice(0, 3).map(p => <li key={p}>{p}</li>)}
+          </ul>
+          <Link to="/" className="mt-3 inline-block text-xs text-cyan-200 hover:text-white">Change the test in Will It Burn</Link>
         </div>
       )}
       graphs={(
-        <div className="space-y-4">
-
-      {section === 'flex' && <Section id="flex" kicker="Suppression" title={`FLEX: how ${stats.flex.tests} droplet fires ended`} cites={['PSI-69']}>
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Chart title="All FLEX outcomes">
-            <PieChart><Pie data={f.outcomes} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={2} label={(e: { name: string; value: number }) => `${e.value}`}>
-              {f.outcomes.map((o, i) => <Cell key={o.name} fill={[OUT_COLORS.Extinction, OUT_COLORS.Disruption, OUT_COLORS.Completion][i]} />)}</Pie><Tooltip /><Legend /></PieChart>
-          </Chart>
-          <Chart title="Outcome share by diluent gas (%)">
-            <BarChart data={dilPct}><CartesianGrid stroke="#1e293b" /><XAxis dataKey="group" {...axis} interval={0} tick={{ fill: '#94a3b8', fontSize: 10 }} /><YAxis {...axis} unit="%" domain={[0, 100]} allowDataOverflow /><Tooltip formatter={(v: number) => `${v}%`} /><Legend />
-              <Bar dataKey="Extinction" name="Self-extinguished" stackId="a" fill={OUT_COLORS.Extinction} /><Bar dataKey="Disruption" stackId="a" fill={OUT_COLORS.Disruption} /><Bar dataKey="Completion" name="Burned out" stackId="a" fill={OUT_COLORS.Completion} /></BarChart>
-          </Chart>
-          <Chart title="Outcome share by starting O₂ (%)">
-            <BarChart data={o2Pct}><CartesianGrid stroke="#1e293b" /><XAxis dataKey="bin" {...axis} /><YAxis {...axis} unit="%" domain={[0, 100]} allowDataOverflow /><Tooltip formatter={(v: number) => `${v}%`} /><Legend />
-              <Bar dataKey="Extinction" name="Self-extinguished" stackId="a" fill={OUT_COLORS.Extinction} /><Bar dataKey="Disruption" stackId="a" fill={OUT_COLORS.Disruption} /><Bar dataKey="Completion" name="Burned out" stackId="a" fill={OUT_COLORS.Completion} /></BarChart>
-          </Chart>
-        </div>
-        <p className="mt-2 text-[11px] text-slate-500">Groups: {f.byDiluent.map(d => `${d.group} n=${d.total}`).join(' · ')} · O₂ bins: {f.byO2.map(d => `${d.bin} n=${d.total}`).join(' · ')}</p>
-        <Takeaway>Flames self-extinguished in {pct(co2.Extinction, co2.total)}% of FLEX tests with CO₂ added and {pct(he.Extinction, he.total)}% with helium, versus {pct(none.Extinction, none.total)}% with neither; at {lowO2.bin} O₂, {pct(lowO2.Extinction, lowO2.total)}% self-extinguished compared with {pct(hiO2.Extinction, hiO2.total)}% above 21%.</Takeaway>
-      </Section>}
-
-      {section === 'bass' && <Section id="bass" kicker="Prevention · solids" title="BASS / BASS-II: what was burned, and at what oxygen" cites={['PSI-26', 'PSI-25', 'PSI-99']}>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Chart title="Tests by material family">
-            <BarChart data={b.materials} layout="vertical" margin={{ left: 20 }}><CartesianGrid stroke="#1e293b" /><XAxis type="number" {...axis} /><YAxis type="category" dataKey="material" width={120} {...axis} /><Tooltip /><Legend />
-              <Bar dataKey="BASS" stackId="a" fill="#5cb8ff" /><Bar dataKey="BASS-II" stackId="a" fill="#ff9f43" radius={[0, 4, 4, 0]} /></BarChart>
-          </Chart>
-          <Chart title="BASS-II: tests by starting O₂ level and material">
-            <BarChart data={b.o2Bins}><CartesianGrid stroke="#1e293b" /><XAxis dataKey="bin" {...axis} /><YAxis {...axis} allowDecimals={false} /><Tooltip /><Legend />
-              {bMats.map((m, i) => <Bar key={m} dataKey={m} stackId="o" fill={['#ff9f43', '#5cb8ff', '#34d399', '#f472b6', '#facc15', '#a78bfa'][i % 6]} />)}
-            </BarChart>
-          </Chart>
-        </div>
-        <p className="mt-2 text-[11px] text-slate-500">The BASS and BASS-II tables in the data pack list materials, O₂ and fan settings (the fan column mixes notes and units, so we do not chart it) but not flame-spread rates, so we show test coverage; SAFFIRE-II (below) is where microgravity spread is listed.</p>
-        <h3 className="mt-5 text-sm font-medium text-slate-200">SAFFIRE-II (Cygnus): microgravity burn vs the 1-g screening test</h3>
-        <div className="scrollbar-thin mt-2 overflow-x-auto rounded-xl border border-white/10">
-          <table className="min-w-full text-left text-xs"><thead className="bg-space-800 text-slate-300"><tr><th className="px-3 py-2">Sample</th><th className="px-3 py-2">Material</th><th className="px-3 py-2">Thickness</th><th className="px-3 py-2">µg burn length</th><th className="px-3 py-2">µg spread</th><th className="px-3 py-2">1-g burn</th><th className="px-3 py-2">1-g spread</th></tr></thead>
-            <tbody>{insights.saffire2.map(s => <tr key={s.id} className="border-t border-white/5"><td className="px-3 py-1.5 font-mono">{s.id.replace('SAFFIRE-II ', '')}</td><td className="px-3 py-1.5">{s.material}</td><td className="px-3 py-1.5">{s.thickness}</td><td className="px-3 py-1.5">{s.ug}</td><td className="px-3 py-1.5">{s.ugSpread}</td><td className="px-3 py-1.5">{s.oneG}</td><td className="px-3 py-1.5">{s.oneGSpread}</td></tr>)}</tbody></table>
-        </div>
-        <Takeaway>BASS-II ran {b.belowAir} of its {b.withO2} tests below normal air oxygen (range {b.o2Range[0]}–{b.o2Range[1]}%) to find where flames go out, but never above {b.o2Range[1]}%; and in SAFFIRE-II all {sil.length} silicone samples showed ~0 burn length in microgravity even though some burned completely in the 1-g test, while SIBAL fabric burned the full 29 cm ({sibal.map(s => s.ugSpread).join(', ')}) — Earth screening and orbit do not always agree.</Takeaway>
-      </Section>}
-
-      {section === 'cfig' && <Section id="cfig" kicker="High oxygen (Moon base, suits)" title="ACME CFI-G: normal vs inverse flames across O₂" cites={['PSI-159']}>
-        <Chart title="Share of tests reaching hot ignition (%), by O₂ bin">
-          <BarChart data={cf}><CartesianGrid stroke="#1e293b" /><XAxis dataKey="bin" {...axis} /><YAxis {...axis} unit="%" domain={[0, 100]} /><Tooltip formatter={(v: number, n: string, p) => [`${v}% (n=${(p.payload as Record<string, number>)[`${n}_n`]})`, `${n} flames`]} /><Legend />
-            <Bar dataKey="Normal" name="Normal" fill="#ff9f43" radius={[4, 4, 0, 0]} /><Bar dataKey="Inverse" name="Inverse" fill="#5cb8ff" radius={[4, 4, 0, 0]} /></BarChart>
-        </Chart>
-        <p className="mt-2 text-[11px] text-slate-500">n per bin — normal: {insights.cfig.byO2.map(r => `${r.bin} ${r.Normal_n}`).join(', ')} · inverse: {insights.cfig.byO2.map(r => `${r.bin} ${r.Inverse_n}`).join(', ')}. Normal flames were not tested above 45% O₂. Small bins (n &lt; 10) are noisy.</p>
-        <Takeaway>Hot ignition rose with oxygen: normal flames ignited in {cfLo?.Normal_ign}% of {cfLo?.Normal_n} tests at 20–25% O₂ but {cfNm?.Normal_ign}% of {cfNm?.Normal_n} at 35–45%, and inverse flames ignited in {cfHi?.Inverse_ign}% of {cfHi?.Inverse_n} tests above 60% O₂.</Takeaway>
-      </Section>}
-
-      {section === 'psi117' && <Section id="psi117" kicker="Low pressure" title="PSI-117: droplet extinction diameter vs pressure (n-dodecane)" cites={['PSI-117', 'PSI-69']}>
-        <Chart title="Flame-out droplet diameter (mm) vs pressure (atm); experiment = solid, model = dashed">
-          <LineChart data={kData}><CartesianGrid stroke="#1e293b" /><XAxis dataKey="p" type="number" domain={[0.4, 3.1]} {...axis} unit=" atm" /><YAxis {...axis} unit=" mm" /><Tooltip /><Legend />
-            <Line dataKey="hotExpt" name="Hot flame (expt)" stroke="#ff7a1a" strokeWidth={2.5} connectNulls dot /><Line dataKey="hotModel" name="Hot flame (model)" stroke="#ff7a1a" strokeDasharray="5 4" connectNulls dot={false} />
-            <Line dataKey="coolExpt" name="Cool flame (expt)" stroke="#5cb8ff" strokeWidth={2.5} connectNulls dot /><Line dataKey="coolModel" name="Cool flame (model)" stroke="#5cb8ff" strokeDasharray="5 4" connectNulls dot={false} /></LineChart>
-        </Chart>
-        <p className="mt-2 text-[11px] text-slate-500">Source file: {k.source.split(';')[0]}. Where two experimental points share a pressure, the chart shows their average.</p>
-        <Takeaway>The hot flame went out at about the same droplet size at every pressure ({hot05} mm at 0.5 atm, {hot3} mm at 3 atm), but cool flames lasted to much smaller droplets as pressure rose ({cool05} mm at 0.5 atm vs {cool1} mm at 1 atm), so low-pressure habitats change how fuel fires end.</Takeaway>
-      </Section>}
+        <div className="space-y-2">
+          {section === 'flex' && (
+            <Chart title={`Share of FLEX droplet fires that went out. Your gas is ${yourGas === 'No' ? 'neither' : yourGas}.`}>
+              <BarChart data={dilPct}>
+                <CartesianGrid stroke="#1e293b" />
+                <XAxis dataKey="group" {...axis} interval={0} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <YAxis {...axis} unit="%" domain={[0, 100]} />
+                <Tooltip formatter={(v: number, _n, item) => [`${v}% of ${(item?.payload as { n: number }).n} tests`, 'Went out']} />
+                <Bar dataKey="wentOut" name="Went out" radius={[4, 4, 0, 0]}>
+                  {dilPct.map(d => <Cell key={d.group} fill={d.group.startsWith(yourGas) ? '#ff9f43' : '#5cb8ff'} />)}
+                </Bar>
+              </BarChart>
+            </Chart>
+          )}
+          {section === 'cfig' && (
+            <Chart title={`Hot ignition by oxygen. Your ${o2}% is in the ${yourCfig} bin.`}>
+              <BarChart data={cf}>
+                <CartesianGrid stroke="#1e293b" />
+                <XAxis dataKey="bin" {...axis} />
+                <YAxis {...axis} unit="%" domain={[0, 100]} />
+                <Tooltip formatter={(v: number) => [`${v}%`, 'Ignited']} />
+                <Legend />
+                <Bar dataKey="Normal" name="Normal flame" radius={[4, 4, 0, 0]}>
+                  {cf.map(d => <Cell key={`n-${d.bin}`} fill={d.bin === yourCfig ? '#ff9f43' : '#fb923c'} />)}
+                </Bar>
+                <Bar dataKey="Inverse" name="Inverse flame" radius={[4, 4, 0, 0]}>
+                  {cf.map(d => <Cell key={`i-${d.bin}`} fill={d.bin === yourCfig ? '#67e8f9' : '#5cb8ff'} />)}
+                </Bar>
+              </BarChart>
+            </Chart>
+          )}
+          {section === 'bass' && (
+            <div>
+              <h3 className="mb-2 text-sm font-medium text-white">SAFFIRE-II: the same material in orbit and on Earth</h3>
+              <div className="scrollbar-thin overflow-x-auto">
+                <table className="min-w-full text-left text-xs">
+                  <thead className="text-slate-400"><tr><th className="py-1 pr-2">Material</th><th className="py-1 pr-2">Orbit burn</th><th className="py-1">Earth burn</th></tr></thead>
+                  <tbody>
+                    {insights.saffire2.map(s => (
+                      <tr key={s.id} className="border-t border-white/5">
+                        <td className="py-1 pr-2 text-slate-200">{s.material}</td>
+                        <td className="py-1 pr-2">{s.ug}</td>
+                        <td className="py-1">{s.oneG}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {section === 'psi117' && (
+            <Chart title={`Droplet size at flame-out. Your pressure is ${atm} atm.`}>
+              <LineChart data={kData}>
+                <CartesianGrid stroke="#1e293b" />
+                <XAxis dataKey="p" type="number" domain={[0.4, 3.1]} {...axis} unit=" atm" />
+                <YAxis {...axis} unit=" mm" />
+                <Tooltip />
+                <Legend />
+                <ReferenceLine x={atm} stroke="#ff9f43" strokeDasharray="4 3" label={{ value: 'you', fill: '#ff9f43', fontSize: 10 }} />
+                <Line dataKey="hot" name="Hot flame" stroke="#ff7a1a" strokeWidth={2.5} connectNulls dot />
+                <Line dataKey="cool" name="Cool flame" stroke="#5cb8ff" strokeWidth={2.5} connectNulls dot />
+              </LineChart>
+            </Chart>
+          )}
+          <p className="text-[11px] text-slate-500">Orange marks your setting. Numbers are counted from the NASA test tables.</p>
         </div>
       )}
       outcome={(
-        <p className="text-sm text-slate-200">
-          {section === 'flex' && `FLEX: CO₂ and helium raised the share of droplet fires that went out on their own, and lean oxygen did the same. ${pct(co2.Extinction, co2.total)}% self-extinguished with CO₂, ${pct(he.Extinction, he.total)}% with helium, ${pct(none.Extinction, none.total)}% with neither.`}
-          {section === 'bass' && `BASS-II stayed at or below ${b.o2Range[1]}% oxygen. In SAFFIRE-II, silicone showed almost no burn length in microgravity while SIBAL fabric burned the full sample. Earth screening and orbit do not always agree.`}
-          {section === 'cfig' && `Hot ignition climbed with oxygen: normal flames ignited in ${cfLo?.Normal_ign}% of tests at 20–25% O₂ and ${cfNm?.Normal_ign}% at 35–45%. Inverse flames ignited in ${cfHi?.Inverse_ign}% of tests above 60% O₂.`}
-          {section === 'psi117' && `Hot-flame extinction diameter stayed near ${hot05} mm at 0.5 atm and ${hot3} mm at 3 atm. Cool flames lasted to smaller droplets as pressure rose (${cool05} mm at 0.5 atm, ${cool1} mm at 1 atm).`}
-        </p>
+        <>
+          <p className="text-base font-semibold text-white">{brief.headline}</p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-200">{brief.action}</p>
+          <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-300">
+            {brief.points.slice(3).map(p => <li key={p}>{p}</li>)}
+          </ul>
+          <div className="mt-3 flex flex-wrap gap-1">
+            {(section === 'flex' ? ['PSI-69'] : section === 'cfig' ? ['PSI-159'] : section === 'bass' ? ['PSI-25', 'PSI-99'] : ['PSI-117']).map(acc => <SourceChip key={acc} acc={acc} compact />)}
+          </div>
+        </>
       )}
     />
   );

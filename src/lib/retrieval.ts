@@ -30,7 +30,7 @@ function buildPassages(): Passage[] {
   }
   const f = insights.flex;
   P.push({ id: 'PSI-69-f1', accession: 'PSI-69', kind: 'fact', kw: 'suppression extinction outcomes', text: `FLEX: of ${stats.flex.tests} droplet fire tests, ${stats.flex.extinction} self-extinguished (extinction), ${stats.flex.disruption} ended in droplet disruption and ${stats.flex.completion} burned out completely (${stats.flex.pctSelfExtinguished}% self-extinguished).` });
-  P.push({ id: 'PSI-69-f2', accession: 'PSI-69', kind: 'fact', kw: 'diluent suppressant co2 helium extinction', text: 'FLEX by diluent gas: ' + f.byDiluent.map(d => `${d.group}: ${d.Extinction} of ${d.total} self-extinguished`).join('; ') + '.' });
+  P.push({ id: 'PSI-69-f2', accession: 'PSI-69', kind: 'fact', kw: 'diluent suppressant co2 helium extinction', text: 'FLEX by diluent gas: ' + f.byDiluent.map(d => `${d.group}: ${d.Extinction} of ${d.total} self-extinguished (${d.total ? Math.round((100 * d.Extinction) / d.total) : 0}%)`).join('; ') + '.' });
   P.push({ id: 'PSI-69-f3', accession: 'PSI-69', kind: 'fact', kw: 'oxygen level extinction', text: 'FLEX by starting oxygen: ' + f.byO2.map(d => `O₂ ${d.bin}: ${d.Extinction}/${d.total} extinction, ${d.Completion} burned out`).join('; ') + '.' });
   const c = insights.cfig.byO2;
   P.push({ id: 'PSI-159-f1', accession: 'PSI-159', kind: 'fact', kw: 'high oxygen hot ignition rate', text: 'ACME CFI-G hot-ignition rate by O₂: ' + c.filter(r => r.Normal_n || r.Inverse_n).map(r => `${r.bin}: normal ${r.Normal_n ? r.Normal_ign + '% of ' + r.Normal_n : 'no tests'}, inverse ${r.Inverse_n ? r.Inverse_ign + '% of ' + r.Inverse_n : 'no tests'}`).join('; ') + '.' });
