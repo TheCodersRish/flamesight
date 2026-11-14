@@ -5,42 +5,21 @@ import { motion } from 'framer-motion';
 import Flame from '../components/Flame';
 import { Stat, Card, Pill } from '../components/ui';
 import { stats } from '../lib/data';
-import { transportPhaseFlame, type TransportPhase } from '../lib/physicsBridge';
 import { SCENARIOS, GRAVITY } from '../lib/scenarios';
 import { rankForScenario } from '../lib/scoring';
 
 const TOPS = Object.fromEntries(SCENARIOS.map(s => [s.id, rankForScenario(s)[0]]));
-const PHASES: TransportPhase[] = ['no-rising', 'diffusion', 'weak-flow'];
-const PHASE_MS = 4200;
 
 export default function Home() {
-  const [phaseIdx, setPhaseIdx] = useState(0);
-  const [tick, setTick] = useState(0);
+  const [g, setG] = useState(0);
   const [auto, setAuto] = useState(true);
-  const [manualG, setManualG] = useState(0);
-  const phase = PHASES[phaseIdx];
-
   useEffect(() => {
     if (!auto) return;
     const t0 = performance.now(); let raf = 0;
-    const loop = (now: number) => {
-      const t = (now - t0) / 1000;
-      setTick(t);
-      const idx = Math.floor((now - t0) / PHASE_MS) % PHASES.length;
-      setPhaseIdx(idx);
-      raf = requestAnimationFrame(loop);
-    };
+    const loop = (now: number) => { const t = (now - t0) / 1000; setG(0.5 - 0.5 * Math.cos(t * 0.6)); raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [auto]);
-
-  const live = auto ? transportPhaseFlame(phase, tick) : {
-    gravity: manualG,
-    o2: 0.55,
-    flow: 0,
-    dilution: 0,
-    label: `Gravity ≈ ${manualG.toFixed(2)} g`,
-  };
 
   const tiles = [
     { label: 'Investigations', value: stats.investigations, sub: `${stats.withTestMatrix} with test tables`, accent: 'micro' as const },
@@ -69,41 +48,14 @@ export default function Home() {
         </div>
         <Card className="relative overflow-hidden p-0" glow="micro">
           <div className="grid-bg absolute inset-0 opacity-60" />
-          <Flame gravity={live.gravity} o2={live.o2} flow={live.flow} dilution={live.dilution} className="h-[340px] w-full sm:h-[400px]" label={`Transport cycle: ${live.label}`} />
+          <Flame gravity={g} o2={0.55} flow={0} dilution={0} className="h-[340px] w-full sm:h-[400px]" label="Flame morphing between Earth gravity and microgravity" />
           <div className="relative border-t border-white/5 bg-space-900/70 px-5 py-3">
-            <div className="mb-2 flex flex-wrap justify-center gap-1.5" role="tablist" aria-label="Transport phase">
-              {PHASES.map((p, i) => (
-                <button
-                  key={p}
-                  type="button"
-                  role="tab"
-                  aria-selected={auto && phaseIdx === i}
-                  onClick={() => { setAuto(true); setPhaseIdx(i); }}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] ${auto && phaseIdx === i ? 'bg-micro-500/30 text-white ring-1 ring-micro-400' : 'bg-white/5 text-slate-400 hover:text-white'}`}
-                >
-                  {p === 'no-rising' ? 'No rising air' : p === 'diffusion' ? 'Slow mixing' : 'Weak cabin flow'}
-                </button>
-              ))}
-            </div>
             <div className="flex items-center justify-between text-xs text-slate-400">
-              <span className="text-micro-300">Feel transport before Fluid Physics</span>
-              <Link to="/fluid-physics" className="text-flame-300 hover:underline">Open sims →</Link>
+              <span className="text-micro-300">Microgravity: round, blue, slow</span>
+              <span className="text-flame-300">Earth: tall, yellow, flickering</span>
             </div>
-            <input
-              aria-label="Gravity override"
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={auto ? live.gravity : manualG}
-              onChange={e => { setAuto(false); setManualG(parseFloat(e.target.value)); }}
-              className="w-full"
-            />
-            <p className="text-center text-[11px] text-slate-500">
-              {auto
-                ? `Cycling: ${live.label}. Drag gravity to take control.`
-                : `Gravity ≈ ${manualG.toFixed(2)} g (illustrative). Click a phase chip to resume the cycle.`}
-            </p>
+            <input aria-label="Gravity" type="range" min={0} max={1} step={0.01} value={g} onChange={e => { setAuto(false); setG(parseFloat(e.target.value)); }} className="w-full" />
+            <p className="text-center text-[11px] text-slate-500">{auto ? 'Auto-morphing. Drag to take control.' : `Gravity ≈ ${(g).toFixed(2)} g (illustrative)`}</p>
           </div>
         </Card>
       </section>
