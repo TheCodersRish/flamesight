@@ -6,17 +6,19 @@ export default function About() {
   const basis = Object.entries(stats.countBasis).sort((a, b) => b[1].count - a[1].count);
   return (
     <div className="space-y-4">
-      <PageHeader kicker="About" title="Challenge, method, limits and sources" />
+      <PageHeader kicker="About" title="The challenge, how we work, limits, and sources">
+        Written so students and mission planners can both follow: everyday language first, with the formulas kept for transparency.
+      </PageHeader>
       <Card>
         <h2 className="text-lg font-semibold text-white">The challenge</h2>
-        <p className="mt-2 text-slate-300">NASA Space Apps 2026 — <b>Flame in Freefall: AI-Powered Fire Safety Insights from Microgravity Combustion Data</b>. Fire in microgravity has no buoyancy: flames are round, slow and blue, and they are fed only by ventilation or diffusion. Future Moon and Mars habitats will use lower pressure and more oxygen. FlameSight summarizes, ranks and interprets NASA's microgravity combustion investigations so mission planners (and students) can see which experiments matter for each habitat and what they show.</p>
+        <p className="mt-2 text-slate-300">NASA Space Apps 2026 — <b>Flame in Freefall: AI-Powered Fire Safety Insights from Microgravity Combustion Data</b>. In near-zero gravity there is no rising hot air: flames are round, slow, and blue, and they get oxygen only from cabin fans or slow mixing. Future Moon and Mars homes will use lower pressure and more oxygen. FlameSight summarizes, ranks, and explains NASA's freefall fire studies so you can see which experiments matter for each habitat—and what they actually showed.</p>
       </Card>
       <Card>
         <h2 className="text-lg font-semibold text-white">Data</h2>
-        <p className="mt-2 text-slate-300">All data comes from NASA's Physical Sciences Informatics repository (<a className="underline" href="https://psi.nasa.gov" target="_blank" rel="noreferrer">psi.nasa.gov</a>): the catalog of {stats.investigations} Combustion Science investigations, test tables for {stats.withTestMatrix} of them, and PSI-117 analyzed results. A build script (<code className="font-mono text-xs">scripts/build-data.mjs</code>) converts the CSVs into JSON with a normalizer per table, because every table has different headers. Values are not invented; where a table has no value we show “not in table”.</p>
+        <p className="mt-2 text-slate-300">All numbers come from NASA's Physical Sciences Informatics library (<a className="underline" href="https://psi.nasa.gov" target="_blank" rel="noreferrer">psi.nasa.gov</a>): the catalog of {stats.investigations} Combustion Science studies, test tables for {stats.withTestMatrix} of them, and PSI-117 analyzed results. A build script (<code className="font-mono text-xs">scripts/build-data.mjs</code>) turns the CSVs into JSON—each table needs its own cleanup because headers differ. We do not invent values; missing cells show as “not in table.”</p>
         <ul className="mt-3 grid gap-1 text-sm text-slate-300 md:grid-cols-2">
-          <li>• <b>{stats.testsTotal.toLocaleString()}</b> test records = {stats.perTestRows.toLocaleString()} per-test table rows + {stats.flamesIgnitedFromDailyTables.toLocaleString()} flames ignited listed in ACME daily logs (BRE, CLD, E-FIELD, s-Flame)</li>
-          <li>• FLEX: <b>{stats.flex.tests}</b> tests — {stats.flex.extinction} extinction, {stats.flex.disruption} disruption, {stats.flex.completion} burnout ({stats.flex.pctSelfExtinguished}% self-extinguished)</li>
+          <li>• <b>{stats.testsTotal.toLocaleString()}</b> test records = {stats.perTestRows.toLocaleString()} per-test table rows + {stats.flamesIgnitedFromDailyTables.toLocaleString()} flames lit in ACME daily logs (BRE, CLD, E-FIELD, s-Flame)</li>
+          <li>• FLEX: <b>{stats.flex.tests}</b> tests — {stats.flex.extinction} went out alone, {stats.flex.disruption} disrupted, {stats.flex.completion} burned out ({stats.flex.pctSelfExtinguished}% went out on their own)</li>
           <li>• Mission dates {stats.yearMin}–{stats.yearMax}; {stats.totalTB} TB and {stats.totalFiles.toLocaleString()} files listed in PSI</li>
           <li>• {stats.knnPool} tests record what the flame did and power the simulator</li>
         </ul>
@@ -25,28 +27,30 @@ export default function About() {
         </details>
       </Card>
       <Card>
-        <h2 id="scoring" className="text-lg font-semibold text-white">Scenario scoring formula</h2>
+        <h2 id="scoring" className="text-lg font-semibold text-white">Scenario scoring (plain English + formula)</h2>
+        <p className="mt-2 text-sm text-slate-300">In plain English: we mix five ingredients—oxygen match, pressure match, airflow match, fire-safety role, and how much data the study has—then turn that mix into a 0–100 score. You can change the ingredient weights on Risk Ranking.</p>
         <p className="mt-2 rounded-lg bg-white/5 p-3 font-mono text-sm text-slate-100">score = 100 × (w_O₂·s_O₂ + w_P·s_P + w_flow·s_flow + w_role·s_role + w_data·s_data) ÷ Σw</p>
         <ul className="mt-3 space-y-1 text-sm text-slate-300">
-          <li>• Default weights: O₂ {DEFAULT_WEIGHTS.o2}, pressure {DEFAULT_WEIGHTS.pressure}, flow {DEFAULT_WEIGHTS.flow}, role {DEFAULT_WEIGHTS.role}, data {DEFAULT_WEIGHTS.data} (adjustable on the Risk Ranking page). The Spacesuit preset defaults to O₂ 40, pressure 25, flow 5, role 15, data 15 because suit airflow is only an assumption.</li>
-          <li>• Match parts are 1.0 inside the tested range, e^(−distance/scale) outside (scale = the larger of {SCALES.o2 * 100} O₂ points / {SCALES.pAtm} atm / {SCALES.flow} cm/s and 25% of the habitat value), and {UNKNOWN} when the table lacks that variable.</li>
-          <li>• Role: tier 1 = 1.0, 2 = 0.7, 3 = 0.4, +0.2 if the role is a priority for that habitat. Tiers are our team's judgment, not NASA's.</li>
+          <li>• Default weights: oxygen {DEFAULT_WEIGHTS.o2}, pressure {DEFAULT_WEIGHTS.pressure}, flow {DEFAULT_WEIGHTS.flow}, role {DEFAULT_WEIGHTS.role}, data {DEFAULT_WEIGHTS.data}. The Spacesuit preset favors oxygen and pressure (40 / 25 / 5 / 15 / 15) because suit airflow is only an assumption.</li>
+          <li>• Match parts are 1.0 inside the tested range, fade smoothly outside (scale = the larger of {SCALES.o2 * 100} oxygen points / {SCALES.pAtm} atmospheres / {SCALES.flow} cm/s and 25% of the habitat value), and {UNKNOWN} when the table lacks that variable.</li>
+          <li>• Role: tier 1 = 1.0, 2 = 0.7, 3 = 0.4, +0.2 if that role is a priority for the habitat. Tiers are our team's judgment, not NASA's.</li>
           <li>• Data richness: 0.7·log₁₀(1+tests)/log₁₀(701) + 0.15 (test table) + 0.15 (analyzed data).</li>
         </ul>
         <h2 id="model" className="mt-5 text-lg font-semibold text-white">“Will It Burn?” model</h2>
-        <p className="mt-2 text-sm text-slate-300">k-nearest neighbors (k = 7) over FLEX, ACME CFI-G and SAFFIRE-I/II tests that record an outcome. Distance uses O₂ (per 10 points), log-pressure (per factor of 2), airflow (per 15 cm/s), fuel match (same fuel 0, same class 1.0, other 1.5) and suppressant gas. Each test has a burn score (1 kept burning · 0.8 droplet disruption · 0.6 ignited then self-extinguished · 0.5 partial · 0.25 flash · 0 no ignition/spread). The prediction is 80% the distance-weighted neighbor score and 20% a simple physics prior (50% when the inputs are outside the tested O₂ or pressure range) (more O₂, buoyancy and forced flow feed flames; CO₂/He suppresses). Likely ≥ 62, Borderline 38–62, Unlikely &lt; 38. Confidence falls when neighbors disagree, are far away, or the conditions are outside the data.</p>
+        <p className="mt-2 text-sm text-slate-300">In plain English: we find the seven closest NASA tests (FLEX, ACME CFI-G, SAFFIRE-I/II) that recorded what the flame did, then blend their outcomes with a simple physics check. More oxygen, rising hot air, and fan flow tend to feed flames; carbon dioxide and helium tend to quiet them. Likely ≥ 62, Borderline 38–62, Unlikely &lt; 38. Confidence falls when neighbors disagree, are far away, or your settings sit outside the measured data.</p>
+        <p className="mt-2 text-sm text-slate-400">Details: distance uses oxygen (per 10 points), log-pressure (per factor of 2), airflow (per 15 cm/s), fuel match, and extra gas. Burn scores: 1 kept burning · 0.8 droplet disruption · 0.6 ignited then went out · 0.5 partial · 0.25 flash · 0 no catch / no spread. Prediction = 80% neighbor blend + 20% physics check (50% when outside tested oxygen or pressure).</p>
         <h2 className="mt-5 text-lg font-semibold text-white">Fire Safety Analyst</h2>
-        <p className="mt-2 text-sm text-slate-300">The browser finds matching NASA investigations and answers from those notes — no on-device model download. On the live Vercel site, FlameSight then runs Gemini through the serverless <code className="rounded bg-white/10 px-1 font-mono text-xs">/api/ask</code> function (key stays in the Vercel project environment, never in the browser) and uses that answer. If the server model is unavailable, the NASA-notes answer remains.</p>
+        <p className="mt-2 text-sm text-slate-300">Your browser finds matching NASA studies and answers from those notes—no big model download on the device. On the live site, FlameSight then asks Gemini through the <code className="rounded bg-white/10 px-1 font-mono text-xs">/api/ask</code> function (the key stays on the server). If that AI call fails, you still get the NASA-notes answer.</p>
       </Card>
       <Card>
         <h2 className="text-lg font-semibold text-white">Data limits (please read)</h2>
         <ul className="mt-2 space-y-1 text-sm text-slate-300">
-          <li>• <b>No partial-gravity combustion data exists in PSI.</b> Moon and Mars results are extrapolated from microgravity data and labeled as such. ACME E-FIELD (PSI-22) is the closest buoyancy proxy.</li>
-          <li>• The highest O₂ in any PSI test is 85% (ACME CFI-G). Spacesuit conditions (100% O₂ at 4.3 psi) are beyond the data.</li>
-          <li>• BASS and BASS-II tables list materials and conditions but not flame-spread rates; BASS has no O₂/flow columns.</li>
-          <li>• Several ACME tables are daily summaries (flames ignited per day), not per-test rows. FLEX-2's table is a test plan.</li>
-          <li>• Habitat airflow values are assumptions (20 cm/s, the SAFFIRE test flow; 5 cm/s for suits). Mars atmosphere is assumed equal to the lunar preset.</li>
-          <li>• The flame animation is illustrative, not a combustion simulation. FlameSight is an educational tool, not a safety certification.</li>
+          <li>• <b>PSI has no Moon/Mars-gravity fire tables.</b> Those results are estimated from near-zero-gravity data and labeled that way. ACME E-FIELD (PSI-22) is the closest rising-hot-air stand-in.</li>
+          <li>• The highest oxygen in any PSI test is 85% (ACME CFI-G). Spacesuit conditions (100% oxygen at 4.3 pounds per square inch) sit beyond the data.</li>
+          <li>• BASS and BASS-II list materials and conditions but not how fast flames spread; BASS has no oxygen/flow columns.</li>
+          <li>• Several ACME tables are daily summaries (flames lit per day), not one-row-per-test. FLEX-2's table is a test plan.</li>
+          <li>• Habitat airflow values are assumptions (20 cm/s from SAFFIRE; 5 cm/s for suits). Mars air is assumed equal to the lunar preset.</li>
+          <li>• The flame animation is a teaching picture, not a real fire simulation. FlameSight is for learning—not a safety certificate.</li>
         </ul>
       </Card>
       <Card>

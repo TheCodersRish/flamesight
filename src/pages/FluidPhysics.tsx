@@ -28,51 +28,51 @@ interface Theme {
 const THEMES: Theme[] = [
   {
     id: 'adiabatic',
-    name: 'Adiabatic',
+    name: 'No Heat In or Out',
     equation: 'Q = 0 · PV^γ = const · T V^{γ−1} = const',
-    tagline: 'No heat crosses the gas parcel boundary',
+    tagline: 'The gas pocket does not trade heat with the cabin walls',
     summary:
-      'An adiabatic process exchanges no heat with the surroundings. As a freefall flame’s hot products expand into the cabin, the parcel does work and its temperature falls along the adiabatic curve—faster than if heat were replenished from the walls.',
+      'An adiabatic change means the gas pocket exchanges no heat with its surroundings (scientists write Q = 0). When hot flame products expand into the cabin, the pocket pushes on the air around it and cools as it expands—faster than if the walls kept feeding heat back in.',
     freefall:
-      'In microgravity there is no buoyant plume to pull fresh cool air through the flame. Heat and species move mainly by diffusion and weak ventilation. Adiabatic cooling of the expanding product gas therefore competes directly with chemical heat release, which is why many droplet flames (FLEX) self-extinguish once the local mixture cools and oxygen is depleted.',
-    flameNote: 'Expand the parcel: temperature and luminosity drop while the spherical diffusion flame shrinks.',
-    takeaway: 'Adiabatic expansion in freefall cools the reaction zone without buoyant mixing—raising the chance of radiative extinction.',
+      'In near-zero gravity there is no rising plume to pull cool air through the flame. Heat and gases move mainly by slow mixing and gentle fans. That expansion cooling races against the heat the flame makes, which is why many droplet flames in FLEX go out on their own once the mixture cools and oxygen runs low.',
+    flameNote: 'Expand the gas pocket: temperature and brightness drop while the round flame shrinks.',
+    takeaway: 'Expanding with no heat from the walls cools a freefall flame—and makes it more likely to go out by glowing heat loss.',
   },
   {
     id: 'isothermal',
-    name: 'Isothermal',
+    name: 'Steady Temperature',
     equation: 'T = const · PV = const · ΔU = 0 (ideal gas)',
-    tagline: 'Temperature held fixed by heat exchange',
+    tagline: 'Temperature stays fixed because heat is traded with the cabin',
     summary:
-      'An isothermal process keeps temperature constant. Any expansion must absorb heat; any compression must reject it. Ideal-gas internal energy stays fixed, so work and heat balance each other.',
+      'An isothermal change keeps temperature constant. If the gas expands, it must absorb heat; if it is squeezed, it must give heat away. For an ideal gas the internal energy stays fixed, so work and heat balance each other.',
     freefall:
-      'Quasi-steady freefall flame models often treat the far-field cabin gas as isothermal. Heat lost from the flame ball is assumed to be soaked up by the large thermal mass of the module, so flame size is set by oxygen diffusion and stoichiometry rather than bulk cooling of the atmosphere.',
-    flameNote: 'Hold T fixed while pressure falls with expansion: the spherical flame stays luminous but grows as density drops.',
-    takeaway: 'Isothermal freefall flames track oxygen transport; cabin heat capacity “anchors” temperature so size follows diffusion.',
+      'Simple freefall flame models often treat the far-away cabin air as steady temperature. Heat leaving the flame ball is soaked up by the huge cabin, so flame size is set by how oxygen mixes in—not by the whole atmosphere cooling down.',
+    flameNote: 'Hold temperature fixed while pressure falls with expansion: the round flame stays bright but grows as the gas thins.',
+    takeaway: 'Steady-temperature freefall flames follow oxygen supply; the cabin “holds” temperature so size tracks mixing.',
   },
   {
     id: 'isochoric',
-    name: 'Isochoric',
+    name: 'Fixed Box Volume',
     equation: 'V = const · P/T = const · W = 0',
-    tagline: 'Fixed volume—pressure rides temperature',
+    tagline: 'Volume stays fixed—pressure rises when the gas heats up',
     summary:
-      'An isochoric (isometric) process keeps volume fixed. No expansion work is done; heat added goes entirely into raising temperature and pressure of the sealed gas.',
+      'An isochoric change keeps volume fixed (think a sealed box). The gas cannot expand to do work; any heat added goes into raising temperature and pressure together.',
     freefall:
-      'Spacecraft cabins and sealed experiment chambers are nearly constant volume. A freefall fire dumps heat into a fixed air mass: pressure and temperature climb together. That raises oxygen partial pressure early on, then can starve or suppress the flame once oxidizer is consumed and radiative losses grow.',
-    flameNote: 'Add heat at fixed volume: pressure and flame intensity rise together inside the sealed module.',
-    takeaway: 'Isochoric freefall fires couple heat release to cabin overpressure—critical for closed-habitat safety.',
+      'Spacecraft cabins and sealed experiment chambers are almost fixed volume. A freefall fire dumps heat into a fixed air mass: pressure and temperature climb together. That can raise oxygen partial pressure early on, then starve or quiet the flame once oxygen is used up and glow heat loss grows.',
+    flameNote: 'Add heat in a sealed volume: pressure and flame intensity rise together inside the module.',
+    takeaway: 'Fixed-volume freefall fires link heat release to cabin overpressure—important for closed-habitat safety.',
   },
   {
     id: 'polytropic',
-    name: 'Polytropic',
+    name: 'In-Between Heat Loss',
     equation: 'PV^n = const · T V^{n−1} = const',
-    tagline: 'General heat-loss path between extremes',
+    tagline: 'A flexible path between “no heat trade” and “steady temperature”',
     summary:
-      'A polytropic process follows PV^n = constant. The index n bridges limiting cases: n = 0 (isobaric), n = 1 (isothermal), n = γ (adiabatic), n → ∞ (isochoric). Real freefall flame gas pockets sit somewhere in between.',
+      'A polytropic path follows PV^n = constant. The index n spans familiar limits: n = 0 (steady pressure), n = 1 (steady temperature), n = γ (no heat in or out), and very large n (fixed volume). Real freefall flame gas pockets sit somewhere in between.',
     freefall:
-      'Product gas around a microgravity flame neither expands perfectly adiabatically nor stays perfectly isothermal—walls, radiation, and weak airflow exchange some heat. Tuning n lets you explore how partial heat loss reshapes temperature, density, and the spherical flame’s oxygen supply.',
-    flameNote: 'Sweep the polytropic index n and watch temperature, pressure, and the freefall flame morph between the classic limits.',
-    takeaway: 'Polytropic paths capture real freefall heat loss; n near γ cools fast, n near 1 keeps the flame warmer.',
+      'Gas around a microgravity flame neither expands with zero heat trade nor stays perfectly steady in temperature—walls, glowing heat loss, and weak airflow exchange some heat. Sliding n lets you see how partial heat loss reshapes temperature, density, and the round flame’s oxygen supply.',
+    flameNote: 'Sweep the index n and watch temperature, pressure, and the freefall flame morph between the classic limits.',
+    takeaway: 'In-between paths match real freefall heat loss; n near γ cools fast, n near 1 keeps the flame warmer.',
   },
 ];
 
@@ -248,37 +248,37 @@ function ThermoPanel() {
           <div className="mt-4 space-y-3">
             {themeId === 'isochoric' ? (
               <Slider
-                label="Heat added (sealed volume)"
+                label="Heat added (sealed box)"
                 value={heat}
                 min={0}
                 max={1}
                 step={0.01}
                 onChange={scrubHeat}
                 format={v => `${Math.round(v * 100)}%`}
-                hint="Scrub heat release — the freefall flame updates with you"
+                hint="Drag to add heat — the freefall flame updates with you"
               />
             ) : (
               <Slider
-                label="Volume ratio V / V₀"
+                label="How much the gas expands (V / V₀)"
                 value={expansion}
                 min={1}
                 max={2.5}
                 step={0.01}
                 onChange={scrubExpansion}
                 format={v => v.toFixed(2)}
-                hint="Scrub expansion — the freefall flame updates with you"
+                hint="Drag to expand the gas pocket — the freefall flame updates with you"
               />
             )}
             {themeId === 'polytropic' && (
               <Slider
-                label="Polytropic index n"
+                label="Heat-loss index n"
                 value={nPoly}
                 min={0.2}
                 max={2.2}
                 step={0.05}
                 onChange={setNPoly}
                 format={v => v.toFixed(2)}
-                hint={`n=1 isothermal · n=${GAMMA} adiabatic · large n → isochoric`}
+                hint={`n=1 steady temperature · n=${GAMMA} no heat trade · large n → fixed volume`}
               />
             )}
           </div>
@@ -301,9 +301,9 @@ function ThermoPanel() {
 
         <div className="space-y-4">
           <Card>
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">Live process path</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">Live path on the chart</h2>
             <p className="mt-1 text-xs text-slate-400">
-              {themeId === 'isochoric' ? 'Pressure vs temperature at fixed volume' : 'Pressure–volume path for the selected theme'}
+              {themeId === 'isochoric' ? 'Pressure vs temperature inside a sealed box' : 'How pressure changes as the gas expands'}
             </p>
             <div className="mt-3 h-52 w-full">
               <ResponsiveContainer>
@@ -335,13 +335,13 @@ function ThermoPanel() {
           <Card>
             <h2 className="text-lg font-semibold text-white">{theme.tagline}</h2>
             <p className="mt-2 text-sm text-slate-300">{theme.summary}</p>
-            <h3 className="mt-4 text-sm font-semibold text-micro-300">In freefall</h3>
+            <h3 className="mt-4 text-sm font-semibold text-micro-300">In near-zero gravity</h3>
             <p className="mt-1 text-sm text-slate-300">{theme.freefall}</p>
             <Takeaway>{theme.takeaway}</Takeaway>
           </Card>
 
           <Card>
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">Compare all four</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">Compare all four (plain English)</h2>
             <ul className="mt-3 space-y-2 text-sm text-slate-300">
               {THEMES.map(t => (
                 <li key={t.id} className="flex gap-2">
@@ -353,7 +353,7 @@ function ThermoPanel() {
               ))}
             </ul>
             <p className="mt-3 text-[11px] text-slate-500">
-              Charts and the flame shader are educational illustrations, not a certified combustion CFD. Ideal-gas normalized units (P₀, V₀, T₀). γ = {GAMMA} for diatomic air-like gas.
+              Charts and the flame are teaching pictures, not a certified fire simulation. Units are scaled so starting pressure, volume, and temperature equal 1. γ = {GAMMA} for air-like gas.
             </p>
           </Card>
         </div>
@@ -417,7 +417,7 @@ function MechanismsPanel() {
   return (
     <>
       <div className="mb-3">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Primary fluid & transport</p>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">How oxygen and fuel get to the flame</p>
         <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Primary transport mechanisms">
           {PRIMARY.map(m => (
             <button
@@ -432,7 +432,7 @@ function MechanismsPanel() {
             </button>
           ))}
         </div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Secondary thermal & surface</p>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Heat loss & liquid-surface effects</p>
         <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Secondary thermal mechanisms">
           {SECONDARY.map(m => (
             <button
@@ -458,9 +458,9 @@ function MechanismsPanel() {
             </div>
             <div className="flex items-center gap-2">
               <Pill tone={mech.group === 'primary' ? 'micro' : 'flame'}>
-                {mech.group === 'primary' ? 'Transport' : 'Thermal / surface'}
+                {mech.group === 'primary' ? 'How gases move' : 'Heat / surface'}
               </Pill>
-              <Pill tone="slate">Intensity {intensityPct}</Pill>
+              <Pill tone="slate">Brightness {intensityPct}</Pill>
               <button
                 type="button"
                 onClick={() => setPlaying(p => !p)}
@@ -524,7 +524,7 @@ function MechanismsPanel() {
         <div className="space-y-4">
           <Card>
             <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">{mech.chart.title}</h2>
-            <p className="mt-1 text-xs text-slate-400">Mathematical model curve with live operating point</p>
+            <p className="mt-1 text-xs text-slate-400">Model curve with your live setting marked on the chart</p>
             <div className="mt-3 h-52 w-full">
               <ResponsiveContainer>
                 <LineChart data={state.series} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
@@ -555,13 +555,13 @@ function MechanismsPanel() {
           <Card>
             <h2 className="text-lg font-semibold text-white">{mech.tagline}</h2>
             <p className="mt-2 text-sm text-slate-300">{mech.summary}</p>
-            <h3 className="mt-4 text-sm font-semibold text-micro-300">In freefall</h3>
+            <h3 className="mt-4 text-sm font-semibold text-micro-300">In near-zero gravity</h3>
             <p className="mt-1 text-sm text-slate-300">{mech.freefall}</p>
             <Takeaway>{mech.takeaway}</Takeaway>
           </Card>
 
           <Card>
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">All seven mechanisms</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">All seven ideas (plain English)</h2>
             <ul className="mt-3 space-y-2 text-sm text-slate-300">
               {MECHANISMS.map(m => (
                 <li key={m.id} className="flex gap-2">
@@ -577,7 +577,7 @@ function MechanismsPanel() {
               ))}
             </ul>
             <p className="mt-3 text-[11px] text-slate-500">
-              Educational models (Gr, Pe, Spalding B, Le, Q̇_rad/Q̇_chem, Ma) drive the live flame intensity. Not a certified CFD solver—use for intuition about freefall fire physics.
+              Simple teaching models drive the live flame brightness. Equations stay visible for depth. This is for building intuition about freefall fire—not a certified safety simulator.
             </p>
           </Card>
         </div>
@@ -592,12 +592,12 @@ export default function FluidPhysics() {
   return (
     <div>
       <PageHeader
-        kicker="Fluid physics"
-        title={mode === 'thermo' ? 'How thermodynamic themes reshape flames in freefall' : 'Transport & thermal mechanisms that reshape freefall flames'}
+        kicker="Fluid physics · plain English"
+        title={mode === 'thermo' ? 'How heat and volume changes reshape flames in freefall' : 'Why freefall flames look round—and what feeds or kills them'}
       >
         {mode === 'thermo'
-          ? 'Live, illustrative simulations of adiabatic, isothermal, isochoric, and polytropic paths—and what each means for spherical microgravity flames when buoyancy is gone.'
-          : 'Primary fluid transport (no buoyancy, diffusion, ventilation, Stefan flow) and secondary thermal/surface effects (Lewis number, radiation, Marangoni)—each with a live flame sim, explanation, and mathematical model.'}
+          ? 'Live teaching sims for four heat-and-volume stories—no heat trade, steady temperature, sealed box, and in-between heat loss—and what each means for round flames when rising hot air is gone. Equations stay for depth; the words stay high-school clear.'
+          : 'Seven ideas in everyday language: no rising hot air, slow mixing, cabin fans, outward gas push, heat vs fuel speed, glow heat loss, and surface-tension stirring. Each has a live flame, a plain-English story, and the math model underneath.'}
       </PageHeader>
 
       <div className="mb-6 flex flex-wrap gap-2" role="tablist" aria-label="Fluid physics mode">
@@ -608,7 +608,7 @@ export default function FluidPhysics() {
           onClick={() => setMode('mechanisms')}
           className={`rounded-lg px-4 py-2 text-sm font-medium ${mode === 'mechanisms' ? 'bg-micro-500/30 text-white ring-1 ring-micro-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
         >
-          Transport & thermal mechanisms
+          What moves gases & heat
         </button>
         <button
           type="button"
@@ -617,7 +617,7 @@ export default function FluidPhysics() {
           onClick={() => setMode('thermo')}
           className={`rounded-lg px-4 py-2 text-sm font-medium ${mode === 'thermo' ? 'bg-flame-500/30 text-white ring-1 ring-flame-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
         >
-          Thermodynamic paths
+          Heat & volume paths
         </button>
       </div>
 

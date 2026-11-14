@@ -21,7 +21,7 @@ export default function BurnCharts({ nearby, o2, p }: { nearby: Neighbor[]; o2: 
   return (
     <div className="space-y-3">
       <div>
-        <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-100/80">Nearest tests · burn score</p>
+        <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-100/80">Closest NASA tests · burn score</p>
         <div className="h-40 w-full">
           <ResponsiveContainer>
             <BarChart data={rows} layout="vertical" margin={{ left: 4, right: 8, top: 4, bottom: 4 }}>
@@ -45,13 +45,13 @@ export default function BurnCharts({ nearby, o2, p }: { nearby: Neighbor[]; o2: 
               <CartesianGrid stroke="#1e293b" />
               <XAxis dataKey="name" {...axis} interval={0} />
               <YAxis {...axis} unit="%" domain={[0, 100]} />
-              <Tooltip formatter={(v: number) => [`${v}%`, 'Test O₂']} />
+              <Tooltip formatter={(v: number) => [`${v}%`, 'Test oxygen']} />
               <ReferenceLine y={you} stroke="#ff9f43" strokeDasharray="4 3" />
-              <Bar dataKey="testO2" name="Test O₂" fill="#5cb8ff" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="testO2" name="Test oxygen" fill="#5cb8ff" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <p className="mt-1 text-[10px] text-slate-500">Cyan line on the first chart is your predicted score. Orange line on the second is the oxygen you set. Scores: 100 kept burning, 60 self-extinguished, 0 no ignition.</p>
+        <p className="mt-1 text-[10px] text-slate-500">Cyan line on the first chart is your predicted score. Orange line on the second is the oxygen you set. Scores: 100 kept burning, 60 went out on their own, 0 never caught fire.</p>
       </div>
     </div>
   );

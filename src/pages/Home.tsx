@@ -26,7 +26,7 @@ export default function Home() {
     { label: 'Test records', value: stats.testsTotal.toLocaleString(), sub: `${stats.perTestRows.toLocaleString()} table rows + ${stats.flamesIgnitedFromDailyTables.toLocaleString()} flames in daily logs`, accent: 'flame' as const },
     { label: 'Years covered', value: `${stats.yearMax - stats.yearMin + 1}`, sub: `${stats.yearMin}–${stats.yearMax} mission dates`, accent: 'micro' as const },
     { label: 'Data in PSI', value: `${stats.totalTB} TB`, sub: `${stats.totalFiles.toLocaleString()} files listed`, accent: 'flame' as const },
-    { label: 'FLEX self-extinguished', value: `${stats.flex.pctSelfExtinguished}%`, sub: `${stats.flex.extinction} of ${stats.flex.tests} droplet fires`, accent: 'micro' as const },
+    { label: 'FLEX went out alone', value: `${stats.flex.pctSelfExtinguished}%`, sub: `${stats.flex.extinction} of ${stats.flex.tests} droplet fires went out on their own`, accent: 'micro' as const },
   ];
 
   return (
@@ -38,7 +38,7 @@ export default function Home() {
             Fire behaves differently in space.<br /><span className="bg-gradient-to-r from-flame-400 to-micro-400 bg-clip-text text-transparent">FlameSight shows what NASA learned.</span>
           </h1>
           <p className="mt-4 max-w-xl text-lg text-slate-300">
-            We turned {stats.investigations} NASA microgravity combustion investigations into fire-safety guidance for spacecraft, Moon and Mars habitats, rovers and spacesuits. Every number links back to NASA's own data.
+            We turned {stats.investigations} NASA near-zero-gravity fire experiments into clear fire-safety guidance for spacecraft, Moon and Mars homes, rovers, and spacesuits. Every number links back to NASA's own data—written so a high-school student can follow along.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link to="/scenarios" className="rounded-xl bg-gradient-to-r from-flame-500 to-flame-600 px-5 py-2.5 font-medium text-white shadow-glow hover:brightness-110">Rank risks for a mission →</Link>
@@ -73,7 +73,7 @@ export default function Home() {
 
       <section>
         <div className="mb-4 flex items-end justify-between">
-          <h2 className="text-2xl font-semibold text-white">Choose a mission scenario</h2>
+          <h2 className="text-2xl font-semibold text-white">Pick a mission setting</h2>
           <Link to="/about" className="text-sm text-slate-400 hover:text-white">Where do these numbers come from?</Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -88,7 +88,7 @@ export default function Home() {
                   <p className="text-xs text-slate-400">{GRAVITY[s.gravity].label}</p>
                   <p className="mt-2 text-xs text-slate-300">{s.blurb}</p>
                   <div className="mt-3 flex flex-wrap gap-1">
-                    {GRAVITY[s.gravity].extrapolated && <Pill tone="amber">extrapolated</Pill>}
+                    {GRAVITY[s.gravity].extrapolated && <Pill tone="amber">estimated beyond the data</Pill>}
                     <Pill tone="micro">top: {top.inv.acronym}</Pill>
                   </div>
                 </Link>
@@ -100,9 +100,9 @@ export default function Home() {
 
       <section className="grid gap-4 md:grid-cols-3">
         {[
-          { to: '/explorer', t: 'Experiment Explorer', d: 'All 24 investigations with plain-English summaries, test tables and charts.' },
-          { to: '/insights', t: 'Insights', d: 'What FLEX, BASS, SAFFIRE, CFI-G and PSI-117 data actually show.' },
-          { to: '/about', t: 'Method & limits', d: 'Scoring formula, data limits, sources and AI-assistance credit.' },
+          { to: '/explorer', t: 'Experiment Explorer', d: 'All 24 NASA fire studies with plain-English summaries, tables, and charts.' },
+          { to: '/insights', t: 'Insights', d: 'What the big NASA fire tests actually showed—in everyday language.' },
+          { to: '/about', t: 'Method & limits', d: 'How scoring works, what the data cannot say, and where numbers come from.' },
         ].map(x => (
           <Link key={x.to} to={x.to} className="glass rounded-2xl p-5 hover:border-micro-500/40">
             <h3 className="font-semibold text-white">{x.t} →</h3>

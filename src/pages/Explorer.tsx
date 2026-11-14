@@ -29,8 +29,8 @@ export default function Explorer() {
 
   return (
     <div>
-      <PageHeader kicker="Experiment Explorer" title="24 NASA combustion investigations, in plain English">
-        Every card is one investigation in NASA's Physical Sciences Informatics (PSI) repository. Tiers are our team's fire-safety ranking (1 Core = named in the challenge), not NASA's.
+      <PageHeader kicker="Experiment Explorer" title="24 NASA fire studies, explained in plain English">
+        Every card is one study from NASA's online fire-in-space data library (PSI). Tiers are our team's “how useful for fire safety?” ranking (1 = Core, named in the challenge)—not an official NASA grade.
       </PageHeader>
       <div className="glass mb-6 flex flex-col gap-3 rounded-2xl p-4 md:flex-row md:items-center">
         <label className="sr-only" htmlFor="search">Search</label>

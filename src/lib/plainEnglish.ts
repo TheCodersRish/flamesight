@@ -2,21 +2,30 @@ import type { InsightBrief } from './insightBrief';
 import type { SimInput, SimResult } from './knn';
 import { GRAVITY } from './scenarios';
 
-/** Soften technical wording so a finding is easy to say out loud. */
+/** Soften technical wording so a finding is easy to say out loud (high-school clear). */
 export function simplifyText(text: string): string {
   return text
     .replace(/\bself-extinguished\b/gi, 'went out on their own')
+    .replace(/\bradiative extinction\b/gi, 'going out by glowing heat loss')
     .replace(/\bextinction\b/gi, 'going out')
+    .replace(/\bignition\b/gi, 'catching fire')
     .replace(/\bdiluent\b/gi, 'extra gas')
+    .replace(/\bsuppressant\b/gi, 'fire-fighting gas')
     .replace(/\bmicrogravity\b/gi, 'near-zero gravity')
     .replace(/\bpartial-gravity\b/gi, 'Moon or Mars gravity')
+    .replace(/\bbuoyanc(?:y|t)\b/gi, 'rising hot air')
+    .replace(/\bconvection\b/gi, 'air currents')
+    .replace(/\bdiffusion\b/gi, 'slow mixing')
+    .replace(/\bventilation\b/gi, 'cabin fan flow')
+    .replace(/\bstoichiometr(?:y|ic)\b/gi, 'fuel–oxygen balance')
     .replace(/\bO₂\b/g, 'oxygen')
     .replace(/\bCO₂\b/g, 'carbon dioxide')
     .replace(/\batm\b/gi, 'atmospheres')
-    .replace(/\bpsi\b/gi, 'pounds per square inch')
+    .replace(/\bpsia?\b/gi, 'pounds per square inch')
     .replace(/\bk-nearest neighbors?\b/gi, 'closest NASA tests')
     .replace(/\bprior\b/gi, 'simple physics check')
     .replace(/\bextrapolated\b/gi, 'estimated beyond the measured data')
+    .replace(/\bquasi-steady\b/gi, 'nearly steady')
     .replace(/\s+/g, ' ')
     .trim();
 }

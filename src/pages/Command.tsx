@@ -99,7 +99,7 @@ export default function Command() {
   return (
     <Deck
       stage={(
-        <FlameStage title="Will it burn?" caption="The flame is an illustration of the settings below. It is not a combustion simulation." controls={(
+        <FlameStage title="Will it burn?" caption="The flame is a teaching picture of the settings below—not a real fire simulation. Results compare your setup to the closest NASA tests." controls={(
           <>
             <label className="text-xs text-slate-300 sm:col-span-2">
               Fuel
