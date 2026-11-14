@@ -111,8 +111,10 @@ function hasWebGL(): boolean {
 export default function Flame({ gravity, o2, flow, dilution, className = '', label, paused }: FlameProps) {
   const host = useRef<HTMLDivElement>(null);
   const target = useRef({ gravity, o2, flow, dilution });
+  const pausedRef = useRef(!!paused);
   const [mode, setMode] = useState<'webgl' | 'canvas'>(() => (typeof window !== 'undefined' && hasWebGL() ? 'webgl' : 'canvas'));
   target.current = { gravity, o2, flow, dilution };
+  pausedRef.current = !!paused;
 
   useEffect(() => {
     const el = host.current; if (!el) return;
@@ -124,6 +126,15 @@ export default function Flame({ gravity, o2, flow, dilution, className = '', lab
     const ease = (dt: number) => {
       const k = 1 - Math.exp(-dt * 3.5);
       (Object.keys(cur) as (keyof typeof cur)[]).forEach(key => { cur[key] += (target.current[key] - cur[key]) * k; });
+    };
+    // Snap toward targets when paused so scrubbing volume/heat updates the flame immediately
+    const syncParams = (dt: number) => {
+      if (pausedRef.current) {
+        cur.gravity = target.current.gravity;
+        cur.o2 = target.current.o2;
+        cur.flow = target.current.flow;
+        cur.dilution = target.current.dilution;
+      } else ease(dt);
     };
 
     if (mode === 'webgl') {
@@ -153,9 +164,9 @@ export default function Flame({ gravity, o2, flow, dilution, className = '', lab
         if (disposed) return;
         raf = requestAnimationFrame(loop);
         const dt = Math.min(0.1, (now - last) / 1000); last = now;
-        if (!visible || paused) return;
-        ease(dt);
-        uniforms.uTime.value += reduce ? dt * 0.2 : dt;
+        if (!visible) return;
+        syncParams(dt);
+        if (!pausedRef.current) uniforms.uTime.value += reduce ? dt * 0.2 : dt;
         uniforms.uGravity.value = cur.gravity; uniforms.uO2.value = cur.o2; uniforms.uFlow.value = cur.flow; uniforms.uDilute.value = cur.dilution;
         renderer.render(scene, camera);
       };
@@ -173,8 +184,9 @@ export default function Flame({ gravity, o2, flow, dilution, className = '', lab
       if (disposed) return;
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.1, (now - last) / 1000); last = now;
-      if (!visible || paused) return;
-      ease(dt); t += dt * (0.4 + cur.gravity * 2);
+      if (!visible) return;
+      syncParams(dt);
+      if (!pausedRef.current) t += dt * (0.4 + cur.gravity * 2);
       const w = (canvas.width = el.clientWidth || 300), h = (canvas.height = el.clientHeight || 300);
       ctx.clearRect(0, 0, w, h);
       const s = Math.min(w, h) * (0.13 + 0.12 * cur.o2) * (1 - 0.28 * cur.dilution);
@@ -201,7 +213,7 @@ export default function Flame({ gravity, o2, flow, dilution, className = '', lab
     };
     raf = requestAnimationFrame(loop);
     return () => { disposed = true; cancelAnimationFrame(raf); io.disconnect(); canvas.remove(); };
-  }, [mode, paused]);
+  }, [mode]);
 
   return (
     <div ref={host} className={`relative ${className}`} role="img" aria-label={label || `Simulated flame: ${gravity < 0.2 ? 'microgravity, round and blue' : gravity > 0.8 ? 'Earth gravity, tall teardrop' : 'partial gravity'}`}>
