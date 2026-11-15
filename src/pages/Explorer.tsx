@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { investigations } from '../lib/data';
+import { fadeUp, stagger } from '../lib/motion';
 import { fluidPresetsFor } from '../lib/physicsBridge';
 import { PageHeader, TierBadge, Pill } from '../components/ui';
 
@@ -53,8 +54,8 @@ export default function Explorer() {
       <p className="mb-3 text-sm text-slate-400">{list.length} investigation{list.length === 1 ? '' : 's'}</p>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {list.map((i, k) => (
-          <motion.article key={i.accession} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(k, 12) * 0.03 }}
-            className="glass flex flex-col rounded-2xl p-5">
+          <motion.article key={i.accession} layout {...fadeUp} transition={stagger(k, 0.02)}
+            className="glass lift flex flex-col rounded-2xl p-5">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="font-mono text-xs text-slate-500">{i.accession}</p>

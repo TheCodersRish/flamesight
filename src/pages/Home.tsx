@@ -8,6 +8,7 @@ import { insightFocus, useBurn } from '../lib/burnSession';
 import { fuelOptions, invLabel, stats } from '../lib/data';
 import { briefFor } from '../lib/insightBrief';
 import { type Diluent } from '../lib/knn';
+import { fadeUp, snap } from '../lib/motion';
 import { plainBurn, plainInsight } from '../lib/plainEnglish';
 import { GRAVITY, SCENARIOS, scenarioById } from '../lib/scenarios';
 import { rankForScenario } from '../lib/scoring';
@@ -22,11 +23,9 @@ const TOOLS = [
   { to: '/explorer', label: 'Browse all tests', hint: `${stats.investigations} studies in one list` },
 ];
 
-const fade = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 } };
-
 function Chapter({ n, title, children, delay = 0 }: { n: string; title: string; children: ReactNode; delay?: number }) {
   return (
-    <motion.section {...fade} transition={{ duration: 0.4, delay }} className="story-chapter relative pl-10 sm:pl-12">
+    <motion.section {...fadeUp} transition={{ ...snap, delay }} className="story-chapter relative pl-10 sm:pl-12">
       <span className="story-node absolute left-0 top-1 grid h-7 w-7 place-items-center rounded-full border border-flame-500/50 bg-space-950 font-mono text-[11px] text-flame-300" aria-hidden>
         {n}
       </span>
@@ -74,7 +73,7 @@ export default function Home() {
 
   return (
     <div className="workspace-shell">
-      <motion.header {...fade} transition={{ duration: 0.35 }} className="mb-8 space-y-2">
+      <motion.header {...fadeUp} transition={snap} className="mb-8 space-y-2">
         <p className="text-sm text-flame-300">FlameSight · NASA fire data, in plain words</p>
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Would a fire start in this cabin?</h1>
         <p className="max-w-2xl text-base text-slate-300 sm:text-lg">
@@ -84,8 +83,8 @@ export default function Home() {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(240px,300px)_minmax(0,1fr)] lg:items-start">
         <motion.aside
-          {...fade}
-          transition={{ duration: 0.4, delay: 0.05 }}
+          {...fadeUp}
+          transition={{ ...snap, delay: 0.03 }}
           className="workspace-rail lg:sticky lg:top-4"
           aria-label="Cabin settings"
         >
@@ -98,7 +97,7 @@ export default function Home() {
                 key={s.id}
                 type="button"
                 onClick={() => pickMission(s.id)}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition ${mission === s.id ? 'bg-white/15 text-white ring-1 ring-white/20' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
+                className={`tap inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs ${mission === s.id ? 'bg-white/15 text-white ring-1 ring-white/20' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
               >
                 <ScenarioIcon id={s.id} className="h-3.5 w-3.5" />
                 {s.short}
@@ -140,7 +139,7 @@ export default function Home() {
         </motion.aside>
 
         <div className="story-spine space-y-10 sm:space-y-12">
-          <Chapter n="2" title="The quick answer" delay={0.08}>
+          <Chapter n="2" title="The quick answer" delay={0.04}>
             <div className="grid gap-5 md:grid-cols-[minmax(0,200px)_minmax(0,1fr)] md:items-center">
               <div className="relative overflow-hidden rounded-2xl border border-white/10">
                 <div className="grid-bg absolute inset-0 opacity-40" />
@@ -149,7 +148,7 @@ export default function Home() {
               <div>
                 <p className={`text-3xl font-semibold tracking-tight ${verdict.tone}`}>{verdict.title}</p>
                 <div className="mt-3 h-2 max-w-xs overflow-hidden rounded-full bg-white/10" aria-hidden>
-                  <div className={`h-full rounded-full transition-all ${verdict.bar}`} style={{ width: `${score}%` }} />
+                  <div className={`h-full rounded-full transition-[width] duration-150 ease-out ${verdict.bar}`} style={{ width: `${score}%` }} />
                 </div>
                 <p className="mt-1.5 text-sm text-slate-400">Confidence score: {score} out of 100</p>
                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-200 sm:text-base">{summary}</p>
@@ -158,12 +157,12 @@ export default function Home() {
             </div>
           </Chapter>
 
-          <Chapter n="3" title="Which NASA tests matter most" delay={0.12}>
+          <Chapter n="3" title="Which NASA tests matter most" delay={0.06}>
             <p className="mb-3 text-sm text-slate-400">These studies best match the cabin you set.</p>
             <ol className="divide-y divide-white/10 border-y border-white/10">
               {ranked.map((r, i) => (
                 <li key={r.inv.accession}>
-                  <Link to={`/explorer/${r.inv.accession}`} className="flex items-center gap-3 py-3 transition hover:bg-white/[0.03]">
+                  <Link to={`/explorer/${r.inv.accession}`} className="flex items-center gap-3 py-3 hover:bg-white/[0.03]">
                     <span className="w-6 text-sm text-slate-500">{i + 1}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-white">{r.inv.hasAcronym ? r.inv.acronym : r.inv.accession}</span>
@@ -176,7 +175,7 @@ export default function Home() {
             </ol>
           </Chapter>
 
-          <Chapter n="4" title="What those tests found" delay={0.16}>
+          <Chapter n="4" title="What those tests found" delay={0.08}>
             <p className="text-xl font-semibold leading-snug text-white sm:text-2xl">{brief.headline}</p>
             <ul className="mt-4 space-y-2.5">
               {brief.points.slice(0, 3).map(p => (
@@ -193,17 +192,17 @@ export default function Home() {
             </div>
           </Chapter>
 
-          <motion.section {...fade} transition={{ duration: 0.4, delay: 0.2 }} aria-label="Next steps" className="border-t border-white/10 pt-6">
+          <motion.section {...fadeUp} transition={{ ...snap, delay: 0.1 }} aria-label="Next steps" className="border-t border-white/10 pt-6">
             <h2 className="mb-1 text-sm font-semibold text-slate-300">Want to go deeper?</h2>
             <p className="mb-4 text-sm text-slate-500">Your cabin settings carry into every tool.</p>
             <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
               {TOOLS.map(t => (
-                <Link key={t.to} to={t.to} className="group flex items-baseline justify-between gap-3 border-b border-white/10 py-2.5 transition hover:border-white/25">
+                <Link key={t.to} to={t.to} className="group flex items-baseline justify-between gap-3 border-b border-white/10 py-2.5 hover:border-white/25">
                   <span>
                     <span className="block text-sm font-medium text-white group-hover:text-micro-300">{t.label}</span>
                     <span className="text-xs text-slate-500">{t.hint}</span>
                   </span>
-                  <span className="text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-white">→</span>
+                  <span className="text-slate-500 group-hover:translate-x-1 group-hover:text-white">→</span>
                 </Link>
               ))}
             </div>

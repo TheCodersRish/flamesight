@@ -4,6 +4,7 @@ import CabinStrip from '../components/CabinStrip';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useBurn } from '../lib/burnSession';
+import { fadeUp, snap, stagger } from '../lib/motion';
 import { physicsTagsFor, fluidPhysicsHref } from '../lib/physicsBridge';
 import {
   SCENARIOS, GRAVITY, scenarioById, psiToAtm, makeAtmosphere, loadCustomScenarios, saveCustomScenarios,
@@ -115,7 +116,6 @@ function PartBars({ scored, weights, tot }: { scored: Scored; weights: Weights; 
   );
 }
 
-const fadeUp = { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 } };
 
 export default function Scenarios() {
   const [sp, setSp] = useSearchParams();
@@ -230,13 +230,13 @@ export default function Scenarios() {
 
   return (
     <div className="workspace-shell">
-      <motion.div {...fadeUp} transition={{ duration: 0.35 }}>
+      <motion.div {...fadeUp} transition={snap}>
         <PageHeader kicker="Scenario Risk Ranking" title="Which NASA experiments matter most for your mission?">
           Pick a habitat — or create your own — and every investigation gets a transparent 0–100 relevance score from oxygen, pressure, airflow match, fire-safety role, and data richness.
         </PageHeader>
       </motion.div>
 
-      <motion.div {...fadeUp} transition={{ duration: 0.4, delay: 0.04 }} className="mb-5 space-y-2">
+      <motion.div {...fadeUp} transition={{ ...snap, delay: 0.02 }} className="mb-5 space-y-2">
         <CabinStrip />
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <button
@@ -267,7 +267,7 @@ export default function Scenarios() {
       </motion.div>
 
       {/* Mission picker */}
-      <motion.section {...fadeUp} transition={{ duration: 0.4, delay: 0.08 }} className="mb-6" aria-label="Choose mission habitat">
+      <motion.section {...fadeUp} transition={{ ...snap, delay: 0.04 }} className="mb-6" aria-label="Choose mission habitat">
         <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">1 · Choose habitat</h2>
           <button
@@ -400,7 +400,7 @@ export default function Scenarios() {
       </AnimatePresence>
 
       {/* Briefing + readout */}
-      <motion.section {...fadeUp} transition={{ duration: 0.4, delay: 0.12 }} className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <motion.section {...fadeUp} transition={{ ...snap, delay: 0.06 }} className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <Card glow="flame" className="relative overflow-hidden">
           <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-flame-500/10 blur-3xl" aria-hidden />
           <div className="flex flex-wrap items-start gap-4">
@@ -505,7 +505,7 @@ export default function Scenarios() {
       </motion.section>
 
       {/* Top 3 podium */}
-      <motion.section {...fadeUp} transition={{ duration: 0.45, delay: 0.16 }} className="mb-6">
+      <motion.section {...fadeUp} transition={{ ...snap, delay: 0.08 }} className="mb-6">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-widest text-flame-300">2 · Top 3 must-reads</h2>
@@ -524,7 +524,7 @@ export default function Scenarios() {
                 layout
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.08 * i, duration: 0.4 }}
+                transition={stagger(i)}
                 className={`relative overflow-hidden rounded-2xl bg-gradient-to-b from-white/[0.07] to-white/[0.02] p-5 ring-1 ring-white/10 ${podium} ${height}`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -577,7 +577,7 @@ export default function Scenarios() {
       </motion.section>
 
       {/* Recommendations */}
-      <motion.section {...fadeUp} transition={{ duration: 0.4, delay: 0.2 }} className="mb-6">
+      <motion.section {...fadeUp} transition={{ ...snap, delay: 0.1 }} className="mb-6">
         <Card>
           <h2 className="text-sm font-semibold uppercase tracking-widest text-micro-300">3 · Recommendations</h2>
           <p className="mt-1 text-sm text-slate-400">Data-cited guidance for this atmosphere</p>
@@ -587,7 +587,7 @@ export default function Scenarios() {
                 key={r.title}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 * i }}
+                transition={stagger(i)}
                 className="rounded-xl bg-white/[0.04] p-4 ring-1 ring-white/10"
               >
                 <div className="flex items-start gap-3">
@@ -605,7 +605,7 @@ export default function Scenarios() {
       </motion.section>
 
       {/* Full ranking */}
-      <motion.section {...fadeUp} transition={{ duration: 0.4, delay: 0.24 }}>
+      <motion.section {...fadeUp} transition={{ ...snap, delay: 0.12 }}>
         <Card>
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -764,7 +764,7 @@ export default function Scenarios() {
               initial={{ x: 480 }}
               animate={{ x: 0 }}
               exit={{ x: 480 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+              transition={{ type: 'spring', damping: 32, stiffness: 420, mass: 0.7 }}
             >
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">How we scored this</h2>

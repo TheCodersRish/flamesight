@@ -217,7 +217,7 @@ export default function FloatingChat() {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-flame-500 text-white shadow-lg shadow-flame-500/30 ring-2 ring-white/20 transition hover:bg-flame-400 hover:scale-105"
+        className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-flame-500 text-white shadow-lg shadow-flame-500/30 ring-2 ring-white/20 will-change-transform hover:bg-flame-400 hover:scale-110 active:scale-95"
         aria-expanded={open}
         aria-label={open ? 'Close Ask FlameSight' : 'Open Ask FlameSight'}
       >

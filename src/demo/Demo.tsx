@@ -55,7 +55,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       {children}
       <AnimatePresence>
         {cur && (
-          <motion.div key={step} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.35 }}
+          <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-x-0 bottom-6 z-50 mx-auto w-[min(92vw,820px)]" role="status" aria-live="polite">
             <div className="glass flex items-center gap-4 rounded-2xl border-flame-500/40 px-5 py-4 shadow-glow">
               <span className="font-mono text-xs text-flame-300">DEMO {step + 1}/{steps.current.length}</span>

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Flame from '../components/Flame';
 import { Stat, Card, Pill } from '../components/ui';
 import { stats } from '../lib/data';
+import { fadeUp, stagger } from '../lib/motion';
 import { SCENARIOS, GRAVITY } from '../lib/scenarios';
 import { rankForScenario } from '../lib/scoring';
 
@@ -41,9 +42,9 @@ export default function Overview() {
             Explore {stats.investigations} real NASA fire studies for spacecraft, Moon and Mars homes, rovers, and spacesuits. Start with a simple yes/maybe/no, then dig deeper if you want.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/" className="rounded-xl bg-gradient-to-r from-flame-500 to-flame-600 px-5 py-2.5 font-medium text-white shadow-glow hover:brightness-110">Try the simple dashboard →</Link>
-            <Link to="/simulator" className="rounded-xl bg-white/10 px-5 py-2.5 font-medium text-white hover:bg-white/15">Will it burn?</Link>
-            <Link to="/analyst" className="rounded-xl px-5 py-2.5 font-medium text-micro-300 ring-1 ring-micro-500/40 hover:bg-micro-500/10">Ask a question</Link>
+            <Link to="/" className="tap rounded-xl bg-gradient-to-r from-flame-500 to-flame-600 px-5 py-2.5 font-medium text-white shadow-glow hover:brightness-110">Try the simple dashboard →</Link>
+            <Link to="/simulator" className="tap rounded-xl bg-white/10 px-5 py-2.5 font-medium text-white hover:bg-white/15">Will it burn?</Link>
+            <Link to="/analyst" className="tap rounded-xl px-5 py-2.5 font-medium text-micro-300 ring-1 ring-micro-500/40 hover:bg-micro-500/10">Ask a question</Link>
           </div>
         </div>
         <Card className="relative overflow-hidden p-0" glow="micro">
@@ -63,7 +64,7 @@ export default function Overview() {
       <section aria-label="Key numbers">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
           {tiles.map((t, i) => (
-            <motion.div key={t.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 * i }}>
+            <motion.div key={t.label} {...fadeUp} transition={stagger(i)}>
               <Stat {...t} />
             </motion.div>
           ))}
@@ -80,8 +81,8 @@ export default function Overview() {
           {SCENARIOS.map((s, i) => {
             const top = TOPS[s.id];
             return (
-              <motion.div key={s.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 * i }}>
-                <Link to={`/scenarios?s=${s.id}`} className="glass group block h-full rounded-2xl p-4 transition hover:-translate-y-1 hover:border-flame-500/40">
+              <motion.div key={s.id} {...fadeUp} transition={stagger(i, 0.03)}>
+                <Link to={`/scenarios?s=${s.id}`} className="glass lift group block h-full rounded-2xl p-4 hover:border-flame-500/40">
                   <ScenarioIcon id={s.id} className="h-9 w-9 text-flame-300" />
                   <h3 className="mt-2 font-semibold text-white">{s.name}</h3>
                   <p className="mt-1 font-mono text-sm text-flame-300">{Math.round(s.o2 * 100)}% O₂ · {s.psi} psi</p>

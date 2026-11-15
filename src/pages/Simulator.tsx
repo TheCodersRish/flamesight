@@ -91,7 +91,7 @@ export default function Simulator() {
         </Card>
 
         <Card>
-          <motion.div key={r.verdict} initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`rounded-2xl bg-gradient-to-br ${VERDICT_STYLE[r.verdict]} p-5 text-white`}>
+          <motion.div key={r.verdict} initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }} className={`rounded-2xl bg-gradient-to-br ${VERDICT_STYLE[r.verdict]} p-5 text-white`}>
             <p className="text-xs uppercase tracking-widest opacity-80">Prediction{extrap ? ' · extrapolated' : ''}</p>
             <p className="mt-1 text-4xl font-semibold">{r.verdict} to burn</p>
             <p className="mt-1 font-mono text-sm opacity-90">burn score {(r.p * 100).toFixed(0)}/100 · confidence {r.confidenceLabel} ({Math.round(r.confidence * 100)}%)</p>

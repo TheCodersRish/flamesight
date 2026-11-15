@@ -4,7 +4,7 @@ import { byAccession, invLabel } from '../lib/data';
 
 export function Card({ children, className = '', glow }: { children: ReactNode; className?: string; glow?: 'flame' | 'micro' }) {
   return (
-    <div className={`glass rounded-2xl p-5 ${glow === 'flame' ? 'shadow-glow' : glow === 'micro' ? 'shadow-glowBlue' : ''} ${className}`}>{children}</div>
+    <div className={`glass lift rounded-2xl p-5 ${glow === 'flame' ? 'shadow-glow' : glow === 'micro' ? 'shadow-glowBlue' : ''} ${className}`}>{children}</div>
   );
 }
 
@@ -44,7 +44,7 @@ export function SourceChip({ acc, compact }: { acc: string; compact?: boolean })
 
 export function Stat({ label, value, sub, accent = 'flame' }: { label: string; value: ReactNode; sub?: ReactNode; accent?: 'flame' | 'micro' }) {
   return (
-    <div className="glass rounded-2xl p-4">
+    <div className="glass lift rounded-2xl p-4">
       <p className="text-[11px] uppercase tracking-widest text-slate-400">{label}</p>
       <p className={`mt-1 font-mono text-3xl font-semibold ${accent === 'flame' ? 'text-flame-300' : 'text-micro-300'}`}>{value}</p>
       {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}

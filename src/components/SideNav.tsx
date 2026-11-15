@@ -145,7 +145,7 @@ export default function SideNav() {
 
       <nav
         id="workspace-nav"
-        className={`workspace-nav shrink-0 border-white/10 transition-[width] duration-200 ${
+        className={`workspace-nav shrink-0 border-white/10 ${
           mobileOpen ? 'flex' : 'hidden'
         } flex-col gap-0 overflow-y-auto border-b px-3 py-3 lg:flex lg:overflow-y-auto lg:overflow-x-hidden lg:border-b-0 lg:border-r lg:px-2 lg:py-4 ${
           collapsed ? 'lg:w-[4.5rem]' : 'lg:w-64'
@@ -204,7 +204,7 @@ export default function SideNav() {
                     title={collapsed ? `${n.label} — ${n.hint}` : n.hint}
                     onClick={() => setMobileOpen(false)}
                     className={({ isActive }) =>
-                      `nav-item group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm transition-colors duration-150 ${
+                      `nav-item group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm will-change-transform ${
                         collapsed ? 'justify-center lg:px-2' : ''
                       } ${
                         isActive
@@ -215,10 +215,10 @@ export default function SideNav() {
                   >
                     {({ isActive }) => (
                       <>
-                        <span className={`grid h-7 w-7 place-items-center rounded-lg border transition-colors ${
+                        <span className={`grid h-7 w-7 place-items-center rounded-lg border ${
                           isActive
-                            ? 'border-flame-400/40 bg-flame-500/15 text-flame-300'
-                            : 'border-white/10 bg-white/5 text-slate-400 group-hover:border-white/20 group-hover:text-slate-200'
+                            ? 'border-flame-400/40 bg-flame-500/15 text-flame-300 scale-105'
+                            : 'border-white/10 bg-white/5 text-slate-400 group-hover:border-white/20 group-hover:text-slate-200 group-hover:scale-105'
                         }`}>
                           {n.icon}
                         </span>
