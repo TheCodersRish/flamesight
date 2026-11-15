@@ -144,7 +144,7 @@ function DataTable({ table, tests }: { table: RawTable; tests: TestRecord[] }) {
   const [asc, setAsc] = useState(true);
   const [limit, setLimit] = useState(40);
   const [selected, setSelected] = useState<number | null>(null);
-  const [detailMode, setDetailMode] = useState<'both' | 'simple' | 'full'>('both');
+  const [detailMode, setDetailMode] = useState<'both' | 'simple' | 'full'>('simple');
 
   const indexed = useMemo(() => table.rows.map((row, origIdx) => ({ row, origIdx })), [table]);
   const rows = useMemo(() => {
@@ -160,10 +160,25 @@ function DataTable({ table, tests }: { table: RawTable; tests: TestRecord[] }) {
 
   const picked = selected === null ? null : indexed[selected] || null;
   const pickedTest = picked ? matchTest(picked.row, picked.origIdx, tests, table.rows.length) : null;
+  const simpleFields = pickedTest
+    ? [
+        ['Fuel / material', pickedTest.fuel || '—'],
+        ['Oxygen', pickedTest.o2 !== null ? `${(pickedTest.o2 * 100).toFixed(2)}%` : '—'],
+        ['Pressure', pickedTest.pAtm !== null ? `${pickedTest.pAtm.toFixed(3)} atm` : '—'],
+        ['Airflow', pickedTest.flow !== null ? `${pickedTest.flow} cm/s` : '—'],
+        ['Diluent', pickedTest.diluent || '—'],
+        ['Outcome', pickedTest.outcome || simpleOutcome(pickedTest)],
+      ]
+    : picked
+      ? table.header
+          .map((h, i) => [(h || `Column ${i + 1}`).replace(/;/g, ',').replace(/\s+/g, ' ').trim(), (picked.row[i] || '').trim() || '—'] as const)
+          .filter(([, v]) => v !== '—' && v.toLowerCase() !== 'n/a')
+          .slice(0, 8)
+      : [];
 
   return (
     <div>
-      <p className="mb-2 text-xs text-slate-400">Click any row to see what that test was about — simplified and full NASA columns.</p>
+      <p className="mb-2 text-xs text-slate-400">Click any row for a split view of that test’s values and a plain-English explanation (defaults to simplified).</p>
       <div className="scrollbar-thin max-h-[480px] overflow-auto rounded-xl border border-white/10">
         <table className="min-w-full text-left text-xs">
           <thead className="sticky top-0 bg-space-800">
@@ -183,8 +198,8 @@ function DataTable({ table, tests }: { table: RawTable; tests: TestRecord[] }) {
                   role="button"
                   tabIndex={0}
                   aria-pressed={on}
-                  onClick={() => setSelected(s => (s === origIdx ? null : origIdx))}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(s => (s === origIdx ? null : origIdx)); } }}
+                  onClick={() => { setSelected(s => (s === origIdx ? null : origIdx)); setDetailMode('simple'); }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(s => (s === origIdx ? null : origIdx)); setDetailMode('simple'); } }}
                   className={`cursor-pointer border-t border-white/5 odd:bg-white/[0.02] hover:bg-flame-500/10 ${on ? 'bg-flame-500/15 ring-1 ring-inset ring-flame-400/40' : ''}`}
                 >
                   {row.map((c, j) => <td key={j} className="max-w-[260px] truncate whitespace-nowrap px-3 py-1.5 text-slate-300" title={c}>{c}</td>)}
@@ -210,8 +225,8 @@ function DataTable({ table, tests }: { table: RawTable; tests: TestRecord[] }) {
             </div>
             <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Detail view">
               {([
-                ['both', 'Both'],
                 ['simple', 'Simplified'],
+                ['both', 'Both'],
                 ['full', 'Big table'],
               ] as const).map(([id, label]) => (
                 <button
@@ -232,26 +247,22 @@ function DataTable({ table, tests }: { table: RawTable; tests: TestRecord[] }) {
           </div>
 
           {(detailMode === 'both' || detailMode === 'simple') && (
-            <div className="mt-3">
-              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-micro-300">Simplified</h4>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-100">{simplifyRowBlurb(table.header, picked.row, pickedTest)}</p>
-              {pickedTest && (
-                <dl className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
-                  {[
-                    ['Fuel / material', pickedTest.fuel || '—'],
-                    ['Oxygen', pickedTest.o2 !== null ? `${(pickedTest.o2 * 100).toFixed(2)}%` : '—'],
-                    ['Pressure', pickedTest.pAtm !== null ? `${pickedTest.pAtm.toFixed(3)} atm` : '—'],
-                    ['Airflow', pickedTest.flow !== null ? `${pickedTest.flow} cm/s` : '—'],
-                    ['Diluent', pickedTest.diluent || '—'],
-                    ['Outcome', pickedTest.outcome || simpleOutcome(pickedTest)],
-                  ].map(([k, v]) => (
+            <div className="mt-3 grid gap-4 md:grid-cols-2 md:divide-x md:divide-white/10">
+              <div className="md:pr-4">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-micro-300">This row</h4>
+                <dl className="mt-2 grid gap-2 sm:grid-cols-2 text-sm">
+                  {simpleFields.map(([k, v]) => (
                     <div key={k} className="rounded-lg bg-white/[0.03] px-2.5 py-2">
                       <dt className="text-[10px] uppercase tracking-wide text-slate-500">{k}</dt>
                       <dd className="mt-0.5 font-mono text-slate-100">{v}</dd>
                     </div>
                   ))}
                 </dl>
-              )}
+              </div>
+              <div className="md:pl-4">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-micro-300">Explanation</h4>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-100">{simplifyRowBlurb(table.header, picked.row, pickedTest)}</p>
+              </div>
             </div>
           )}
 
