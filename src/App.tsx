@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import SideNav from './components/SideNav';
 import { DemoProvider } from './demo/Demo';
 import { BurnProvider } from './lib/burnSession';
+import { UiVariationProvider } from './lib/uiVariation';
 import Command from './pages/Command';
 import Home from './pages/Home';
 import Overview from './pages/Overview';
@@ -54,10 +55,12 @@ function Shell() {
 
 export default function App() {
   return (
-    <DemoProvider>
-      <BurnProvider>
-        <Shell />
-      </BurnProvider>
-    </DemoProvider>
+    <UiVariationProvider>
+      <DemoProvider>
+        <BurnProvider>
+          <Shell />
+        </BurnProvider>
+      </DemoProvider>
+    </UiVariationProvider>
   );
 }

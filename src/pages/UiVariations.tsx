@@ -1,11 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PageHeader, Pill } from '../components/ui';
 import { stats } from '../lib/data';
 import { SCENARIOS } from '../lib/scenarios';
-
-const STORAGE_KEY = 'flamesight-ui-variation';
+import { useUiVariation } from '../lib/uiVariation';
 
 type Sample = {
   mission: string;
@@ -408,24 +407,43 @@ export const VARIATIONS: Variation[] = [
       </Shell>
     ),
   },
+  {
+    id: 'minimal-plain',
+    name: 'Minimal plain',
+    blurb: 'Non-Jarvis: flat panels, quiet type, no HUD corners or glow.',
+    render: s => (
+      <Shell className="rounded-lg border-slate-700/70 bg-[#0c1018] p-5 shadow-none">
+        <p className="text-sm text-slate-500">{s.mission}</p>
+        <p className="mt-1 text-3xl font-medium tracking-tight text-slate-100">{s.verdict}</p>
+        <p className="mt-1 text-sm text-slate-500">{s.score}% burn likelihood</p>
+        <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-400">{s.takeaway}</p>
+        <dl className="mt-5 grid gap-3 border-t border-slate-800 pt-4 sm:grid-cols-4">
+          {[
+            ['O₂', s.o2],
+            ['Pressure', s.psi],
+            ['Gravity', s.gravity],
+            ['Studies', String(stats.investigations)],
+          ].map(([k, v]) => (
+            <div key={k}>
+              <dt className="text-xs text-slate-600">{k}</dt>
+              <dd className="mt-0.5 text-sm text-slate-200">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-4 text-xs text-slate-600">{s.studies.map(st => `${st.name} ${st.score}`).join(' · ')}</p>
+      </Shell>
+    ),
+  },
 ];
 
 export default function UiVariations() {
-  const [selected, setSelected] = useState<string>(() => {
-    if (typeof localStorage === 'undefined') return VARIATIONS[0].id;
-    return localStorage.getItem(STORAGE_KEY) || VARIATIONS[0].id;
-  });
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, selected);
-  }, [selected]);
-
+  const { id: selected, setId: setSelected } = useUiVariation();
   const active = VARIATIONS.find(v => v.id === selected) ?? VARIATIONS[0];
 
   return (
     <div className="space-y-8">
-      <PageHeader kicker="Design lab" title="15 UI variations">
-        Preview different ways to present FlameSight cabin data, scores, and study rankings. Select the style you want to keep — your choice is saved in this browser.
+      <PageHeader kicker="Design lab" title={`${VARIATIONS.length} UI variations`}>
+        Preview different ways to present FlameSight cabin data, scores, and study rankings. Select a style to apply it across the whole app — your choice is saved in this browser.
       </PageHeader>
 
       <section className="rounded-2xl border border-micro-500/30 bg-micro-500/5 p-4 sm:p-5" aria-live="polite">
@@ -435,13 +453,13 @@ export default function UiVariations() {
             <h2 className="text-xl font-semibold text-white">{active.name}</h2>
             <p className="text-sm text-slate-400">{active.blurb}</p>
           </div>
-          <Link to="/" className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/15">Back to dashboard</Link>
+          <Link to="/" className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/15">See it on dashboard →</Link>
         </div>
         {active.render(SAMPLE)}
       </section>
 
       <section aria-label="All variations">
-        <h2 className="mb-4 text-lg font-semibold text-white">Try all 15 · tap Select to choose</h2>
+        <h2 className="mb-4 text-lg font-semibold text-white">Try all {VARIATIONS.length} · tap Select to apply app-wide</h2>
         <div className="grid gap-6">
           {VARIATIONS.map((v, i) => {
             const isOn = v.id === selected;

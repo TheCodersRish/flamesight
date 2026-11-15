@@ -2,7 +2,11 @@ import type { ReactNode } from 'react';
 
 export function HudFrame({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <section className={`flex min-h-0 flex-col rounded-2xl border border-white/10 bg-space-900/80 ${className}`}>
+    <section className={`hud-panel relative flex min-h-0 flex-col rounded-2xl ${className}`}>
+      <span className="hud-c tl" aria-hidden />
+      <span className="hud-c tr" aria-hidden />
+      <span className="hud-c bl" aria-hidden />
+      <span className="hud-c br" aria-hidden />
       <h2 className="px-4 pt-3 text-sm font-semibold text-white">{title}</h2>
       <div className="scrollbar-thin min-h-0 flex-1 overflow-auto px-4 py-3">{children}</div>
     </section>
