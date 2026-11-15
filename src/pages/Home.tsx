@@ -7,7 +7,7 @@ import { Pill, Slider } from '../components/ui';
 import { insightFocus, useBurn } from '../lib/burnSession';
 import { fuelOptions, invLabel, stats } from '../lib/data';
 import { briefFor } from '../lib/insightBrief';
-import { isCatalogFuel, type Diluent, type FuelClass } from '../lib/knn';
+import { type Diluent } from '../lib/knn';
 import { fadeUp, snap } from '../lib/motion';
 import { plainBurn, plainInsight } from '../lib/plainEnglish';
 import { GRAVITY, SCENARIOS, scenarioById } from '../lib/scenarios';
@@ -106,54 +106,13 @@ export default function Home() {
           </div>
 
           <div className="space-y-3">
-            <div className="space-y-2">
-              <label className="block text-xs text-slate-300">
-                What is burning?
-                <select
-                  value={isCatalogFuel(x.fuel) ? x.fuel : '__custom__'}
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (v === '__custom__') setX({ ...x, fuel: '', fuelClass: x.fuelClass && x.fuelClass !== 'any' ? x.fuelClass : 'solid' });
-                    else setX({ ...x, fuel: v, fuelClass: undefined });
-                  }}
-                  className="mt-1 w-full rounded-md border border-white/10 bg-space-950 px-2 py-1.5 text-sm text-white"
-                >
-                  <option value="any">Not sure / any fuel</option>
-                  {fuelOptions.map(f => <option key={f.fuel} value={f.fuel}>{f.fuel}</option>)}
-                  <option value="__custom__">Custom material…</option>
-                </select>
-              </label>
-              {!isCatalogFuel(x.fuel) && (
-                <div className="space-y-2 rounded-md bg-white/5 p-2 ring-1 ring-white/10">
-                  <label className="block text-xs text-slate-300">
-                    Material name
-                    <input
-                      value={x.fuel}
-                      onChange={e => set('fuel', e.target.value)}
-                      placeholder="e.g. cotton towel, acrylic panel"
-                      className="mt-1 w-full rounded-md border border-white/10 bg-space-950 px-2 py-1.5 text-sm text-white placeholder:text-slate-500"
-                    />
-                  </label>
-                  <div>
-                    <p className="text-[11px] text-slate-400">Type (if not in NASA list)</p>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {(['solid', 'liquid', 'gas'] as FuelClass[]).map(c => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => set('fuelClass', c)}
-                          aria-pressed={(x.fuelClass || 'solid') === c}
-                          className={`rounded-md px-2.5 py-1 text-xs capitalize ${(x.fuelClass || 'solid') === c ? 'bg-white/15 text-white' : 'bg-white/5 text-slate-300'}`}
-                        >
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {result.fuelResolve.note && <p className="text-[11px] text-cyan-200/90">{result.fuelResolve.note}</p>}
-                </div>
-              )}
-            </div>
+            <label className="block text-xs text-slate-300">
+              What is burning?
+              <select value={x.fuel} onChange={e => set('fuel', e.target.value)} className="mt-1 w-full rounded-md border border-white/10 bg-space-950 px-2 py-1.5 text-sm text-white">
+                <option value="any">Not sure / any fuel</option>
+                {fuelOptions.map(f => <option key={f.fuel} value={f.fuel}>{f.fuel}</option>)}
+              </select>
+            </label>
             <Slider label="Oxygen in the air" value={x.o2} min={0.1} max={1} step={0.01} onChange={v => set('o2', v)} format={v => `${Math.round(v * 100)}%`} />
             <Slider label="Air pressure" value={x.psi} min={2} max={45} step={0.1} onChange={v => set('psi', v)} format={v => `${v.toFixed(1)} psi`} />
             <Slider label="Air moving past the flame" value={x.flow} min={0} max={50} step={1} onChange={v => set('flow', v)} format={v => `${v} cm/s`} />

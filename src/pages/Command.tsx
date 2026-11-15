@@ -7,7 +7,7 @@ import Flame from '../components/Flame';
 import { Pill, Slider } from '../components/ui';
 import { useBurn } from '../lib/burnSession';
 import { fuelOptions, invLabel } from '../lib/data';
-import { isCatalogFuel, type Diluent, type FuelClass, type SimInput } from '../lib/knn';
+import { type Diluent, type SimInput } from '../lib/knn';
 import { narrateBurn } from '../lib/narrate';
 import { feedingMode, fluidPhysicsHref } from '../lib/physicsBridge';
 import { plainBurn } from '../lib/plainEnglish';
@@ -172,54 +172,13 @@ export default function Command() {
               </Link>
               <span className="text-[11px] text-slate-500">{feed.detail}</span>
             </div>
-            <div className="space-y-2 sm:col-span-2">
-              <label className="block text-xs text-slate-300">
-                Fuel / material
-                <select
-                  value={isCatalogFuel(x.fuel) ? x.fuel : '__custom__'}
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (v === '__custom__') setX({ ...x, fuel: '', fuelClass: x.fuelClass && x.fuelClass !== 'any' ? x.fuelClass : 'solid' });
-                    else setX({ ...x, fuel: v, fuelClass: undefined });
-                  }}
-                  className="mt-1 w-full rounded border border-cyan-200/20 bg-space-950 px-2 py-1 text-sm text-white"
-                >
-                  <option value="any">Any fuel</option>
-                  {fuelOptions.map(f => <option key={f.fuel} value={f.fuel}>{f.fuel}</option>)}
-                  <option value="__custom__">Custom material…</option>
-                </select>
-              </label>
-              {!isCatalogFuel(x.fuel) && (
-                <div className="space-y-2 rounded-lg bg-white/5 p-2 ring-1 ring-white/10">
-                  <label className="block text-xs text-slate-300">
-                    Material name
-                    <input
-                      value={x.fuel}
-                      onChange={e => set('fuel', e.target.value)}
-                      placeholder="e.g. cotton towel, acrylic panel, Nomex glove"
-                      className="mt-1 w-full rounded border border-cyan-200/20 bg-space-950 px-2 py-1.5 text-sm text-white placeholder:text-slate-500"
-                    />
-                  </label>
-                  <div>
-                    <p className="text-[11px] text-slate-400">Material type (used when name is not in NASA tests)</p>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {(['solid', 'liquid', 'gas'] as FuelClass[]).map(c => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => set('fuelClass', c)}
-                          aria-pressed={(x.fuelClass || 'solid') === c}
-                          className={`rounded-lg px-2.5 py-1 text-xs capitalize ${(x.fuelClass || 'solid') === c ? 'bg-white/15 text-white' : 'bg-white/5 text-slate-300'}`}
-                        >
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {result.fuelResolve.note && <p className="text-[11px] text-cyan-200/90">{result.fuelResolve.note}</p>}
-                </div>
-              )}
-            </div>
+            <label className="text-xs text-slate-300">
+              Fuel / material
+              <select value={x.fuel} onChange={e => set('fuel', e.target.value)} className="mt-1 w-full rounded border border-cyan-200/20 bg-space-950 px-2 py-1 text-sm text-white">
+                <option value="any">Any fuel</option>
+                {fuelOptions.map(f => <option key={f.fuel} value={f.fuel}>{f.fuel}</option>)}
+              </select>
+            </label>
             <Slider label="Oxygen" value={x.o2} min={0.1} max={1} step={0.01} onChange={v => set('o2', v)} format={v => `${Math.round(v * 100)}%`} />
             <Slider label="Pressure" value={x.psi} min={2} max={45} step={0.1} onChange={v => set('psi', v)} format={v => `${v.toFixed(1)} psi`} />
             <Slider label="Airflow" value={x.flow} min={0} max={50} step={1} onChange={v => set('flow', v)} format={v => `${v} cm/s`} />

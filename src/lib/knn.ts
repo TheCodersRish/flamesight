@@ -20,28 +20,8 @@ import type { Gravity, KnnTest } from './types';
 // ---------------------------------------------------------------------------
 
 export type Diluent = 'none' | 'CO2' | 'He';
-export type FuelClass = 'liquid' | 'gas' | 'solid' | 'any';
-export interface SimInput {
-  fuel: string;
-  /** Declared class for custom (non-catalog) materials; ignored for known NASA fuels. */
-  fuelClass?: FuelClass;
-  o2: number;
-  psi: number;
-  flow: number;
-  gravity: Gravity;
-  diluent: Diluent;
-}
+export interface SimInput { fuel: string; o2: number; psi: number; flow: number; gravity: Gravity; diluent: Diluent }
 export interface Neighbor { t: KnnTest; d: number; w: number }
-export interface FuelResolve {
-  /** Normalized query used for matching (`any` when blank / any-fuel). */
-  query: string;
-  /** Exact NASA catalog fuel when known or fuzzy-matched; null for class-only custom. */
-  matchFuel: string | null;
-  cls: FuelClass | string;
-  /** True when the user typed a material not listed as an exact NASA fuel option. */
-  custom: boolean;
-  note: string | null;
-}
 export interface SimResult {
   verdict: 'Likely' | 'Borderline' | 'Unlikely';
   p: number; pData: number; prior: number; priorW: number;
@@ -52,99 +32,21 @@ export interface SimResult {
   band: [number, number];
   /** True when O₂, pressure, or gravity sit outside what PSI outcome tables cover. */
   beyondTested: boolean;
-  /** How the fuel/material input was mapped onto past NASA tests. */
-  fuelResolve: FuelResolve;
   neighbors: Neighbor[];
   nearby: Neighbor[];
   flags: string[];
 }
 
 const K = 7;
-const CATALOG_FUELS = [...new Set(knnPool.map(t => t.fuel))];
 const fuelClassOf = (fuel: string) => knnPool.find(t => t.fuel === fuel)?.fuelClass ?? 'any';
 const dilOf = (t: KnnTest): Diluent => (t.diluent?.startsWith('CO2') ? 'CO2' : t.diluent?.startsWith('He') ? 'He' : 'none');
 
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-
-/** Common cabin / lab names → NASA-tested fuels in the outcome pool. */
-const FUEL_ALIASES: [string, string][] = [
-  ['plexiglass', 'PMMA'],
-  ['perspex', 'PMMA'],
-  ['acrylic', 'PMMA'],
-  ['polymethyl methacrylate', 'PMMA'],
-  ['pmma', 'PMMA'],
-  ['nomex', 'PMMA & Nomex'],
-  ['sibal', 'SIBAL Fabric'],
-  ['cotton fiberglass', 'Cotton-Fiberglass (SIBAL)'],
-  ['cotton-fiberglass', 'Cotton-Fiberglass (SIBAL)'],
-  ['cotton', 'Cotton-Fiberglass (SIBAL)'],
-  ['fabric', 'SIBAL Fabric'],
-  ['silicone', 'Silicone'],
-  ['methanol', 'Methanol'],
-  ['heptane', 'Heptane'],
-  ['butane', 'Butane'],
-  ['propane', 'Propane'],
-  ['ethane', 'Ethane'],
-];
-
-export function isCatalogFuel(fuel: string): boolean {
-  return fuel === 'any' || CATALOG_FUELS.includes(fuel);
-}
-
-/** Map a typed / selected fuel onto past NASA tests (exact, alias, or class). */
-export function resolveFuel(x: Pick<SimInput, 'fuel' | 'fuelClass'>): FuelResolve {
-  const raw = (x.fuel || '').trim();
-  if (!raw || raw === 'any') return { query: 'any', matchFuel: null, cls: 'any', custom: false, note: null };
-
-  if (CATALOG_FUELS.includes(raw)) {
-    return { query: raw, matchFuel: raw, cls: fuelClassOf(raw), custom: false, note: null };
-  }
-
-  const n = norm(raw);
-  for (const [alias, fuel] of FUEL_ALIASES) {
-    if (n === norm(alias) || n.includes(norm(alias))) {
-      return {
-        query: raw,
-        matchFuel: fuel,
-        cls: fuelClassOf(fuel),
-        custom: true,
-        note: `Custom material “${raw}” matched past NASA tests of ${fuel}.`,
-      };
-    }
-  }
-
-  for (const fuel of CATALOG_FUELS) {
-    const fn = norm(fuel);
-    if (!fn || /not listed/.test(fuel)) continue;
-    if (n === fn || (fn.length >= 4 && n.includes(fn)) || (n.length >= 4 && fn.includes(n))) {
-      return {
-        query: raw,
-        matchFuel: fuel,
-        cls: fuelClassOf(fuel),
-        custom: true,
-        note: `Custom material “${raw}” matched past NASA tests of ${fuel}.`,
-      };
-    }
-  }
-
-  const cls: FuelClass = x.fuelClass && x.fuelClass !== 'any' ? x.fuelClass : 'solid';
-  return {
-    query: raw,
-    matchFuel: null,
-    cls,
-    custom: true,
-    note: `Custom material “${raw}” is not in the NASA fuel list — scoring from past ${cls} tests at similar conditions.`,
-  };
-}
-
-export function distance(t: KnnTest, x: SimInput, resolved: FuelResolve = resolveFuel(x)): number {
+export function distance(t: KnnTest, x: SimInput, cls: string): number {
   const atm = psiToAtm(x.psi);
   const dO2 = (t.o2 - x.o2) / 0.1;
   const dP = t.pAtm ? Math.log(t.pAtm / atm) / Math.LN2 : 0.5;
   const dF = t.flow !== null ? (t.flow - x.flow) / 15 : 0.5;
-  const target = resolved.matchFuel;
-  const cls = resolved.cls;
-  const dFuel = resolved.query === 'any' ? 0 : target && t.fuel === target ? 0 : t.fuelClass === cls ? 1.0 : 1.5;
+  const dFuel = x.fuel === 'any' ? 0 : t.fuel === x.fuel ? 0 : t.fuelClass === cls ? 1.0 : 1.5;
   const dDil = dilOf(t) === x.diluent ? 0 : 0.5;
   return Math.sqrt(dO2 * dO2 + dP * dP + dF * dF + dFuel * dFuel + dDil * dDil);
 }
@@ -160,8 +62,8 @@ export function physicsPrior(x: SimInput): number {
 }
 
 export function predict(x: SimInput): SimResult {
-  const resolved = resolveFuel(x);
-  const scored = knnPool.map(t => ({ t, d: distance(t, x, resolved), w: 0 })).sort((a, b) => a.d - b.d);
+  const cls = x.fuel === 'any' ? 'any' : fuelClassOf(x.fuel);
+  const scored = knnPool.map(t => ({ t, d: distance(t, x, cls), w: 0 })).sort((a, b) => a.d - b.d);
   const nb = scored.slice(0, K).map(n => ({ ...n, w: 1 / (n.d + 0.15) }));
   const W = nb.reduce((s, n) => s + n.w, 0);
   const pData = nb.reduce((s, n) => s + n.w * n.t.burn, 0) / W;
@@ -180,10 +82,6 @@ export function predict(x: SimInput): SimResult {
   let conf = 0.25 + 0.4 * agreement + 0.35 * proximity;
   const flags: string[] = [];
   const atm = psiToAtm(x.psi);
-  if (resolved.custom) {
-    conf *= resolved.matchFuel ? 0.92 : 0.82;
-    if (resolved.note) flags.push(resolved.note);
-  }
   if (GRAVITY[x.gravity].extrapolated) {
     conf *= x.gravity === 'earth' ? 0.85 : 0.7;
     flags.push(x.gravity === 'earth'
@@ -212,7 +110,6 @@ export function predict(x: SimInput): SimResult {
     nTests: nb.length,
     band: [bandLo, bandHi],
     beyondTested,
-    fuelResolve: resolved,
     neighbors: nb.slice(0, 3),
     nearby: nb,
     flags,
