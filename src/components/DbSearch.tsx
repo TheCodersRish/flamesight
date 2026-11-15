@@ -1,17 +1,43 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { searchDatabase, type SearchHit } from '../lib/search';
+import { isLongSearchQuery, searchDatabase, searchStudiesRemote, type SearchHit } from '../lib/search';
 
 export default function DbSearch({ className = '' }: { className?: string }) {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [aiHits, setAiHits] = useState<SearchHit[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const inputId = useId();
   const nav = useNavigate();
-  const hits = searchDatabase(q);
+  const keywordHits = searchDatabase(q);
+  const useAi = isLongSearchQuery(q);
+  const hits = useAi && aiHits ? aiHits : keywordHits;
 
-  useEffect(() => setActive(0), [q]);
+  useEffect(() => setActive(0), [q, hits]);
+
+  useEffect(() => {
+    if (!useAi) {
+      setAiHits(null);
+      setAiLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setAiHits(null);
+    setAiLoading(true);
+    const timer = window.setTimeout(() => {
+      void searchStudiesRemote(q, controller.signal).then(remote => {
+        if (controller.signal.aborted) return;
+        setAiHits(remote);
+        setAiLoading(false);
+      });
+    }, 400);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [q, useAi]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -25,6 +51,7 @@ export default function DbSearch({ className = '' }: { className?: string }) {
     nav(`/explorer/${hit.acc}`);
     setOpen(false);
     setQ('');
+    setAiHits(null);
   };
 
   return (
@@ -48,7 +75,13 @@ export default function DbSearch({ className = '' }: { className?: string }) {
       />
       {open && q.trim().length >= 2 && (
         <div className="absolute right-0 z-50 mt-1 w-[min(24rem,80vw)] overflow-hidden rounded-md border border-cyan-300/25 bg-space-950/95 shadow-glowBlue backdrop-blur-xl" role="listbox">
-          {hits.length === 0 && <p className="px-3 py-3 text-xs text-slate-400">No investigations or charted cases match.</p>}
+          {useAi && (
+            <p className="border-b border-cyan-300/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-300/70">
+              {aiLoading ? 'AI matching studies…' : aiHits ? 'AI study match' : 'Keyword fallback'}
+            </p>
+          )}
+          {hits.length === 0 && !aiLoading && <p className="px-3 py-3 text-xs text-slate-400">No investigations or charted cases match.</p>}
+          {hits.length === 0 && aiLoading && <p className="px-3 py-3 text-xs text-slate-400">Finding the best NASA study…</p>}
           {hits.map((h, i) => (
             <button
               key={h.kind === 'study' ? `s-${h.id}` : `i-${h.acc}`}

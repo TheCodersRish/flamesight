@@ -138,3 +138,95 @@ export async function answerWithGemini(opts: {
   if (!text) throw new Error('Gemini returned an empty answer');
   return text;
 }
+
+export interface StudyCatalogEntry {
+  accession: string;
+  acronym: string;
+  title: string;
+  role: string;
+  summary: string;
+  keywords: string[];
+}
+
+const MATCH_SYSTEM =
+  'You match natural-language descriptions to NASA PSI combustion investigations. ' +
+  'Return ONLY valid JSON: {"accessions":["PSI-…",…]} ranked best-first. ' +
+  'Pick only from the catalog. Prefer 1–5 matches. If nothing fits, return {"accessions":[]}.';
+
+/** Rank catalog studies for a long free-text query. Returns accession ids best-first. */
+export async function matchStudiesWithGemini(opts: {
+  key: string;
+  model: string;
+  query: string;
+  catalog: StudyCatalogEntry[];
+}): Promise<string[]> {
+  const query = String(opts.query || '').trim().slice(0, 800);
+  const catalog = (opts.catalog || []).slice(0, 40);
+  if (!query || !catalog.length) throw new Error('query and catalog required');
+
+  const allowed = new Set(catalog.map(c => c.accession));
+  const listing = catalog
+    .map(c => {
+      const name = c.acronym && c.acronym !== c.accession ? `${c.acronym} (${c.accession})` : c.accession;
+      const kw = (c.keywords || []).slice(0, 8).join(', ');
+      return `- ${name}: ${c.title}. Role: ${c.role}. ${String(c.summary || '').slice(0, 220)}${kw ? ` Keywords: ${kw}.` : ''}`;
+    })
+    .join('\n');
+
+  const body = {
+    systemInstruction: { parts: [{ text: MATCH_SYSTEM }] },
+    contents: [{
+      role: 'user',
+      parts: [{ text: `User search:\n${query}\n\nCatalog:\n${listing}\n\nJSON:` }],
+    }],
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 512,
+      responseMimeType: 'application/json',
+      thinkingConfig: { thinkingLevel: 'minimal' },
+    },
+  };
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${opts.model}:generateContent`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': opts.key,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    let message = `Gemini error ${r.status}`;
+    try {
+      const j = (await r.json()) as { error?: { message?: string } };
+      if (j.error?.message) message = j.error.message;
+    } catch { /* ignore */ }
+    throw new Error(message);
+  }
+
+  const j = (await r.json()) as GeminiChunk;
+  if (j.error?.message) throw new Error(j.error.message);
+  const raw = partText(j).trim();
+  if (!raw) throw new Error('Gemini returned an empty match list');
+
+  let parsed: { accessions?: unknown };
+  try {
+    parsed = JSON.parse(raw) as { accessions?: unknown };
+  } catch {
+    // Model sometimes wraps JSON in fences or prose — pull the first array-looking blob.
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Gemini match response was not JSON');
+    parsed = JSON.parse(m[0]) as { accessions?: unknown };
+  }
+
+  const list = Array.isArray(parsed.accessions) ? parsed.accessions : [];
+  const out: string[] = [];
+  for (const item of list) {
+    const acc = String(item || '').trim().toUpperCase();
+    // Catalog uses mixed case like PSI-25; normalize lookup.
+    const hit = [...allowed].find(a => a.toUpperCase() === acc);
+    if (hit && !out.includes(hit)) out.push(hit);
+  }
+  return out.slice(0, 8);
+}
