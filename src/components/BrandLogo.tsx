@@ -5,10 +5,9 @@ type BrandLogoProps = {
   title?: string;
 };
 
-/** Public asset path that respects Vite `base: './'`. */
+/** Public asset path (Vite `base: './'`). */
 export function brandAsset(file: string) {
-  const base = import.meta.env.BASE_URL || './';
-  return `${base}${file.replace(/^\//, '')}`;
+  return `./${file.replace(/^\//, '')}`;
 }
 
 export default function BrandLogo({
