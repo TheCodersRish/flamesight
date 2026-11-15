@@ -73,8 +73,8 @@ export default function Home() {
   const score = Math.round(result.p * 100);
 
   return (
-    <div className="workspace-shell">
-      <motion.header {...fadeUp} transition={snap} className="mb-8 space-y-2">
+    <div className="workspace-shell flex min-h-0 flex-1 flex-col lg:overflow-hidden">
+      <motion.header {...fadeUp} transition={snap} className="mb-4 shrink-0 space-y-2 sm:mb-6">
         <p className="text-sm text-flame-300">Dashboard · NASA fire data, in plain words</p>
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Would a fire start in this cabin?</h1>
         <p className="max-w-2xl text-base text-slate-300 sm:text-lg">
@@ -82,11 +82,11 @@ export default function Home() {
         </p>
       </motion.header>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(240px,300px)_minmax(0,1fr)] lg:items-start">
+      <div className="grid gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(240px,300px)_minmax(0,1fr)] lg:gap-8 lg:overflow-hidden">
         <motion.aside
           {...fadeUp}
           transition={{ ...snap, delay: 0.03 }}
-          className="workspace-rail lg:sticky lg:top-4"
+          className="workspace-rail scrollbar-thin lg:min-h-0 lg:overflow-y-auto"
           aria-label="Cabin settings"
         >
           <h2 className="mb-3 text-sm font-semibold text-white">1. Set the cabin</h2>
@@ -139,7 +139,7 @@ export default function Home() {
           </div>
         </motion.aside>
 
-        <div className="story-spine space-y-10 sm:space-y-12">
+        <div className="story-spine scrollbar-thin space-y-10 sm:space-y-12 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           <Chapter n="2" title="The quick answer" delay={0.04}>
             <div className="grid gap-5 md:grid-cols-[minmax(0,200px)_minmax(0,1fr)] md:items-center">
               <div className="relative overflow-hidden rounded-2xl border border-white/10">
