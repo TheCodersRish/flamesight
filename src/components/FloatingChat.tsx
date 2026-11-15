@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useBurn } from '../lib/burnSession';
-import { plainAnalyst, simplifyText } from '../lib/plainEnglish';
+import { simplifyText } from '../lib/plainEnglish';
 import { narrateLocal } from '../lib/narrate';
 import { answerLocal, askRemote, SAMPLE_QUESTIONS } from '../lib/retrieval';
 import {
@@ -20,6 +20,8 @@ interface Turn {
   state: 'loading' | 'done';
   caveats: string[];
   hits: { accession: string; label: string }[];
+  /** Page the AI wants to open — user must confirm first. */
+  pendingOpen?: ScreenAction | null;
   opened?: ScreenAction | null;
 }
 
@@ -38,16 +40,23 @@ export default function FloatingChat() {
   const workspace = describeWorkspace({ pathname, search, burn: { input: burn.input, result: burn.result } });
   const where = workspaceChip(pathname);
 
-  const applyOpen = (action: ScreenAction | null | undefined) => {
-    if (!action) return;
+  const confirmOpen = (action: ScreenAction) => {
     navigate(action.path);
+    setTurns(list => list.map((turn, i) => (
+      i === 0 ? { ...turn, pendingOpen: null, opened: action } : turn
+    )));
+  };
+
+  const declineOpen = () => {
+    setTurns(list => list.map((turn, i) => (
+      i === 0 ? { ...turn, pendingOpen: null } : turn
+    )));
   };
 
   const ask = (question: string) => {
     const text = question.trim();
     if (!text) return;
     const localOpen = intentToOpen(text);
-    if (localOpen) applyOpen(localOpen);
     const openStudy = pathname.startsWith('/explorer/') ? pathname.split('/')[2]?.toUpperCase() : undefined;
     const a = answerLocal(text, openStudy);
     const notes = narrateLocal(a);
@@ -56,18 +65,16 @@ export default function FloatingChat() {
       accession: h.inv.accession,
       label: h.inv.hasAcronym ? h.inv.acronym : h.inv.title,
     }));
-    const localNotes = localOpen
-      ? `${notes}\n\nOpened ${localOpen.label} on your screen.`
-      : notes;
     setTurns(t => [{
       question: text,
-      notes: localNotes,
-      ai: plainAnalyst(text, localNotes, a.caveats),
+      notes,
+      ai: '',
       source: 'local',
       state: 'loading',
       caveats: a.caveats,
       hits,
-      opened: localOpen,
+      pendingOpen: localOpen,
+      opened: null,
     }, ...t]);
     setQ('');
     setOpen(true);
@@ -85,11 +92,12 @@ export default function FloatingChat() {
         if (i !== 0) return turn;
         if (remote) {
           const { answer, action } = stripOpenDirective(remote);
-          const opened = action || turn.opened || null;
-          if (action && (!turn.opened || turn.opened.path !== action.path)) applyOpen(action);
-          return { ...turn, ai: answer, source: 'gemini', state: 'done', opened };
+          const pendingOpen = action && (!turn.opened || turn.opened.path !== action.path)
+            ? action
+            : (turn.pendingOpen || null);
+          return { ...turn, ai: answer, source: 'gemini', state: 'done', pendingOpen };
         }
-        return { ...turn, ai: turn.notes, source: 'local', state: 'done' };
+        return { ...turn, ai: '', source: 'local', state: 'done' };
       }));
     })();
   };
@@ -105,9 +113,7 @@ export default function FloatingChat() {
   if (hide) return null;
 
   const latest = turns[0];
-  const display = latest
-    ? (latest.source === 'gemini' ? simplifyText(latest.ai) : plainAnalyst(latest.question, latest.notes, latest.caveats))
-    : '';
+  const display = latest?.source === 'gemini' && latest.ai ? simplifyText(latest.ai) : '';
 
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
@@ -120,7 +126,7 @@ export default function FloatingChat() {
           <header className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2.5">
             <div>
               <p className="text-sm font-semibold text-white">Ask FlameSight</p>
-              <p className="text-[11px] text-slate-400">Sees what you are working on · can open pages</p>
+              <p className="text-[11px] text-slate-400">Sees what you are working on · asks before opening pages</p>
             </div>
             <div className="flex items-center gap-1">
               <Link to="/analyst" className="rounded-lg px-2 py-1 text-[11px] text-micro-300 hover:bg-white/10" onClick={() => setOpen(false)}>
@@ -157,11 +163,38 @@ export default function FloatingChat() {
                 <p className="text-xs text-slate-400">You asked</p>
                 <p className="text-sm text-white">{latest.question}</p>
                 <p className="text-[11px] text-slate-500">
-                  {latest.source === 'gemini' ? 'Live AI answer' : 'NASA notes (AI still loading or unavailable)'}
-                  {latest.state === 'loading' ? ' · writing…' : ''}
+                  {latest.source === 'gemini' ? 'Live AI answer' : latest.state === 'loading' ? 'AI writing…' : 'AI unavailable'}
+                  {latest.state === 'loading' && latest.source === 'gemini' ? ' · writing…' : ''}
                 </p>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>
-                {latest.opened && (
+                {display ? (
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>
+                ) : latest.state === 'loading' ? (
+                  <p className="text-sm text-cyan-100">Writing the AI answer…</p>
+                ) : (
+                  <p className="text-sm text-slate-400">The AI could not answer right now. Try again in a moment.</p>
+                )}
+                {latest.pendingOpen && (
+                  <div className="rounded-lg bg-micro-500/15 px-2.5 py-2 ring-1 ring-micro-500/30">
+                    <p className="text-[11px] text-micro-100">Open {latest.pendingOpen.label}?</p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => confirmOpen(latest.pendingOpen!)}
+                        className="rounded-lg bg-flame-500 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-flame-400"
+                      >
+                        Open
+                      </button>
+                      <button
+                        type="button"
+                        onClick={declineOpen}
+                        className="rounded-lg bg-white/10 px-2.5 py-1 text-[11px] text-slate-200 hover:bg-white/15"
+                      >
+                        Not now
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {latest.opened && !latest.pendingOpen && (
                   <p className="rounded-lg bg-micro-500/15 px-2 py-1.5 text-[11px] text-micro-100">
                     On screen: {latest.opened.label}
                   </p>
@@ -176,9 +209,8 @@ export default function FloatingChat() {
                         key={h.accession}
                         type="button"
                         onClick={() => {
-                          applyOpen({ path: `/explorer/${h.accession}`, label: h.label });
                           setTurns(list => list.map((turn, i) => (
-                            i === 0 ? { ...turn, opened: { path: `/explorer/${h.accession}`, label: h.label } } : turn
+                            i === 0 ? { ...turn, pendingOpen: { path: `/explorer/${h.accession}`, label: h.label } } : turn
                           )));
                         }}
                         className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-micro-200 hover:bg-white/10"

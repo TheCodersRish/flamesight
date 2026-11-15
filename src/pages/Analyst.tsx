@@ -6,7 +6,7 @@ import Flame from '../components/Flame';
 import { Pill, SourceChip } from '../components/ui';
 import { useBurn } from '../lib/burnSession';
 import { analystPhysicsCitations, fluidPhysicsHref, physicsFollowUps } from '../lib/physicsBridge';
-import { plainAnalyst, simplifyText } from '../lib/plainEnglish';
+import { simplifyText } from '../lib/plainEnglish';
 import { downloadReport, stamp } from '../lib/report';
 import { answerLocal, askRemote, SAMPLE_QUESTIONS, type Answer } from '../lib/retrieval';
 import { narrateLocal } from '../lib/narrate';
@@ -25,6 +25,8 @@ interface Turn {
   ai: string;
   source: 'local' | 'gemini';
   state: 'loading' | 'done';
+  /** Page the AI wants to open — user must confirm first. */
+  pendingOpen?: ScreenAction | null;
   opened?: ScreenAction | null;
 }
 
@@ -40,18 +42,36 @@ export default function Analyst() {
   const request = useRef(0);
   const workspace = describeWorkspace({ pathname, search, burn: { input: burn.input, result: burn.result } });
 
+  const confirmOpen = (action: ScreenAction) => {
+    navigate(action.path);
+    setTurns(list => list.map((turn, i) => (
+      i === 0 ? { ...turn, pendingOpen: null, opened: action } : turn
+    )));
+  };
+
+  const declineOpen = () => {
+    setTurns(list => list.map((turn, i) => (
+      i === 0 ? { ...turn, pendingOpen: null } : turn
+    )));
+  };
+
   const ask = (question: string) => {
     const text = question.trim();
     if (!text) return;
     const localOpen = intentToOpen(text);
-    if (localOpen) navigate(localOpen.path);
     const openStudy = pathname.startsWith('/explorer/') ? pathname.split('/')[2]?.toUpperCase() : undefined;
     const a = answerLocal(text, openStudy);
-    const notes = localOpen
-      ? `${narrateLocal(a)}\n\nOpened ${localOpen.label} on your screen.`
-      : narrateLocal(a);
+    const notes = narrateLocal(a);
     const id = ++request.current;
-    setTurns(t => [{ a, notes, ai: plainAnalyst(text, notes, a.caveats), source: 'local', state: 'loading', opened: localOpen }, ...t]);
+    setTurns(t => [{
+      a,
+      notes,
+      ai: '',
+      source: 'local',
+      state: 'loading',
+      pendingOpen: localOpen,
+      opened: null,
+    }, ...t]);
     setQ('');
 
     void (async () => {
@@ -67,10 +87,12 @@ export default function Analyst() {
         if (i !== 0) return turn;
         if (remote) {
           const { answer, action } = stripOpenDirective(remote);
-          if (action && (!turn.opened || turn.opened.path !== action.path)) navigate(action.path);
-          return { ...turn, ai: answer, source: 'gemini', state: 'done', opened: action || turn.opened || null };
+          const pendingOpen = action && (!turn.opened || turn.opened.path !== action.path)
+            ? action
+            : (turn.pendingOpen || null);
+          return { ...turn, ai: answer, source: 'gemini', state: 'done', pendingOpen };
         }
-        return { ...turn, ai: notes, source: 'local', state: 'done' };
+        return { ...turn, ai: '', source: 'local', state: 'done' };
       }));
     })();
   };
@@ -93,20 +115,18 @@ export default function Analyst() {
   );
   const followUps = useMemo(() => physicsFollowUps(citations), [citations]);
 
-  const display = latest
-    ? (plain
-      ? (latest.source === 'gemini' ? simplifyText(latest.ai) : plainAnalyst(latest.a.question, latest.notes, latest.a.caveats))
-      : (latest.source === 'gemini' ? latest.ai : latest.notes))
+  const display = latest?.source === 'gemini' && latest.ai
+    ? (plain ? simplifyText(latest.ai) : latest.ai)
     : '';
 
   const onDownload = () => {
-    if (!latest) return;
+    if (!latest || !display) return;
     const body = [
       'FlameSight — Fire Safety Analyst report',
       `Generated: ${new Date().toLocaleString()}`,
       '',
       `Question: ${latest.a.question}`,
-      `Answer source: ${latest.source === 'gemini' ? 'Gemini on Vercel (/api/ask)' : 'NASA notes on this device (server AI unavailable)'}`,
+      'Answer source: Live AI on Vercel (/api/ask)',
       '',
       'Answer',
       display,
@@ -128,7 +148,7 @@ export default function Analyst() {
       graphsTitle="How well they match"
       outcomeTitle="Answer"
       stage={(
-        <FlameStage title="Ask FlameSight" caption="Knows what you are working on. Ask in everyday language, or say “pull up FLEX” to open it on screen." controls={(
+        <FlameStage title="Ask FlameSight" caption="Knows what you are working on. Ask in everyday language — it will ask before opening another page." controls={(
           <>
             <form className="flex gap-2 sm:col-span-2" onSubmit={e => { e.preventDefault(); ask(q); }}>
               <label htmlFor="q" className="sr-only">Your question</label>
@@ -136,7 +156,7 @@ export default function Analyst() {
               <button className="rounded-lg bg-flame-500 px-4 py-2 text-sm font-medium text-white">Ask</button>
             </form>
             <p className="text-[11px] leading-relaxed text-slate-400 sm:col-span-2">
-              Tip: the agent sees your current page and Will-it-burn knobs. Say “open lunar risks” or “pull up BASS-II” to bring them up.
+              Tip: the agent sees your current page and Will-it-burn knobs. Say “open lunar risks” or “pull up BASS-II” — it asks before switching.
             </p>
           </>
         )}>
@@ -180,27 +200,48 @@ export default function Analyst() {
             <button type="button" onClick={() => setPlain(p => !p)} className={`rounded-lg px-2.5 py-1 text-xs ${plain ? 'bg-cyan-500/20 text-cyan-100' : 'bg-white/5 text-slate-300'}`} aria-pressed={plain}>
               {plain ? 'Simpler wording on' : 'Simpler wording off'}
             </button>
-            {latest && (latest.state === 'done' || latest.ai) && (
+            {latest && display && (
               <button type="button" onClick={onDownload} className="rounded-lg bg-flame-500/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-flame-500">Download report</button>
             )}
           </div>
           <p className="mt-2 text-xs text-slate-400">
-            {latest?.source === 'gemini' ? 'Live AI answer' : 'NASA notes (AI still loading or unavailable)'}
+            {latest?.source === 'gemini' ? 'Live AI answer' : latest?.state === 'loading' ? 'AI writing…' : latest ? 'AI unavailable' : 'AI answer'}
           </p>
           {latest && <p className="mt-1 text-sm text-slate-300">You asked: {latest.a.question}</p>}
-          {latest && latest.state === 'loading' && (
-            <p className="mt-3 text-sm text-cyan-100">
-              Writing the full answer…
-              <span className="mt-1 block text-xs text-slate-400">NASA notes show first; the live AI answer replaces them when ready.</span>
-            </p>
+          {latest && latest.state === 'loading' && !display && (
+            <p className="mt-3 text-sm text-cyan-100">Writing the AI answer…</p>
           )}
-          {latest && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>}
-          {latest?.opened && (
+          {display && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>}
+          {latest && latest.state === 'done' && !display && (
+            <p className="mt-3 text-sm text-slate-400">The AI could not answer right now. Try again in a moment.</p>
+          )}
+          {latest?.pendingOpen && (
+            <div className="mt-3 rounded-lg bg-micro-500/15 px-3 py-2.5 ring-1 ring-micro-500/30">
+              <p className="text-sm text-micro-100">Open {latest.pendingOpen.label}?</p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => confirmOpen(latest.pendingOpen!)}
+                  className="rounded-lg bg-flame-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-flame-400"
+                >
+                  Open
+                </button>
+                <button
+                  type="button"
+                  onClick={declineOpen}
+                  className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-slate-200 hover:bg-white/15"
+                >
+                  Not now
+                </button>
+              </div>
+            </div>
+          )}
+          {latest?.opened && !latest.pendingOpen && (
             <p className="mt-2 rounded-lg bg-micro-500/15 px-2 py-1.5 text-xs text-micro-100">
               On screen: {latest.opened.label}
             </p>
           )}
-          {!latest && <p className="mt-3 text-sm text-slate-300">Ask anything about fire in space. You will get a short answer grounded in NASA tests.</p>}
+          {!latest && <p className="mt-3 text-sm text-slate-300">Ask anything about fire in space. You will get a short AI answer grounded in NASA tests.</p>}
           {latest?.a.caveats.map(c => <p key={c} className="mt-2 text-xs text-amber-200">⚠ {plain ? simplifyText(c) : c}</p>)}
           {citations.length > 0 && (
             <div className="mt-3 rounded-lg bg-micro-500/10 p-2 ring-1 ring-micro-500/25">
