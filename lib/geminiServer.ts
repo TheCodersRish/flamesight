@@ -10,13 +10,14 @@ export interface AskContext {
 }
 
 const SYSTEM =
-  'You are FlameSight, a fire-safety analyst for NASA Space Apps. Answer ONLY from the numbered NASA PSI sources given. ' +
+  'You are FlameSight, a fire-safety guide for NASA Space Apps. Answer ONLY from the numbered NASA PSI sources given. ' +
   'Cite sources inline like (PSI-69). If the sources do not answer the question, say so. Never invent numbers. ' +
   'Moon/Mars conditions have no partial-gravity combustion data in PSI: label any such statement as extrapolated. ' +
   'The flame animation is illustrative, not a combustion simulation. ' +
-  'Write 3–6 short sentences at a senior high-school / first-year university level. Keep technical terms when useful and briefly define the hardest jargon in place.';
+  'Write 3–6 short everyday sentences a non-scientist can follow. Prefer plain words; if you must use a technical term, define it in the same sentence.';
 
-const MAX_OUT = 2048;
+// Gemini 3 thinking tokens count against maxOutputTokens. Keep thinking minimal and leave room for a full answer.
+const MAX_OUT = 8192;
 
 function buildBody(question: string, context: AskContext[]) {
   const sources = context
@@ -25,7 +26,12 @@ function buildBody(question: string, context: AskContext[]) {
   return {
     systemInstruction: { parts: [{ text: SYSTEM }] },
     contents: [{ role: 'user', parts: [{ text: `Question: ${question}\n\nSources:\n${sources}` }] }],
-    generationConfig: { temperature: 0.2, maxOutputTokens: MAX_OUT },
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: MAX_OUT,
+      // Default Gemini 3 thinking is "high" and can eat the whole token budget, cutting answers mid-sentence.
+      thinkingConfig: { thinkingLevel: 'minimal' },
+    },
   };
 }
 
@@ -38,11 +44,18 @@ function prepare(opts: { question: string; context: AskContext[] }) {
 
 interface GeminiChunk {
   error?: { message?: string };
-  candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
+  candidates?: {
+    content?: { parts?: { text?: string; thought?: boolean }[] };
+    finishReason?: string;
+  }[];
 }
 
 function partText(j: GeminiChunk): string {
-  return j.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+  // Skip internal "thought" parts so only the user-facing answer streams to the browser.
+  return j.candidates?.[0]?.content?.parts
+    ?.filter(p => !p.thought)
+    .map(p => p.text || '')
+    .join('') || '';
 }
 
 /** Yield incremental text deltas from Gemini SSE streaming. */

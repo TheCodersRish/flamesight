@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useDemo } from '../demo/Demo';
 import DbSearch from './DbSearch';
@@ -12,6 +12,7 @@ type NavItem = {
 };
 
 const iconCls = 'h-4 w-4 shrink-0';
+const NAV_KEY = 'flamesight-nav-collapsed';
 
 const Icons = {
   overview: (
@@ -78,104 +79,199 @@ const Icons = {
 
 const GROUPS: { label: string; items: NavItem[] }[] = [
   {
-    label: 'Story',
+    label: 'Start here',
     items: [
-      { to: '/overview', label: 'Overview', hint: 'Mission brief', icon: Icons.overview },
-      { to: '/', label: 'Dashboard', end: true, hint: 'Live workspace', icon: Icons.dashboard },
+      { to: '/overview', label: 'Overview', hint: 'The big picture', icon: Icons.overview },
+      { to: '/', label: 'Dashboard', end: true, hint: 'Try a cabin setup', icon: Icons.dashboard },
     ],
   },
   {
-    label: 'Lab',
+    label: 'Explore',
     items: [
-      { to: '/simulator', label: 'Will it burn?', hint: 'Run a flame test', icon: Icons.burn },
-      { to: '/insights', label: 'What NASA found', hint: 'Charts & findings', icon: Icons.insights },
-      { to: '/fluid-physics', label: 'How flames work', hint: 'Microgravity physics', icon: Icons.physics },
-      { to: '/scenarios', label: 'Rank risks', hint: 'Score every study', icon: Icons.risks },
+      { to: '/simulator', label: 'Will it burn?', hint: 'Yes / maybe / no', icon: Icons.burn },
+      { to: '/insights', label: 'What NASA found', hint: 'Simple takeaways', icon: Icons.insights },
+      { to: '/fluid-physics', label: 'How flames work', hint: 'Why space fire looks odd', icon: Icons.physics },
+      { to: '/scenarios', label: 'Rank risks', hint: 'Pick a mission', icon: Icons.risks },
     ],
   },
   {
-    label: 'Library',
+    label: 'More',
     items: [
-      { to: '/explorer', label: 'Browse tests', hint: 'All investigations', icon: Icons.browse },
-      { to: '/analyst', label: 'Ask a question', hint: 'NASA-grounded Q&A', icon: Icons.ask },
-      { to: '/about', label: 'About', hint: 'Method & sources', icon: Icons.about },
-      { to: '/ui-variations', label: 'UI variations', hint: 'Design skins', icon: Icons.ui },
+      { to: '/explorer', label: 'Browse tests', hint: 'All NASA studies', icon: Icons.browse },
+      { to: '/analyst', label: 'Ask a question', hint: 'Plain-language answers', icon: Icons.ask },
+      { to: '/about', label: 'About', hint: 'Where numbers come from', icon: Icons.about },
+      { to: '/ui-variations', label: 'UI look', hint: 'Optional skins', icon: Icons.ui },
     ],
   },
 ];
 
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(NAV_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export default function SideNav() {
   const { running, start, stop } = useDemo();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(readCollapsed());
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed(c => {
+      const next = !c;
+      try {
+        localStorage.setItem(NAV_KEY, next ? '1' : '0');
+      } catch { /* ignore */ }
+      return next;
+    });
+  };
+
   return (
-    <nav className="workspace-nav flex shrink-0 gap-2 overflow-x-auto border-b border-white/10 px-3 py-2.5 lg:w-64 lg:flex-col lg:gap-0 lg:overflow-y-auto lg:overflow-x-hidden lg:border-b-0 lg:border-r lg:px-3 lg:py-5" aria-label="Workspace">
-      <NavLink to="/overview" className="nav-brand mb-5 hidden items-center gap-3 rounded-xl px-2 py-1.5 lg:flex" aria-label="FlameSight overview">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-flame-400 via-flame-500 to-micro-600 text-sm font-bold text-white shadow-glow">FS</span>
-        <span className="min-w-0">
-          <span className="block text-[15px] font-semibold tracking-[0.04em] text-white">FlameSight</span>
-          <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">Mission workspace</span>
-        </span>
-      </NavLink>
-
-      <div className="flex min-w-0 flex-1 items-stretch gap-2 lg:flex-col lg:gap-0">
-        {GROUPS.map((group, gi) => (
-          <div
-            key={group.label}
-            className={`contents lg:mb-4 lg:block ${gi > 0 ? 'lg:border-t lg:border-white/10 lg:pt-4' : ''}`}
-          >
-            <p className="mb-2 hidden px-2.5 font-mono text-[10px] uppercase tracking-[0.24em] text-slate-500 lg:block">{group.label}</p>
-            <div className="contents lg:space-y-1 lg:block">
-              {group.items.map(n => (
-                <NavLink
-                  key={n.to}
-                  to={n.to}
-                  end={n.end}
-                  title={n.hint}
-                  className={({ isActive }) =>
-                    `nav-item group relative flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-colors duration-150 lg:w-full lg:whitespace-normal ${
-                      isActive
-                        ? 'bg-white/10 font-medium text-white shadow-[inset_3px_0_0_0_rgba(255,159,67,0.95)]'
-                        : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <span className={`grid h-7 w-7 place-items-center rounded-lg border transition-colors ${
-                        isActive
-                          ? 'border-flame-400/40 bg-flame-500/15 text-flame-300'
-                          : 'border-white/10 bg-white/5 text-slate-400 group-hover:border-white/20 group-hover:text-slate-200'
-                      }`}>
-                        {n.icon}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block leading-tight">{n.label}</span>
-                        <span className={`mt-0.5 hidden text-[11px] leading-tight lg:block ${isActive ? 'text-slate-300' : 'text-slate-500 group-hover:text-slate-400'}`}>
-                          {n.hint}
-                        </span>
-                      </span>
-                    </>
-                  )}
-                </NavLink>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0 lg:mt-auto lg:flex-col lg:items-stretch lg:gap-2 lg:border-t lg:border-white/10 lg:pt-4">
-        <DbSearch className="w-44 lg:w-full" />
+    <>
+      {/* Mobile top bar with menu toggle */}
+      <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2 lg:hidden">
         <button
           type="button"
-          onClick={running ? stop : start}
-          className={`whitespace-nowrap rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors lg:w-full ${
-            running
-              ? 'border border-white/15 bg-white/10 text-white'
-              : 'border border-flame-500/30 bg-flame-500/10 text-flame-300 hover:border-flame-400/50 hover:bg-flame-500/15 hover:text-flame-200'
-          }`}
+          onClick={() => setMobileOpen(o => !o)}
+          className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white"
+          aria-expanded={mobileOpen}
+          aria-controls="workspace-nav"
         >
-          {running ? 'Stop demo' : 'Guided demo'}
+          {mobileOpen ? 'Hide menu' : 'Menu'}
         </button>
+        <NavLink to="/overview" className="flex min-w-0 items-center gap-2" aria-label="FlameSight overview">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-flame-400 via-flame-500 to-micro-600 text-xs font-bold text-white">FS</span>
+          <span className="truncate text-sm font-semibold text-white">FlameSight</span>
+        </NavLink>
       </div>
-    </nav>
+
+      <nav
+        id="workspace-nav"
+        className={`workspace-nav shrink-0 border-white/10 transition-[width] duration-200 ${
+          mobileOpen ? 'flex' : 'hidden'
+        } flex-col gap-0 overflow-y-auto border-b px-3 py-3 lg:flex lg:overflow-y-auto lg:overflow-x-hidden lg:border-b-0 lg:border-r lg:px-2 lg:py-4 ${
+          collapsed ? 'lg:w-[4.5rem]' : 'lg:w-64'
+        }`}
+        aria-label="Workspace"
+        data-collapsed={collapsed ? 'true' : 'false'}
+      >
+        <div className={`mb-3 hidden items-center gap-2 lg:flex ${collapsed ? 'flex-col' : ''}`}>
+          <NavLink
+            to="/overview"
+            className={`nav-brand flex items-center gap-3 rounded-xl px-1.5 py-1.5 ${collapsed ? 'justify-center' : 'flex-1'}`}
+            aria-label="FlameSight overview"
+            title="FlameSight"
+          >
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-flame-400 via-flame-500 to-micro-600 text-sm font-bold text-white shadow-glow">FS</span>
+            {!collapsed && (
+              <span className="min-w-0">
+                <span className="block text-[15px] font-semibold tracking-[0.04em] text-white">FlameSight</span>
+                <span className="mt-0.5 block text-[11px] text-slate-400">Fire safety, made clear</span>
+              </span>
+            )}
+          </NavLink>
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-300 hover:bg-white/10 hover:text-white"
+            aria-pressed={collapsed}
+            aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
+            title={collapsed ? 'Expand menu' : 'Collapse menu'}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+              {collapsed ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 6l-6 6 6 6" />
+              )}
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          {GROUPS.map((group, gi) => (
+            <div
+              key={group.label}
+              className={`${gi > 0 ? 'mt-3 border-t border-white/10 pt-3' : ''}`}
+            >
+              {!collapsed && (
+                <p className="mb-1.5 px-2.5 text-[10px] font-medium uppercase tracking-[0.2em] text-slate-500">{group.label}</p>
+              )}
+              <div className="space-y-1">
+                {group.items.map(n => (
+                  <NavLink
+                    key={n.to}
+                    to={n.to}
+                    end={n.end}
+                    title={collapsed ? `${n.label} — ${n.hint}` : n.hint}
+                    onClick={() => setMobileOpen(false)}
+                    className={({ isActive }) =>
+                      `nav-item group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm transition-colors duration-150 ${
+                        collapsed ? 'justify-center lg:px-2' : ''
+                      } ${
+                        isActive
+                          ? 'bg-white/10 font-medium text-white shadow-[inset_3px_0_0_0_rgba(255,159,67,0.95)]'
+                          : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <span className={`grid h-7 w-7 place-items-center rounded-lg border transition-colors ${
+                          isActive
+                            ? 'border-flame-400/40 bg-flame-500/15 text-flame-300'
+                            : 'border-white/10 bg-white/5 text-slate-400 group-hover:border-white/20 group-hover:text-slate-200'
+                        }`}>
+                          {n.icon}
+                        </span>
+                        {!collapsed && (
+                          <span className="min-w-0 flex-1">
+                            <span className="block leading-tight">{n.label}</span>
+                            <span className={`mt-0.5 block text-[11px] leading-tight ${isActive ? 'text-slate-300' : 'text-slate-500 group-hover:text-slate-400'}`}>
+                              {n.hint}
+                            </span>
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className={`mt-4 flex flex-col gap-2 border-t border-white/10 pt-4 ${collapsed ? 'items-stretch' : ''}`}>
+          {!collapsed && <DbSearch className="w-full" />}
+          <button
+            type="button"
+            onClick={running ? stop : start}
+            title={running ? 'Stop demo' : 'Guided demo'}
+            className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+              collapsed ? 'px-2 text-center text-xs' : 'text-left'
+            } ${
+              running
+                ? 'border border-white/15 bg-white/10 text-white'
+                : 'border border-flame-500/30 bg-flame-500/10 text-flame-300 hover:border-flame-400/50 hover:bg-flame-500/15 hover:text-flame-200'
+            }`}
+          >
+            {collapsed ? (running ? 'Stop' : 'Demo') : (running ? 'Stop demo' : 'Guided demo')}
+          </button>
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="hidden rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400 hover:bg-white/10 hover:text-white lg:block"
+          >
+            {collapsed ? 'Show labels' : 'Collapse menu'}
+          </button>
+        </div>
+      </nav>
+    </>
   );
 }

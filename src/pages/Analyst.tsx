@@ -111,15 +111,15 @@ export default function Analyst() {
       graphsTitle="How well they match"
       outcomeTitle="Answer"
       stage={(
-        <FlameStage title="Analyst" caption="Matches NASA notes in the browser, then runs the AI model on the Vercel site via /api/ask." controls={(
+        <FlameStage title="Ask FlameSight" caption="Ask in everyday language. We match NASA notes first, then fill in a clear AI answer." controls={(
           <>
             <form className="flex gap-2 sm:col-span-2" onSubmit={e => { e.preventDefault(); ask(q); }}>
               <label htmlFor="q" className="sr-only">Your question</label>
-              <input id="q" value={q} onChange={e => setQ(e.target.value)} placeholder="Which gas puts out fuel fires best in microgravity?" className="min-w-0 flex-1 rounded-lg border border-white/15 bg-space-950 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
+              <input id="q" value={q} onChange={e => setQ(e.target.value)} placeholder="Which gas puts out fuel fires best in space?" className="min-w-0 flex-1 rounded-lg border border-white/15 bg-space-950 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
               <button className="rounded-lg bg-flame-500 px-4 py-2 text-sm font-medium text-white">Ask</button>
             </form>
             <p className="text-[11px] leading-relaxed text-slate-400 sm:col-span-2">
-              No on-device model download. The live site calls Gemini through FlameSight&apos;s Vercel <code className="rounded bg-white/10 px-1 text-cyan-100">/api/ask</code> endpoint, then shows that answer. If the server model is offline, NASA notes stay as the fallback.
+              Tip: ask like you would ask a friend. If the live AI is busy, you still get a NASA-notes answer right away.
             </p>
           </>
         )}>
@@ -168,17 +168,17 @@ export default function Analyst() {
             )}
           </div>
           <p className="mt-2 text-xs text-slate-400">
-            {latest?.source === 'gemini' ? 'Gemini · running on Vercel' : 'NASA notes · waiting on / fallback from server AI'}
+            {latest?.source === 'gemini' ? 'Live AI answer' : 'NASA notes (AI still loading or unavailable)'}
           </p>
           {latest && <p className="mt-1 text-sm text-slate-300">You asked: {latest.a.question}</p>}
           {latest && latest.state === 'loading' && (
             <p className="mt-3 text-sm text-cyan-100">
-              Running the AI model on the Vercel site…
-              <span className="mt-1 block text-xs text-slate-400">Showing NASA notes right away. The server answer replaces them when /api/ask responds.</span>
+              Writing the full answer…
+              <span className="mt-1 block text-xs text-slate-400">NASA notes show first; the live AI answer replaces them when ready.</span>
             </p>
           )}
           {latest && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>}
-          {!latest && <p className="mt-3 text-sm text-slate-300">Ask a question. FlameSight matches NASA notes locally, then uses the AI model hosted on Vercel.</p>}
+          {!latest && <p className="mt-3 text-sm text-slate-300">Ask anything about fire in space. You will get a short answer grounded in NASA tests.</p>}
           {latest?.a.caveats.map(c => <p key={c} className="mt-2 text-xs text-amber-200">⚠ {plain ? simplifyText(c) : c}</p>)}
           {citations.length > 0 && (
             <div className="mt-3 rounded-lg bg-micro-500/10 p-2 ring-1 ring-micro-500/25">

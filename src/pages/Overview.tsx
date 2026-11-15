@@ -33,17 +33,17 @@ export default function Overview() {
     <div className="space-y-12">
       <section className="grid items-center gap-8 lg:grid-cols-[1.1fr_1fr]">
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.3em] text-micro-300">NASA Space Apps 2026 · Flame in Freefall</p>
+          <p className="text-sm text-micro-300">NASA Space Apps 2026 · Flame in Freefall</p>
           <h1 className="mt-3 text-3xl font-semibold leading-tight tracking-tight text-white sm:text-5xl">
-            Fire behaves differently in space.<br /><span className="bg-gradient-to-r from-flame-400 to-micro-400 bg-clip-text text-transparent">FlameSight shows what NASA learned.</span>
+            Fire behaves differently in space.<br /><span className="bg-gradient-to-r from-flame-400 to-micro-400 bg-clip-text text-transparent">FlameSight shows what NASA learned — in plain words.</span>
           </h1>
           <p className="mt-4 max-w-xl text-lg text-slate-300">
-            We turned {stats.investigations} NASA microgravity combustion investigations into fire-safety guidance for spacecraft, Moon and Mars habitats, rovers, and spacesuits. Every number links back to NASA's own data.
+            Explore {stats.investigations} real NASA fire studies for spacecraft, Moon and Mars homes, rovers, and spacesuits. Start with a simple yes/maybe/no, then dig deeper if you want.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/" className="rounded-xl bg-gradient-to-r from-flame-500 to-flame-600 px-5 py-2.5 font-medium text-white shadow-glow hover:brightness-110">Open fire safety dashboard →</Link>
+            <Link to="/" className="rounded-xl bg-gradient-to-r from-flame-500 to-flame-600 px-5 py-2.5 font-medium text-white shadow-glow hover:brightness-110">Try the simple dashboard →</Link>
             <Link to="/simulator" className="rounded-xl bg-white/10 px-5 py-2.5 font-medium text-white hover:bg-white/15">Will it burn?</Link>
-            <Link to="/analyst" className="rounded-xl px-5 py-2.5 font-medium text-micro-300 ring-1 ring-micro-500/40 hover:bg-micro-500/10">Ask the analyst</Link>
+            <Link to="/analyst" className="rounded-xl px-5 py-2.5 font-medium text-micro-300 ring-1 ring-micro-500/40 hover:bg-micro-500/10">Ask a question</Link>
           </div>
         </div>
         <Card className="relative overflow-hidden p-0" glow="micro">
