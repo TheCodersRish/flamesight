@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import BrandLogo from './BrandLogo';
 
 export function HudFrame({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
   return (
@@ -16,7 +17,10 @@ export function HudFrame({ title, children, className = '' }: { title: string; c
 export function FlameStage({ title = 'Flame', caption, children, controls }: { title?: string; caption: string; children: ReactNode; controls?: ReactNode }) {
   return (
     <section className="flex min-h-[420px] flex-col lg:min-h-0">
-      <h1 className="px-5 pt-4 text-lg font-semibold text-white">{title}</h1>
+      <div className="flex items-center gap-2.5 px-5 pt-4">
+        <BrandLogo variant="mark" imgClassName="h-7 w-7 shrink-0" />
+        <h1 className="text-lg font-semibold text-white">{title}</h1>
+      </div>
       <div className="grid min-h-[200px] flex-1 place-items-center px-4">
         <div className="aspect-square w-[min(38vh,340px)] overflow-hidden rounded-full border border-white/15 shadow-[0_0_40px_-12px_rgba(94,200,255,0.7)]">
           {children}

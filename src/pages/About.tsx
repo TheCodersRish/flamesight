@@ -1,5 +1,6 @@
 import { investigations, stats } from '../lib/data';
 import { DEFAULT_WEIGHTS, SCALES, UNKNOWN } from '../lib/scoring';
+import BrandLogo from '../components/BrandLogo';
 import { Card, PageHeader, SourceChip } from '../components/ui';
 
 export default function About() {
@@ -62,6 +63,7 @@ export default function About() {
         <p className="mt-1 text-sm text-slate-400">AI helped write code and draft the investigation summaries from NASA's objectives text; the team reviewed them against the data. All numbers are computed from NASA PSI files by the build script.</p>
       </Card>
       <Card>
+        <BrandLogo variant="full" className="mb-3" imgClassName="h-10 w-auto max-w-[16rem]" />
         <h2 className="text-lg font-semibold text-white">Team</h2>
         <p className="mt-2 text-slate-300">Team AstroGhosts, NASA Space Apps 2026 (Dallas local event).</p>
         <p className="mt-2 text-sm text-slate-300">Live site: <a className="underline text-micro-300 hover:text-white" href="https://flamesight.vercel.app" target="_blank" rel="noreferrer">https://flamesight.vercel.app</a></p>

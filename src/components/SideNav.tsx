@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useDemo } from '../demo/Demo';
+import BrandLogo from './BrandLogo';
 import DbSearch from './DbSearch';
 
 type NavItem = {
@@ -146,8 +147,7 @@ export default function SideNav() {
           {mobileOpen ? 'Hide menu' : 'Menu'}
         </button>
         <NavLink to="/overview" className="flex min-w-0 items-center gap-2" aria-label="FlameSight overview">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-flame-400 via-flame-500 to-micro-600 text-xs font-bold text-white">FS</span>
-          <span className="truncate text-sm font-semibold text-white">FlameSight</span>
+          <BrandLogo variant="full" imgClassName="h-8 w-auto max-w-[11rem]" />
         </NavLink>
       </div>
 
@@ -168,10 +168,11 @@ export default function SideNav() {
             aria-label="FlameSight overview"
             title="FlameSight"
           >
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-flame-400 via-flame-500 to-micro-600 text-sm font-bold text-white shadow-glow">FS</span>
-            {!collapsed && (
+            {collapsed ? (
+              <BrandLogo variant="mark" imgClassName="h-10 w-10 drop-shadow-[0_0_12px_rgba(255,122,26,0.35)]" />
+            ) : (
               <span className="min-w-0">
-                <span className="block text-[15px] font-semibold tracking-[0.04em] text-white">FlameSight</span>
+                <BrandLogo variant="full" imgClassName="h-9 w-auto max-w-[11.5rem]" />
                 <span className="mt-0.5 block text-[11px] text-slate-400">Fire safety, made clear</span>
               </span>
             )}

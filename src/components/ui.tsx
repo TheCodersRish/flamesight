@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { byAccession, invLabel } from '../lib/data';
+import BrandLogo from './BrandLogo';
 
 export function Card({ children, className = '', glow }: { children: ReactNode; className?: string; glow?: 'flame' | 'micro' }) {
   return (
@@ -11,8 +12,11 @@ export function Card({ children, className = '', glow }: { children: ReactNode; 
 export function PageHeader({ kicker, title, children }: { kicker: string; title: string; children?: ReactNode }) {
   return (
     <header className="mb-8">
-      <p className="font-mono text-xs uppercase tracking-[0.25em] text-flame-400">{kicker}</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h1>
+      <div className="mb-3 flex items-center gap-2">
+        <BrandLogo variant="mark" imgClassName="h-6 w-6" title="" />
+        <p className="font-mono text-xs uppercase tracking-[0.25em] text-flame-400">{kicker}</p>
+      </div>
+      <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h1>
       {children && <div className="mt-3 max-w-3xl text-slate-300">{children}</div>}
     </header>
   );

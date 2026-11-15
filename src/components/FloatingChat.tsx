@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import AiAnswer from './AiAnswer';
+import BrandLogo from './BrandLogo';
 import { useBurn } from '../lib/burnSession';
 import { simplifyText } from '../lib/plainEnglish';
 import { narrateLocal } from '../lib/narrate';
@@ -223,9 +224,12 @@ export default function FloatingChat() {
           aria-label="Ask FlameSight"
         >
           <header className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2.5">
-            <div>
-              <p className="text-sm font-semibold text-white">Ask FlameSight</p>
-              <p className="text-[11px] text-slate-400">Sees your workspace · can simulate conditions fullscreen</p>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <BrandLogo variant="mark" imgClassName="h-8 w-8 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white">Ask FlameSight</p>
+                <p className="text-[11px] text-slate-400">Sees your workspace · can simulate conditions fullscreen</p>
+              </div>
             </div>
             <div className="flex items-center gap-1">
               <Link to="/analyst" className="rounded-lg px-2 py-1 text-[11px] text-micro-300 hover:bg-white/10" onClick={() => setOpen(false)}>
@@ -345,7 +349,10 @@ export default function FloatingChat() {
         {open ? (
           <span className="text-sm leading-none">✕ Close</span>
         ) : (
-          <span>FlameSight AI</span>
+          <>
+            <BrandLogo variant="mark" imgClassName="h-5 w-5" />
+            <span>FlameSight AI</span>
+          </>
         )}
       </button>
     </div>

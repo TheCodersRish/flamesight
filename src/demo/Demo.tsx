@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import BrandLogo from '../components/BrandLogo';
 import { rankForScenario } from '../lib/scoring';
 import { scenarioById } from '../lib/scenarios';
 import { stats } from '../lib/data';
@@ -58,6 +59,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-x-0 bottom-6 z-50 mx-auto w-[min(92vw,820px)]" role="status" aria-live="polite">
             <div className="glass flex items-center gap-4 rounded-2xl border-flame-500/40 px-5 py-4 shadow-glow">
+              <BrandLogo variant="mark" imgClassName="h-9 w-9 shrink-0" />
               <span className="font-mono text-xs text-flame-300">DEMO {step + 1}/{steps.current.length}</span>
               <p className="flex-1 text-sm text-white sm:text-base">{cur.caption}</p>
               <button onClick={stop} className="rounded-lg bg-white/10 px-3 py-1 text-xs text-slate-200 hover:bg-white/20">Stop (Esc)</button>

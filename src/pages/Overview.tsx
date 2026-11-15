@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import ScenarioIcon from '../components/ScenarioIcon';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import BrandLogo from '../components/BrandLogo';
 import Flame from '../components/Flame';
 import { Stat, Card, Pill } from '../components/ui';
 import { stats } from '../lib/data';
@@ -34,9 +35,10 @@ export default function Overview() {
     <div className="space-y-12">
       <section className="grid items-center gap-8 lg:grid-cols-[1.1fr_1fr]">
         <div>
+          <BrandLogo variant="full" className="mb-4" imgClassName="h-12 w-auto max-w-[min(100%,18rem)] sm:h-14 sm:max-w-[20rem] drop-shadow-[0_0_24px_rgba(255,122,26,0.28)]" />
           <p className="text-sm text-micro-300">NASA Space Apps 2026 · Flame in Freefall</p>
           <h1 className="mt-3 text-3xl font-semibold leading-tight tracking-tight text-white sm:text-5xl">
-            Fire behaves differently in space.<br /><span className="bg-gradient-to-r from-flame-400 to-micro-400 bg-clip-text text-transparent">FlameSight shows what NASA learned — in plain words.</span>
+            Fire behaves differently in space.<br /><span className="bg-gradient-to-r from-flame-400 to-micro-400 bg-clip-text text-transparent">See what NASA learned — in plain words.</span>
           </h1>
           <p className="mt-4 max-w-xl text-lg text-slate-300">
             Explore {stats.investigations} real NASA fire studies for spacecraft, Moon and Mars homes, rovers, and spacesuits. Start with a simple yes/maybe/no, then dig deeper if you want.

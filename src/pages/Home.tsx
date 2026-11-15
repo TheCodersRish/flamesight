@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import BrandLogo from '../components/BrandLogo';
 import Flame from '../components/Flame';
 import ScenarioIcon from '../components/ScenarioIcon';
 import { Pill, Slider } from '../components/ui';
@@ -74,6 +75,7 @@ export default function Home() {
   return (
     <div className="workspace-shell flex min-h-0 flex-1 flex-col lg:overflow-hidden">
       <motion.header {...fadeUp} transition={snap} className="mb-4 shrink-0 space-y-2 sm:mb-6">
+        <BrandLogo variant="full" imgClassName="h-9 w-auto max-w-[14rem] sm:h-10" />
         <p className="text-sm text-flame-300">Dashboard · NASA fire data, in plain words</p>
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Would a fire start in this cabin?</h1>
         <p className="max-w-2xl text-base text-slate-300 sm:text-lg">
