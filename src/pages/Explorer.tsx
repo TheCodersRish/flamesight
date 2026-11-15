@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { investigations } from '../lib/data';
 import { fadeUp, stagger } from '../lib/motion';
 import { fluidPresetsFor } from '../lib/physicsBridge';
+import { searchStudiesRemote, type SearchHit } from '../lib/search';
 import { PageHeader, TierBadge, Pill } from '../components/ui';
 
 type Sort = 'tier' | 'tests' | 'newest' | 'size' | 'az';
@@ -18,6 +19,105 @@ function cardTitle(i: (typeof investigations)[number]): string {
     .replace(/^Concurrent Flame Spread Modeling using /i, '');
   if (trimmed.length <= 48) return trimmed;
   return `${trimmed.slice(0, 46).trim()}…`;
+}
+
+function AiSearchSection() {
+  const inputId = useId();
+  const [query, setQuery] = useState('');
+  const [submitted, setSubmitted] = useState('');
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    const q = submitted.trim();
+    if (q.length < 3) {
+      setHits(null);
+      setLoading(false);
+      setFailed(false);
+      return;
+    }
+    const controller = new AbortController();
+    setLoading(true);
+    setFailed(false);
+    setHits(null);
+    void searchStudiesRemote(q, controller.signal).then(remote => {
+      if (controller.signal.aborted) return;
+      setLoading(false);
+      if (remote === null) {
+        setFailed(true);
+        setHits([]);
+        return;
+      }
+      setHits(remote);
+    });
+    return () => controller.abort();
+  }, [submitted]);
+
+  const runSearch = () => {
+    const next = query.trim();
+    if (next.length < 3) return;
+    setSubmitted(next);
+  };
+
+  return (
+    <section aria-labelledby="ai-search-heading" className="glass mb-6 rounded-2xl p-4 md:p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="ai-search-heading" className="text-lg font-semibold text-white">AI search</h2>
+        <p className="text-xs text-slate-400">Describe what you need in plain words — separate from the keyword filters below.</p>
+      </div>
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        <label className="sr-only" htmlFor={inputId}>AI search NASA PSI studies</label>
+        <input
+          id={inputId}
+          type="search"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              runSearch();
+            }
+          }}
+          placeholder="e.g. droplet fire that goes out at low oxygen on the ISS"
+          className="flex-1 rounded-xl border border-white/10 bg-space-900 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-micro-500 focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={runSearch}
+          disabled={query.trim().length < 3 || loading}
+          className="rounded-xl bg-micro-500/20 px-4 py-2.5 text-sm font-medium text-micro-200 ring-1 ring-micro-500/40 hover:bg-micro-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? 'Matching…' : 'Find studies'}
+        </button>
+      </div>
+      {submitted.trim().length >= 3 && (
+        <div className="mt-4 border-t border-white/10 pt-4">
+          {loading && <p className="text-sm text-slate-400">AI is matching your description to NASA PSI investigations…</p>}
+          {!loading && failed && <p className="text-sm text-amber-300">AI search is unavailable right now. Try again, or use keyword search below.</p>}
+          {!loading && !failed && hits && hits.length === 0 && <p className="text-sm text-slate-400">No investigations matched that description.</p>}
+          {!loading && hits && hits.length > 0 && (
+            <ul className="space-y-2">
+              {hits.map(h => (
+                <li key={h.kind === 'study' ? `s-${h.id}` : `i-${h.acc}`}>
+                  <Link
+                    to={`/explorer/${h.acc}`}
+                    className="block rounded-xl border border-white/10 bg-space-900/60 px-3 py-2.5 hover:border-micro-500/40 hover:bg-white/5"
+                  >
+                    <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-micro-300/80">
+                      {h.kind === 'study' ? `Case · ${h.acc}` : `Experiment · ${h.acc}`}
+                    </span>
+                    <span className="mt-0.5 block text-sm font-medium text-white">{h.title}</span>
+                    <span className="mt-0.5 block text-xs text-slate-400 line-clamp-2">{h.blurb}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
+  );
 }
 
 export default function Explorer() {
@@ -46,6 +146,7 @@ export default function Explorer() {
       <PageHeader kicker="Experiment Explorer" title="24 NASA combustion investigations">
         Every card is one investigation in NASA's Physical Sciences Informatics (PSI) repository. Tiers are our team's fire-safety ranking (1 Core = named in the challenge), not NASA's.
       </PageHeader>
+      <AiSearchSection />
       <div className="glass mb-6 flex flex-col gap-3 rounded-2xl p-4 md:flex-row md:items-center">
         <label className="sr-only" htmlFor="search">Search</label>
         <input id="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search: smoke, PMMA, CO2, droplet, Cygnus…"
