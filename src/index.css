@@ -51,6 +51,40 @@ input[type='range'] { accent-color: #ff7a1a; height: 1.5rem; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 
+/* Story / workspace dashboard */
+.workspace-shell { position: relative; }
+.workspace-rail {
+  border: 1px solid rgba(148, 180, 255, 0.12);
+  background: linear-gradient(180deg, rgba(10, 17, 36, 0.72), rgba(6, 11, 26, 0.88));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  padding: 1rem 1.1rem 1.15rem;
+}
+.story-spine {
+  position: relative;
+}
+.story-spine::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(255, 122, 26, 0.55), rgba(47, 140, 255, 0.25), transparent);
+  pointer-events: none;
+}
+.story-node {
+  z-index: 1;
+  box-shadow: 0 0 0 4px rgba(3, 6, 15, 0.9);
+}
+.workspace-nav {
+  background-image: linear-gradient(180deg, rgba(6, 11, 26, 0.4), transparent 40%);
+}
+@media (max-width: 1023px) {
+  .story-spine::before { left: 13px; }
+}
+
 /* —— UI variation skins (selected on /ui-variations, applied app-wide via data-ui) —— */
 html[data-ui="dense-table"] body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

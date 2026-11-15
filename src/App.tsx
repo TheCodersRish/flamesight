@@ -28,7 +28,7 @@ function Shell() {
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-1 focus:text-black">Skip to content</a>
       <SideNav />
       <main id="main" className={deck ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden' : 'min-h-0 min-w-0 flex-1 overflow-y-auto'}>
-        <div className={deck ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto w-full max-w-7xl px-4 py-8'}>
+        <div className={deck ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto w-full max-w-7xl px-4 py-6 sm:py-8'}>
           <Suspense fallback={<p className="py-20 text-center text-slate-400">Loading…</p>}>
             <Routes>
               <Route path="/" element={<Home />} />
