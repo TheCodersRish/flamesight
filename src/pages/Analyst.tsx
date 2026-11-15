@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import AiAnswer from '../components/AiAnswer';
 import Deck, { FlameStage } from '../components/Deck';
 import Flame from '../components/Flame';
 import { Pill, SourceChip } from '../components/ui';
@@ -243,24 +244,37 @@ export default function Analyst() {
               <button type="button" onClick={onDownload} className="rounded-lg bg-flame-500/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-flame-500">Download report</button>
             )}
           </div>
-          <p className="mt-2 text-xs text-slate-400">
-            {latest?.source === 'gemini' ? 'Live AI answer' : latest?.state === 'loading' ? 'AI writing…' : latest ? 'AI unavailable' : 'AI answer'}
-          </p>
-          {latest && <p className="mt-1 text-sm text-slate-300">You asked: {latest.a.question}</p>}
-          {latest && latest.state === 'loading' && !display && (
-            <p className="mt-3 text-sm text-cyan-100">Writing the AI answer…</p>
+          {latest && (
+            <div className="mt-2 rounded-xl bg-white/[0.06] px-3 py-2">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">You asked</p>
+              <p className="mt-0.5 text-sm font-medium text-white">{latest.a.question}</p>
+            </div>
           )}
-          {display && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>}
-          {latest && latest.state === 'done' && !display && (
-            <p className="mt-3 text-sm text-slate-400">The AI could not answer right now. Try again in a moment.</p>
-          )}
+          <div className="mt-3 rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-transparent px-3 py-2.5">
+            <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-micro-300/90">
+              {latest?.source === 'gemini' ? 'Live AI answer' : latest?.state === 'loading' ? 'AI writing…' : latest ? 'AI unavailable' : 'AI answer'}
+            </p>
+            {latest && latest.state === 'loading' && !display && (
+              <p className="text-sm text-cyan-100/90">Writing the AI answer…</p>
+            )}
+            {display && <AiAnswer text={display} />}
+            {latest && latest.state === 'done' && !display && (
+              <p className="text-sm text-slate-400">The AI could not answer right now. Try again in a moment.</p>
+            )}
+            {!latest && (
+              <p className="text-sm text-slate-300">Ask anything about fire in space. You will get a short AI answer grounded in NASA tests.</p>
+            )}
+          </div>
           {latest?.opened && !latest.pendingOpen && (
-            <p className="mt-2 rounded-lg bg-micro-500/15 px-2 py-1.5 text-xs text-micro-100">
+            <p className="mt-2 rounded-lg bg-micro-500/15 px-2.5 py-1.5 text-xs text-micro-100">
               On screen: {latest.opened.label}
             </p>
           )}
-          {!latest && <p className="mt-3 text-sm text-slate-300">Ask anything about fire in space. You will get a short AI answer grounded in NASA tests.</p>}
-          {latest?.a.caveats.map(c => <p key={c} className="mt-2 text-xs text-amber-200">⚠ {plain ? simplifyText(c) : c}</p>)}
+          {latest?.a.caveats.map(c => (
+            <p key={c} className="mt-2 rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-xs leading-snug text-amber-100">
+              ⚠ {plain ? simplifyText(c) : c}
+            </p>
+          ))}
           {citations.length > 0 && (
             <div className="mt-3 rounded-lg bg-micro-500/10 p-2 ring-1 ring-micro-500/25">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-micro-300">Freefall physics</p>

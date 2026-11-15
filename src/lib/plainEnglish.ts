@@ -2,7 +2,7 @@ import type { InsightBrief } from './insightBrief';
 import type { SimInput, SimResult } from './knn';
 import { cabinGravityLabel } from './scenarios';
 
-/** Soften a few dense phrases so a finding is easier to say out loud. */
+/** Soften a few dense phrases so a finding is easier to say out loud. Preserves paragraph breaks. */
 export function simplifyText(text: string): string {
   return text
     .replace(/\bself-extinguished\b/gi, 'ignited, then went out on their own')
@@ -17,7 +17,8 @@ export function simplifyText(text: string): string {
     .replace(/\bk-nearest neighbors?\b/gi, 'closest NASA tests')
     .replace(/\bprior\b/gi, 'simple physics check')
     .replace(/\bextrapolated\b/gi, 'estimated beyond the measured data')
-    .replace(/\s+/g, ' ')
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import AiAnswer from './AiAnswer';
 import { useBurn } from '../lib/burnSession';
 import { simplifyText } from '../lib/plainEnglish';
 import { narrateLocal } from '../lib/narrate';
@@ -198,30 +199,36 @@ export default function FloatingChat() {
               </div>
             )}
             {latest && (
-              <article className="space-y-2">
-                <p className="text-xs text-slate-400">You asked</p>
-                <p className="text-sm text-white">{latest.question}</p>
-                <p className="text-[11px] text-slate-500">
-                  {latest.source === 'gemini' ? 'Live AI answer' : latest.state === 'loading' ? 'AI writing…' : 'AI unavailable'}
-                  {latest.state === 'loading' && latest.source === 'gemini' ? ' · writing…' : ''}
-                </p>
-                {display ? (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>
-                ) : latest.state === 'loading' ? (
-                  <p className="text-sm text-cyan-100">Writing the AI answer…</p>
-                ) : (
-                  <p className="text-sm text-slate-400">The AI could not answer right now. Try again in a moment.</p>
-                )}
+              <article className="space-y-3">
+                <div className="rounded-xl bg-white/[0.06] px-3 py-2">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">You asked</p>
+                  <p className="mt-0.5 text-sm font-medium text-white">{latest.question}</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-transparent px-3 py-2.5">
+                  <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-micro-300/90">
+                    {latest.source === 'gemini' ? 'Live AI answer' : latest.state === 'loading' ? 'AI writing…' : 'AI unavailable'}
+                    {latest.state === 'loading' && latest.source === 'gemini' ? ' · writing…' : ''}
+                  </p>
+                  {display ? (
+                    <AiAnswer text={display} />
+                  ) : latest.state === 'loading' ? (
+                    <p className="text-sm text-cyan-100/90">Writing the AI answer…</p>
+                  ) : (
+                    <p className="text-sm text-slate-400">The AI could not answer right now. Try again in a moment.</p>
+                  )}
+                </div>
                 {latest.opened && !latest.pendingOpen && (
-                  <p className="rounded-lg bg-micro-500/15 px-2 py-1.5 text-[11px] text-micro-100">
+                  <p className="rounded-lg bg-micro-500/15 px-2.5 py-1.5 text-[11px] text-micro-100">
                     On screen: {latest.opened.label}
                   </p>
                 )}
                 {latest.caveats.map(c => (
-                  <p key={c} className="text-[11px] text-amber-200">⚠ {simplifyText(c)}</p>
+                  <p key={c} className="rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-snug text-amber-100">
+                    ⚠ {simplifyText(c)}
+                  </p>
                 ))}
                 {latest.hits.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  <div className="flex flex-wrap gap-1.5">
                     {latest.hits.map(h => (
                       <button
                         key={h.accession}
@@ -231,7 +238,7 @@ export default function FloatingChat() {
                             i === 0 ? { ...turn, pendingOpen: { path: `/explorer/${h.accession}`, label: h.label } } : turn
                           )));
                         }}
-                        className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-micro-200 hover:bg-white/10"
+                        className="rounded-md bg-white/5 px-2 py-1 text-[10px] font-medium text-micro-200 ring-1 ring-white/10 hover:bg-white/10"
                       >
                         {h.accession}
                       </button>
