@@ -116,6 +116,45 @@ export default function FloatingChat() {
   const display = latest?.source === 'gemini' && latest.ai ? simplifyText(latest.ai) : '';
 
   return (
+    <>
+    {latest?.pendingOpen && (
+      <div
+        className="pointer-events-auto fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        role="presentation"
+        onClick={declineOpen}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="float-open-title"
+          className="w-full max-w-md rounded-2xl border border-white/15 bg-space-950 p-6 shadow-2xl shadow-black/60"
+          onClick={e => e.stopPropagation()}
+        >
+          <h2 id="float-open-title" className="text-xl font-semibold text-white">
+            Open this page?
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-300">
+            FlameSight wants to open <span className="font-medium text-micro-100">{latest.pendingOpen.label}</span>.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => confirmOpen(latest.pendingOpen!)}
+              className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
+            >
+              Open
+            </button>
+            <button
+              type="button"
+              onClick={declineOpen}
+              className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="pointer-events-none fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {open && (
         <section
@@ -172,27 +211,6 @@ export default function FloatingChat() {
                   <p className="text-sm text-cyan-100">Writing the AI answer…</p>
                 ) : (
                   <p className="text-sm text-slate-400">The AI could not answer right now. Try again in a moment.</p>
-                )}
-                {latest.pendingOpen && (
-                  <div className="rounded-lg bg-micro-500/15 px-2.5 py-2 ring-1 ring-micro-500/30">
-                    <p className="text-[11px] text-micro-100">Open {latest.pendingOpen.label}?</p>
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => confirmOpen(latest.pendingOpen!)}
-                        className="rounded-lg bg-flame-500 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-flame-400"
-                      >
-                        Open
-                      </button>
-                      <button
-                        type="button"
-                        onClick={declineOpen}
-                        className="rounded-lg bg-white/10 px-2.5 py-1 text-[11px] text-slate-200 hover:bg-white/15"
-                      >
-                        Not now
-                      </button>
-                    </div>
-                  </div>
                 )}
                 {latest.opened && !latest.pendingOpen && (
                   <p className="rounded-lg bg-micro-500/15 px-2 py-1.5 text-[11px] text-micro-100">
@@ -262,5 +280,6 @@ export default function FloatingChat() {
         )}
       </button>
     </div>
+    </>
   );
 }

@@ -143,6 +143,45 @@ export default function Analyst() {
   };
 
   return (
+    <>
+    {latest?.pendingOpen && (
+      <div
+        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        role="presentation"
+        onClick={declineOpen}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="analyst-open-title"
+          className="w-full max-w-md rounded-2xl border border-white/15 bg-space-950 p-6 shadow-2xl shadow-black/60"
+          onClick={e => e.stopPropagation()}
+        >
+          <h2 id="analyst-open-title" className="text-xl font-semibold text-white">
+            Open this page?
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-300">
+            FlameSight wants to open <span className="font-medium text-micro-100">{latest.pendingOpen.label}</span>.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => confirmOpen(latest.pendingOpen!)}
+              className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
+            >
+              Open
+            </button>
+            <button
+              type="button"
+              onClick={declineOpen}
+              className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <Deck
       experimentsTitle="NASA sources"
       graphsTitle="How well they match"
@@ -215,27 +254,6 @@ export default function Analyst() {
           {latest && latest.state === 'done' && !display && (
             <p className="mt-3 text-sm text-slate-400">The AI could not answer right now. Try again in a moment.</p>
           )}
-          {latest?.pendingOpen && (
-            <div className="mt-3 rounded-lg bg-micro-500/15 px-3 py-2.5 ring-1 ring-micro-500/30">
-              <p className="text-sm text-micro-100">Open {latest.pendingOpen.label}?</p>
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => confirmOpen(latest.pendingOpen!)}
-                  className="rounded-lg bg-flame-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-flame-400"
-                >
-                  Open
-                </button>
-                <button
-                  type="button"
-                  onClick={declineOpen}
-                  className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-slate-200 hover:bg-white/15"
-                >
-                  Not now
-                </button>
-              </div>
-            </div>
-          )}
           {latest?.opened && !latest.pendingOpen && (
             <p className="mt-2 rounded-lg bg-micro-500/15 px-2 py-1.5 text-xs text-micro-100">
               On screen: {latest.opened.label}
@@ -275,5 +293,6 @@ export default function Analyst() {
         </>
       )}
     />
+    </>
   );
 }
