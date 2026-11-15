@@ -228,7 +228,15 @@ export default function Scenarios() {
   };
 
   const visible = showAll ? filtered : filtered.slice(0, 12);
-  const allMissions = [...SCENARIOS, ...custom];
+  // Drop Deep Space Transport / Earth risk presets (built-in or saved customs).
+  const allMissions = [...SCENARIOS, ...custom].filter(s => {
+    const id = s.id.toLowerCase();
+    const name = s.name.trim().toLowerCase();
+    if (id === 'earth' || id === 'deepspace' || id === 'deep-space' || id === 'dst' || id === 'transit') return false;
+    if (name === 'earth' || /deep[-\s]?space\s*(transport|transit)/i.test(s.name)) return false;
+    return true;
+  });
+  const riskGravityOptions = (Object.keys(GRAVITY) as Gravity[]).filter(g => g !== 'earth');
 
   return (
     <div className="workspace-shell">
@@ -332,7 +340,7 @@ export default function Scenarios() {
                     <input
                       value={draft.name}
                       onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
-                      placeholder="e.g. Deep-space transit cabin"
+                      placeholder="e.g. High-O₂ lab cabin"
                       className="mt-1 w-full rounded-xl border border-white/10 bg-space-900 px-3 py-2 text-sm text-white placeholder:text-slate-600"
                     />
                   </label>
@@ -370,7 +378,7 @@ export default function Scenarios() {
                   <fieldset>
                     <legend className="text-sm text-slate-300">Gravity</legend>
                     <div className="mt-1 grid grid-cols-2 gap-2">
-                      {(Object.keys(GRAVITY) as Gravity[]).map(g => (
+                      {riskGravityOptions.map(g => (
                         <button
                           key={g}
                           type="button"
@@ -378,7 +386,7 @@ export default function Scenarios() {
                           aria-pressed={draft.gravity === g}
                           className={`rounded-lg px-2 py-1.5 text-xs ${draft.gravity === g ? 'bg-micro-500/30 text-white ring-1 ring-micro-400' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
                         >
-                          {GRAVITY[g].label}{GRAVITY[g].extrapolated && g !== 'earth' ? ' *' : ''}
+                          {GRAVITY[g].label}{GRAVITY[g].extrapolated ? ' *' : ''}
                         </button>
                       ))}
                     </div>

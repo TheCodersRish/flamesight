@@ -137,13 +137,26 @@ export const ROLE_BOOST_OPTIONS = [
   'Exploration atmospheres',
 ] as const;
 
+function isRetiredRiskPreset(s: Scenario): boolean {
+  const id = String(s.id || '').toLowerCase();
+  const name = String(s.name || '').trim().toLowerCase();
+  if (id === 'earth' || id === 'deepspace' || id === 'deep-space' || id === 'dst' || id === 'transit') return true;
+  if (name === 'earth') return true;
+  if (/deep[-\s]?space\s*(transport|transit)/i.test(String(s.name || ''))) return true;
+  return false;
+}
+
 export function loadCustomScenarios(): Scenario[] {
   if (typeof localStorage === 'undefined') return [];
   try {
     const raw = localStorage.getItem(CUSTOM_SCENARIOS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as Scenario[];
-    return Array.isArray(parsed) ? parsed.filter(s => s && typeof s.id === 'string' && s.id.startsWith('custom-')) : [];
+    if (!Array.isArray(parsed)) return [];
+    const kept = parsed.filter(s => s && typeof s.id === 'string' && s.id.startsWith('custom-') && !isRetiredRiskPreset(s));
+    // Persist the scrub so Deep Space Transport / Earth customs stay gone.
+    if (kept.length !== parsed.length) localStorage.setItem(CUSTOM_SCENARIOS_KEY, JSON.stringify(kept));
+    return kept;
   } catch {
     return [];
   }
