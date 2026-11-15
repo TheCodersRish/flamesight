@@ -31,43 +31,33 @@ export default function Overview() {
 
   return (
     <div className="space-y-12">
-      <section className="relative overflow-hidden rounded-[1.75rem] border border-white/10 px-5 py-8 sm:px-8 sm:py-10">
-        <div className="pointer-events-none absolute inset-0" aria-hidden>
-          <div className="absolute -right-20 -top-28 h-72 w-72 animate-ember-pulse rounded-full bg-flame-500/20 blur-3xl" />
-          <div className="absolute -bottom-24 left-10 h-56 w-56 rounded-full bg-micro-500/15 blur-3xl" />
-          <div className="grid-bg absolute inset-0 opacity-25" />
-        </div>
-        <div className="relative grid items-center gap-8 lg:grid-cols-[1.1fr_1fr]">
-          <div>
-            <p className="text-sm font-medium text-flame-300">FlameSight · NASA Space Apps 2026</p>
-            <h1 className="font-display mt-3 text-3xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl">
-              Fire behaves differently in space.<br />
-              <span className="bg-gradient-to-r from-flame-300 via-ember-400 to-micro-300 bg-clip-text text-transparent">
-                FlameSight shows what NASA learned — in plain words.
-              </span>
-            </h1>
-            <p className="mt-4 max-w-xl text-lg text-slate-300">
-              Explore {stats.investigations} real NASA fire studies for spacecraft, Moon and Mars homes, rovers, and spacesuits. Start with a simple yes/maybe/no, then dig deeper if you want.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link to="/" className="rounded-xl bg-gradient-to-r from-flame-500 to-ember-500 px-5 py-2.5 font-medium text-white shadow-glow hover:brightness-110">Try the simple dashboard →</Link>
-              <Link to="/simulator" className="rounded-xl bg-white/10 px-5 py-2.5 font-medium text-white hover:bg-white/15">Will it burn?</Link>
-              <Link to="/analyst" className="rounded-xl px-5 py-2.5 font-medium text-micro-300 ring-1 ring-micro-500/40 hover:bg-micro-500/10">Ask a question</Link>
-            </div>
+      <section className="grid items-center gap-8 lg:grid-cols-[1.1fr_1fr]">
+        <div>
+          <p className="text-sm text-micro-300">NASA Space Apps 2026 · Flame in Freefall</p>
+          <h1 className="mt-3 text-3xl font-semibold leading-tight tracking-tight text-white sm:text-5xl">
+            Fire behaves differently in space.<br /><span className="bg-gradient-to-r from-flame-400 to-micro-400 bg-clip-text text-transparent">FlameSight shows what NASA learned — in plain words.</span>
+          </h1>
+          <p className="mt-4 max-w-xl text-lg text-slate-300">
+            Explore {stats.investigations} real NASA fire studies for spacecraft, Moon and Mars homes, rovers, and spacesuits. Start with a simple yes/maybe/no, then dig deeper if you want.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link to="/" className="rounded-xl bg-gradient-to-r from-flame-500 to-flame-600 px-5 py-2.5 font-medium text-white shadow-glow hover:brightness-110">Try the simple dashboard →</Link>
+            <Link to="/simulator" className="rounded-xl bg-white/10 px-5 py-2.5 font-medium text-white hover:bg-white/15">Will it burn?</Link>
+            <Link to="/analyst" className="rounded-xl px-5 py-2.5 font-medium text-micro-300 ring-1 ring-micro-500/40 hover:bg-micro-500/10">Ask a question</Link>
           </div>
-          <Card className="relative overflow-hidden p-0 shadow-soft" glow="flame">
-            <div className="grid-bg absolute inset-0 opacity-60" />
-            <Flame gravity={g} o2={0.55} flow={0} dilution={0} className="h-[340px] w-full sm:h-[400px]" label="Flame morphing between Earth gravity and microgravity" />
-            <div className="relative border-t border-white/5 bg-space-900/70 px-5 py-3">
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span className="text-micro-300">Microgravity: round, blue, slow</span>
-                <span className="text-flame-300">Earth: tall, yellow, flickering</span>
-              </div>
-              <input aria-label="Gravity" type="range" min={0} max={1} step={0.01} value={g} onChange={e => { setAuto(false); setG(parseFloat(e.target.value)); }} className="w-full" />
-              <p className="text-center text-[11px] text-slate-500">{auto ? 'Auto-morphing. Drag to take control.' : `Gravity ≈ ${(g).toFixed(2)} g (illustrative)`}</p>
-            </div>
-          </Card>
         </div>
+        <Card className="relative overflow-hidden p-0" glow="micro">
+          <div className="grid-bg absolute inset-0 opacity-60" />
+          <Flame gravity={g} o2={0.55} flow={0} dilution={0} className="h-[340px] w-full sm:h-[400px]" label="Flame morphing between Earth gravity and microgravity" />
+          <div className="relative border-t border-white/5 bg-space-900/70 px-5 py-3">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span className="text-micro-300">Microgravity: round, blue, slow</span>
+              <span className="text-flame-300">Earth: tall, yellow, flickering</span>
+            </div>
+            <input aria-label="Gravity" type="range" min={0} max={1} step={0.01} value={g} onChange={e => { setAuto(false); setG(parseFloat(e.target.value)); }} className="w-full" />
+            <p className="text-center text-[11px] text-slate-500">{auto ? 'Auto-morphing. Drag to take control.' : `Gravity ≈ ${(g).toFixed(2)} g (illustrative)`}</p>
+          </div>
+        </Card>
       </section>
 
       <section aria-label="Key numbers">
@@ -83,7 +73,7 @@ export default function Overview() {
 
       <section>
         <div className="mb-4 flex items-end justify-between">
-          <h2 className="font-display text-2xl font-bold text-white">Choose a mission scenario</h2>
+          <h2 className="text-2xl font-semibold text-white">Choose a mission scenario</h2>
           <Link to="/about" className="text-sm text-slate-400 hover:text-white">Where do these numbers come from?</Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">

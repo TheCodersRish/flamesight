@@ -12,7 +12,7 @@ export function PageHeader({ kicker, title, children }: { kicker: string; title:
   return (
     <header className="mb-8">
       <p className="font-mono text-xs uppercase tracking-[0.25em] text-flame-400">{kicker}</p>
-      <h1 className="font-display mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">{title}</h1>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h1>
       {children && <div className="mt-3 max-w-3xl text-slate-300">{children}</div>}
     </header>
   );

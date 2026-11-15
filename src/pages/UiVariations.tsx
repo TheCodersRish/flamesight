@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { PageHeader, Pill } from '../components/ui';
 import { stats } from '../lib/data';
 import { SCENARIOS } from '../lib/scenarios';
-import { CLASSIC_UI_VARIATION, OVERHAUL_UI_VARIATION, useUiVariation } from '../lib/uiVariation';
+import { useUiVariation } from '../lib/uiVariation';
 
 type Sample = {
   mission: string;
@@ -53,37 +53,9 @@ function Shell({ children, className = '' }: { children: ReactNode; className?: 
 
 export const VARIATIONS: Variation[] = [
   {
-    id: OVERHAUL_UI_VARIATION,
-    name: 'Ember Forge',
-    blurb: 'Design overhaul default: ember atmosphere, Syne display type, cinematic panels.',
-    render: s => (
-      <Shell className="relative overflow-hidden border-flame-500/20 bg-gradient-to-br from-[#1a121c] to-[#08060c] p-5">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-flame-500/25 blur-3xl" aria-hidden />
-        <p className="text-sm font-medium text-flame-300">FlameSight</p>
-        <h3 className="font-display mt-1 text-2xl font-extrabold tracking-tight text-white">{s.mission}</h3>
-        <p className="mt-3 font-display text-3xl font-bold text-amber-200">{s.verdict}</p>
-        <div className="mt-3 h-2 max-w-xs overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-gradient-to-r from-flame-500 to-ember-400" style={{ width: `${s.score}%` }} />
-        </div>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300">{s.takeaway}</p>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-400">
-          <span>{s.o2} O₂</span><span>·</span><span>{s.psi}</span><span>·</span><span>{s.gravity}</span>
-        </div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-4">
-          {METRICS.map(m => (
-            <div key={m.label} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-              <p className="text-[10px] uppercase tracking-widest text-slate-500">{m.label}</p>
-              <p className="mt-1 font-mono text-xl text-flame-300">{m.value}</p>
-            </div>
-          ))}
-        </div>
-      </Shell>
-    ),
-  },
-  {
-    id: CLASSIC_UI_VARIATION,
+    id: 'glass-cards',
     name: 'Glass cards',
-    blurb: 'Classic FlameSight look: frosted panels and soft glow. Use Revert design to return here.',
+    blurb: 'Current FlameSight look: frosted panels and soft glow.',
     render: s => (
       <Shell className="p-4">
         <div className="grid gap-3 sm:grid-cols-4">
@@ -465,7 +437,7 @@ export const VARIATIONS: Variation[] = [
 ];
 
 export default function UiVariations() {
-  const { id: selected, setId: setSelected, revert, isOverhaul } = useUiVariation();
+  const { id: selected, setId: setSelected } = useUiVariation();
   const active = VARIATIONS.find(v => v.id === selected) ?? VARIATIONS[0];
 
   return (
@@ -478,19 +450,10 @@ export default function UiVariations() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-micro-300">Currently selected</p>
-            <h2 className="font-display text-xl font-bold text-white">{active.name}</h2>
+            <h2 className="text-xl font-semibold text-white">{active.name}</h2>
             <p className="text-sm text-slate-400">{active.blurb}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => (isOverhaul ? revert() : setSelected(OVERHAUL_UI_VARIATION))}
-              className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-slate-200 hover:border-flame-400/40 hover:bg-flame-500/10 hover:text-white"
-            >
-              {isOverhaul ? 'Revert design' : 'Restore Ember Forge'}
-            </button>
-            <Link to="/" className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/15">See it on dashboard →</Link>
-          </div>
+          <Link to="/" className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/15">See it on dashboard →</Link>
         </div>
         {active.render(SAMPLE)}
       </section>

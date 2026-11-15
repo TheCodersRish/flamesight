@@ -6,44 +6,39 @@
 html, body, #root { min-height: 100%; }
 body {
   @apply bg-space-950 text-slate-200 antialiased;
-  font-family: Outfit, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: Rajdhani, Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   background-image:
-    radial-gradient(1100px 620px at 88% -8%, rgba(255, 92, 26, 0.16), transparent 58%),
-    radial-gradient(900px 520px at -12% 8%, rgba(47, 140, 255, 0.1), transparent 55%),
-    radial-gradient(700px 400px at 50% 110%, rgba(255, 122, 26, 0.07), transparent 50%),
-    linear-gradient(180deg, #07050a 0%, #0a0810 45%, #05040a 100%);
+    radial-gradient(1200px 600px at 85% -10%, rgba(47, 140, 255, 0.12), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(255, 122, 26, 0.08), transparent 60%);
   background-attachment: fixed;
 }
-.font-display { font-family: Syne, Outfit, ui-sans-serif, system-ui, sans-serif; }
 .glass {
-  background: linear-gradient(165deg, rgba(28, 22, 38, 0.72), rgba(10, 8, 16, 0.78));
-  border: 1px solid rgba(255, 170, 120, 0.12);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: linear-gradient(180deg, rgba(21, 33, 63, 0.55), rgba(10, 17, 36, 0.55));
+  border: 1px solid rgba(148, 180, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 .grid-bg {
-  background-image:
-    linear-gradient(rgba(255, 140, 80, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 180, 255, 0.04) 1px, transparent 1px);
-  background-size: 36px 36px;
+  background-image: linear-gradient(rgba(148,180,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(148,180,255,0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
-input[type='range'] { accent-color: #ff5c1a; height: 1.5rem; }
-:focus-visible { outline: 2px solid #5cb8ff; outline-offset: 2px; border-radius: 8px; }
+input[type='range'] { accent-color: #ff7a1a; height: 1.5rem; }
+:focus-visible { outline: 2px solid #5cb8ff; outline-offset: 2px; border-radius: 6px; }
 .scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255, 140, 80, 0.22); border-radius: 8px; }
-.recharts-tooltip-wrapper .recharts-default-tooltip { background: #0a0810 !important; border: 1px solid rgba(255, 140, 80, 0.22) !important; border-radius: 12px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(148,180,255,0.2); border-radius: 8px; }
+.recharts-tooltip-wrapper .recharts-default-tooltip { background: #0a1124 !important; border: 1px solid rgba(148,180,255,0.25) !important; border-radius: 10px; }
 .recharts-text { fill: #94a3b8; font-size: 11px; }
 .hud-panel {
-  background: linear-gradient(180deg, rgba(18, 14, 28, 0.82), rgba(6, 5, 12, 0.9));
-  border: 1px solid rgba(255, 140, 80, 0.18);
-  box-shadow: inset 0 0 48px rgba(255, 92, 26, 0.04);
+  background: linear-gradient(180deg, rgba(8, 22, 44, 0.78), rgba(3, 8, 20, 0.88));
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  box-shadow: inset 0 0 48px rgba(56, 189, 248, 0.05);
 }
 .hud-c {
   position: absolute;
   width: 12px;
   height: 12px;
   pointer-events: none;
-  border-color: rgba(255, 180, 120, 0.75);
+  border-color: rgba(165, 243, 252, 0.85);
   border-style: solid;
 }
 .hud-c.tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
@@ -59,17 +54,16 @@ input[type='range'] { accent-color: #ff5c1a; height: 1.5rem; }
 /* Story / workspace dashboard */
 .workspace-shell { position: relative; }
 .workspace-rail {
-  border: 1px solid rgba(255, 150, 100, 0.14);
-  background:
-    linear-gradient(165deg, rgba(22, 16, 28, 0.85), rgba(8, 6, 14, 0.92)),
-    radial-gradient(360px 180px at 10% 0%, rgba(255, 92, 26, 0.1), transparent 70%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 1.25rem;
-  padding: 1.15rem 1.2rem 1.25rem;
-  box-shadow: 0 20px 50px -32px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(148, 180, 255, 0.12);
+  background: linear-gradient(180deg, rgba(10, 17, 36, 0.72), rgba(6, 11, 26, 0.88));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  padding: 1rem 1.1rem 1.15rem;
 }
-.story-spine { position: relative; }
+.story-spine {
+  position: relative;
+}
 .story-spine::before {
   content: '';
   position: absolute;
@@ -77,73 +71,46 @@ input[type='range'] { accent-color: #ff5c1a; height: 1.5rem; }
   top: 8px;
   bottom: 8px;
   width: 1px;
-  background: linear-gradient(180deg, rgba(255, 92, 26, 0.7), rgba(47, 140, 255, 0.28), transparent);
+  background: linear-gradient(180deg, rgba(255, 122, 26, 0.55), rgba(47, 140, 255, 0.25), transparent);
   pointer-events: none;
 }
 .story-node {
   z-index: 1;
-  box-shadow: 0 0 0 4px rgba(7, 5, 10, 0.95);
+  box-shadow: 0 0 0 4px rgba(3, 6, 15, 0.9);
 }
 .workspace-nav {
   background:
-    linear-gradient(180deg, rgba(12, 10, 18, 0.96), rgba(5, 4, 10, 0.94)),
-    linear-gradient(180deg, rgba(255, 92, 26, 0.08), transparent 32%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+    linear-gradient(180deg, rgba(10, 17, 36, 0.92), rgba(3, 6, 15, 0.88)),
+    linear-gradient(180deg, rgba(255, 122, 26, 0.06), transparent 28%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   scrollbar-width: thin;
 }
 .workspace-nav[data-collapsed="true"] .nav-item[aria-current="page"] {
-  box-shadow: inset 0 0 0 1px rgba(255, 140, 80, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(255, 159, 67, 0.35);
 }
 .workspace-nav::-webkit-scrollbar { height: 6px; width: 6px; }
-.workspace-nav::-webkit-scrollbar-thumb { background: rgba(255, 140, 80, 0.25); border-radius: 999px; }
+.workspace-nav::-webkit-scrollbar-thumb { background: rgba(148, 180, 255, 0.22); border-radius: 999px; }
 .workspace-nav .nav-item[aria-current="page"] {
-  background: linear-gradient(90deg, rgba(255, 92, 26, 0.2), rgba(255, 255, 255, 0.04) 60%);
+  background: linear-gradient(90deg, rgba(255, 122, 26, 0.16), rgba(255, 255, 255, 0.06) 55%);
 }
 @media (max-width: 1023px) {
   .workspace-nav {
     background:
-      linear-gradient(90deg, rgba(12, 10, 18, 0.98), rgba(8, 6, 14, 0.94)),
-      linear-gradient(90deg, rgba(255, 92, 26, 0.1), transparent 40%);
+      linear-gradient(90deg, rgba(10, 17, 36, 0.96), rgba(6, 11, 26, 0.92)),
+      linear-gradient(90deg, rgba(255, 122, 26, 0.08), transparent 40%);
   }
   .workspace-nav .nav-item {
-    border: 1px solid rgba(255, 150, 100, 0.1);
+    border: 1px solid rgba(148, 180, 255, 0.1);
     background: rgba(255, 255, 255, 0.03);
   }
   .workspace-nav .nav-item[aria-current="page"] {
-    border-color: rgba(255, 140, 80, 0.5);
-    box-shadow: inset 0 0 0 1px rgba(255, 140, 80, 0.18);
+    border-color: rgba(255, 159, 67, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(255, 159, 67, 0.15);
   }
 }
 @media (max-width: 1023px) {
   .story-spine::before { left: 13px; }
-}
-
-/* —— Ember Forge overhaul (default) —— */
-html[data-ui="ember-forge"] body {
-  font-family: Outfit, ui-sans-serif, system-ui, sans-serif;
-  color: #e8e4ef;
-  background-image:
-    radial-gradient(1000px 560px at 92% -12%, rgba(255, 92, 26, 0.2), transparent 55%),
-    radial-gradient(780px 480px at -8% 18%, rgba(47, 140, 255, 0.12), transparent 52%),
-    radial-gradient(520px 320px at 40% 100%, rgba(255, 122, 26, 0.08), transparent 55%),
-    linear-gradient(180deg, #07050a, #0a0810 40%, #05040a);
-}
-html[data-ui="ember-forge"] .glass,
-html[data-ui="ember-forge"] .hud-panel {
-  background: linear-gradient(160deg, rgba(32, 24, 42, 0.78), rgba(10, 8, 16, 0.88));
-  border-color: rgba(255, 150, 100, 0.16);
-  border-radius: 1.15rem;
-  box-shadow: 0 18px 48px -28px rgba(0, 0, 0, 0.75);
-}
-html[data-ui="ember-forge"] .hud-c { border-color: rgba(255, 170, 110, 0.8); }
-html[data-ui="ember-forge"] .workspace-rail {
-  border-radius: 1.35rem;
-}
-html[data-ui="ember-forge"] h1,
-html[data-ui="ember-forge"] .font-display {
-  font-family: Syne, Outfit, ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.02em;
 }
 
 /* —— UI variation skins (selected on /ui-variations, applied app-wide via data-ui) —— */
@@ -314,24 +281,6 @@ html[data-ui="story-cards"] .hud-panel {
   border-radius: 1rem;
   background: linear-gradient(180deg, rgba(24, 36, 64, 0.7), rgba(6, 10, 22, 0.9));
 }
-
-/* Classic glass-cards skin (revert target) */
-html[data-ui="glass-cards"] body {
-  font-family: Rajdhani, Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background-image:
-    radial-gradient(1200px 600px at 85% -10%, rgba(47, 140, 255, 0.12), transparent 60%),
-    radial-gradient(900px 500px at -10% 10%, rgba(255, 122, 26, 0.08), transparent 60%);
-}
-html[data-ui="glass-cards"] .glass {
-  background: linear-gradient(180deg, rgba(21, 33, 63, 0.55), rgba(10, 17, 36, 0.55));
-  border: 1px solid rgba(148, 180, 255, 0.12);
-  border-radius: 1rem;
-}
-html[data-ui="glass-cards"] .hud-panel {
-  background: linear-gradient(180deg, rgba(8, 22, 44, 0.78), rgba(3, 8, 20, 0.88));
-  border: 1px solid rgba(125, 211, 252, 0.22);
-}
-html[data-ui="glass-cards"] .hud-c { border-color: rgba(165, 243, 252, 0.85); }
 
 /* Minimal non-Jarvis: flat, quiet, no HUD chrome */
 html[data-ui="minimal-plain"] body {
