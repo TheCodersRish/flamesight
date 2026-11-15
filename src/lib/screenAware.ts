@@ -18,6 +18,7 @@ const PAGES: { match: RegExp; path: string; label: string; keys: string[] }[] = 
   { match: /^\/explorer$/, path: '/explorer', label: 'Browse tests', keys: ['explorer', 'browse', 'catalog', 'all studies', 'all tests'] },
   { match: /^\/analyst$/, path: '/analyst', label: 'Ask a question', keys: ['analyst', 'full chat', 'ask page'] },
   { match: /^\/about$/, path: '/about', label: 'About', keys: ['about', 'credits', 'method'] },
+  { match: /^\/changelog$/, path: '/changelog', label: 'Changelog', keys: ['changelog', 'updates', 'what changed', 'release notes'] },
 ];
 
 const OPEN_RE = /\b(?:open|show|pull\s*up|bring\s*up|take\s*me\s*to|go\s*to|navigate\s*to|display|launch)\b/i;

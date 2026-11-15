@@ -16,7 +16,7 @@ const SYSTEM =
   'The flame animation is illustrative, not a combustion simulation. ' +
   'You can see what the user is working on from the Workspace line — use it to tailor the answer. ' +
   'If they ask to open, show, or pull something up on screen, end with exactly one directive on its own line: ' +
-  '[[OPEN:/path|short label]] using an app route such as /simulator, /insights, /scenarios, /scenarios?s=lunar, /explorer, /explorer/PSI-69, /analyst, /overview, /fluid-physics, /about, or /. ' +
+  '[[OPEN:/path|short label]] using an app route such as /simulator, /insights, /scenarios, /scenarios?s=lunar, /explorer, /explorer/PSI-69, /analyst, /overview, /fluid-physics, /about, /changelog, or /. ' +
   'Otherwise do not emit [[OPEN:…]]. ' +
   'Write 3–6 short everyday sentences a non-scientist can follow. Prefer plain words; if you must use a technical term, define it in the same sentence.';
 

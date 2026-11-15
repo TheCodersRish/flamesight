@@ -68,6 +68,13 @@ const Icons = {
       <path strokeLinecap="round" d="M12 11v5.5M12 8h.01" />
     </svg>
   ),
+  changelog: (
+    <svg className={iconCls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 4h9.5A1.5 1.5 0 0 1 19 5.5v14A1.5 1.5 0 0 1 17.5 21H8" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2" />
+      <path strokeLinecap="round" d="M11 9h5M11 13h5M11 17h3" />
+    </svg>
+  ),
   impact: (
     <svg className={iconCls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v4M12 17v4M3 12h4M17 12h4" />
@@ -101,6 +108,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { to: '/explorer', label: 'Browse tests', hint: 'All NASA studies', icon: Icons.browse },
       { to: '/analyst', label: 'Ask a question', hint: 'Plain-language answers', icon: Icons.ask },
       { to: '/about', label: 'About', hint: 'Where numbers come from', icon: Icons.about },
+      { to: '/changelog', label: 'Changelog', hint: 'What changed each update', icon: Icons.changelog },
     ],
   },
 ];
