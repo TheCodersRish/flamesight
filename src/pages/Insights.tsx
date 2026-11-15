@@ -241,7 +241,7 @@ export default function Insights() {
           <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-300">
             {brief.points.slice(0, 3).map(p => <li key={p}>{p}</li>)}
           </ul>
-          <Link to="/" className="mt-3 inline-block text-xs text-cyan-200 hover:text-white">Change the test in Will It Burn</Link>
+          <Link to="/simulator" className="mt-3 inline-block text-xs text-cyan-200 hover:text-white">Change the test in Will It Burn</Link>
         </div>
       )}
       graphs={(

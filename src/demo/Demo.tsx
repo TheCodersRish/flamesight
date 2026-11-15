@@ -14,12 +14,12 @@ export const DEMO_QUESTION = 'What happens to fire safety at a lunar base with 3
 function buildSteps() {
   const top = rankForScenario(scenarioById('lunar'))[0];
   return [
-    { path: '/overview', ms: 5000, caption: `Mission Control: ${stats.investigations} NASA microgravity combustion investigations, ${stats.testsTotal.toLocaleString()} test records, ${stats.totalTB} TB of data.` },
-    { path: '/scenarios?s=lunar', ms: 5500, caption: 'Pick a mission: Lunar Base, 30% O₂ at 10.2 psi. Every experiment gets a transparent 0–100 relevance score.' },
+    { path: '/', ms: 5000, caption: `Dashboard: set one cabin, then see burn risk, top NASA tests, and what those tests found — ${stats.investigations} studies, ${stats.testsTotal.toLocaleString()} records.` },
+    { path: '/scenarios?s=lunar', ms: 5500, caption: 'Rank risks: Lunar Base, 30% oxygen at 10.2 psi. Every experiment gets a clear 0–100 match score.' },
     { path: `/explorer/${top.inv.accession}`, ms: 5000, caption: `Top match: ${top.inv.acronym} (${top.inv.accession}). Clear summary, real test table, link to NASA PSI.` },
-    { path: '/fluid-physics?mech=no-buoyancy', ms: 5500, caption: 'Fluid Physics: why freefall flames are round—no buoyancy, then diffusion and ventilation feed the fire.' },
-    { path: '/?preset=lunar&demo=1', ms: 7000, caption: '“Will It Burn?” Change gravity and oxygen: the flame morphs, and the nearest NASA tests are the evidence.' },
-    { path: `/analyst?q=${encodeURIComponent(DEMO_QUESTION)}`, ms: 5500, caption: 'Ask the Fire Safety Analyst. NASA notes match in the browser, then the AI model on Vercel writes the answer.' },
+    { path: '/fluid-physics?mech=no-buoyancy', ms: 5500, caption: 'How flames work: why freefall flames are round—no buoyancy, then diffusion and ventilation feed the fire.' },
+    { path: '/simulator?preset=lunar&demo=1', ms: 7000, caption: 'Will it burn? Change gravity and oxygen: the flame morphs, and the nearest NASA tests are the evidence.' },
+    { path: `/analyst?q=${encodeURIComponent(DEMO_QUESTION)}`, ms: 5500, caption: 'Ask a question. NASA notes match in the browser, then the AI model on Vercel writes the answer.' },
     { path: '/', ms: 2000, caption: 'FlameSight: fire-safety insights from microgravity combustion data. Built for NASA Space Apps 2026.' },
   ];
 }

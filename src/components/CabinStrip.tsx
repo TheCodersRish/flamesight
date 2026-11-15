@@ -18,7 +18,7 @@ export default function CabinStrip({ compact }: { compact?: boolean }) {
       <Pill tone="slate">{feed.label}</Pill>
       {!compact && (
         <span className="ml-auto flex flex-wrap gap-2 text-xs">
-          <Link to="/" className="text-micro-300 hover:underline">Will It Burn?</Link>
+          <Link to="/simulator" className="text-micro-300 hover:underline">Will It Burn?</Link>
           <Link to="/scenarios" className="text-micro-300 hover:underline">Risk Ranking</Link>
           <Link to={`/fluid-physics?mech=${feed.mechId}`} className="text-micro-300 hover:underline">Fluid Physics</Link>
         </span>
