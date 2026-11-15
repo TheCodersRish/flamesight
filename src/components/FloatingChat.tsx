@@ -148,61 +148,70 @@ export default function FloatingChat() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="float-open-title"
-          className="w-full max-w-md rounded-2xl border border-white/15 bg-space-950 p-6 shadow-2xl shadow-black/60"
+          aria-describedby="float-open-answer"
+          className="flex w-full max-w-lg max-h-[min(90vh,40rem)] flex-col overflow-hidden rounded-2xl border border-white/15 bg-space-950 shadow-2xl shadow-black/60"
           onClick={e => e.stopPropagation()}
         >
-          {latest.pendingSim ? (
-            <>
-              <h2 id="float-open-title" className="text-xl font-semibold text-white">
-                Simulate in fullscreen?
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                FlameSight wants to run <span className="font-medium text-micro-100">{latest.pendingSim.label}</span> on Will It Burn and open the flame fullscreen.
-              </p>
-              <p className="mt-2 text-xs text-slate-400">{describeSim(latest.pendingSim.input)}</p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => confirmSim(latest.pendingSim!)}
-                  className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
-                >
-                  Simulate
-                </button>
-                <button
-                  type="button"
-                  onClick={declineOpen}
-                  className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
-                >
-                  Not now
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <h2 id="float-open-title" className="text-xl font-semibold text-white">
-                Open this page?
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                FlameSight wants to open <span className="font-medium text-micro-100">{latest.pendingOpen!.label}</span>.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => confirmOpen(latest.pendingOpen!)}
-                  className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
-                >
-                  Open
-                </button>
-                <button
-                  type="button"
-                  onClick={declineOpen}
-                  className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
-                >
-                  Not now
-                </button>
-              </div>
-            </>
-          )}
+          <div className="border-b border-white/10 px-5 pt-5 pb-3">
+            {latest.pendingSim ? (
+              <>
+                <h2 id="float-open-title" className="text-xl font-semibold text-white">
+                  Simulate in fullscreen?
+                </h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-300">
+                  FlameSight wants to run <span className="font-medium text-micro-100">{latest.pendingSim.label}</span> on Will It Burn and open the flame fullscreen.
+                </p>
+                <p className="mt-1.5 text-xs text-slate-400">{describeSim(latest.pendingSim.input)}</p>
+              </>
+            ) : (
+              <>
+                <h2 id="float-open-title" className="text-xl font-semibold text-white">
+                  Open this page?
+                </h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-300">
+                  FlameSight wants to open <span className="font-medium text-micro-100">{latest.pendingOpen!.label}</span>.
+                </p>
+              </>
+            )}
+          </div>
+          <div id="float-open-answer" className="min-h-0 flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
+            <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-micro-300/90">
+              {display ? 'AI answer' : latest.state === 'loading' ? 'AI writing…' : 'AI answer'}
+            </p>
+            {display ? (
+              <AiAnswer text={display} />
+            ) : latest.state === 'loading' ? (
+              <p className="text-sm text-cyan-100/90">Writing the AI answer…</p>
+            ) : (
+              <p className="text-sm text-slate-400">Read the request above, then accept or dismiss.</p>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-3 border-t border-white/10 px-5 py-4">
+            {latest.pendingSim ? (
+              <button
+                type="button"
+                onClick={() => confirmSim(latest.pendingSim!)}
+                className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
+              >
+                Accept & simulate
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => confirmOpen(latest.pendingOpen!)}
+                className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
+              >
+                Accept & open
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={declineOpen}
+              className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
+            >
+              Not now
+            </button>
+          </div>
         </div>
       </div>
     )}
