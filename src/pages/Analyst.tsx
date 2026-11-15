@@ -43,7 +43,12 @@ export default function Analyst() {
     setQ('');
 
     void (async () => {
-      const remote = await askRemote(text, a);
+      const remote = await askRemote(text, a, undefined, (partial) => {
+        if (id !== request.current) return;
+        setTurns(list => list.map((turn, i) => (
+          i === 0 ? { ...turn, ai: partial, source: 'gemini', state: 'loading' } : turn
+        )));
+      });
       if (id !== request.current) return;
       setTurns(list => list.map((turn, i) => {
         if (i !== 0) return turn;

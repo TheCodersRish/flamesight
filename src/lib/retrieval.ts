@@ -121,14 +121,68 @@ export function contextForLLM(a: Answer) {
   return a.hits.map(h => ({ accession: h.inv.accession, name: invLabel(h.inv.accession), url: h.inv.psiPage, text: [h.inv.summary, ...h.passages.filter(p => p.kind === 'fact').map(p => p.text)].join(' ') }));
 }
 
-export async function askRemote(question: string, a: Answer, signal?: AbortSignal): Promise<string | null> {
+/** Call /api/ask. Prefers SSE streaming (onChunk per token); falls back to a JSON { answer } body. */
+export async function askRemote(
+  question: string,
+  a: Answer,
+  signal?: AbortSignal,
+  onChunk?: (partial: string) => void,
+): Promise<string | null> {
   try {
-    const r = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, context: contextForLLM(a) }), signal });
+    const r = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream, application/json' },
+      body: JSON.stringify({ question, context: contextForLLM(a) }),
+      signal,
+    });
     if (!r.ok) return null;
     const ct = r.headers.get('content-type') || '';
+
+    if (ct.includes('text/event-stream') && r.body) {
+      const reader = r.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let full = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+        let boundary: number;
+        while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+          const event = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          const data = event
+            .split('\n')
+            .filter(l => l.startsWith('data: '))
+            .map(l => l.slice(6))
+            .join('');
+          if (!data) continue;
+          let payload: { t?: string; answer?: string; done?: boolean; error?: string };
+          try {
+            payload = JSON.parse(data) as typeof payload;
+          } catch {
+            continue;
+          }
+          if (payload.error) return full.trim() || null;
+          if (payload.t) {
+            full += payload.t;
+            onChunk?.(full);
+          }
+          if (payload.done && payload.answer) {
+            full = payload.answer;
+            onChunk?.(full);
+          }
+        }
+      }
+      const out = full.trim();
+      return out || null;
+    }
+
     if (!ct.includes('application/json')) return null;
     const j = (await r.json()) as { answer?: string };
-    return j.answer && j.answer.trim() ? j.answer.trim() : null;
+    const out = j.answer?.trim() || '';
+    if (out) onChunk?.(out);
+    return out || null;
   } catch {
     return null;
   }
