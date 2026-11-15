@@ -1,5 +1,5 @@
 // POST /api/ask
-// Body: { question: string, context: { accession, name, url, text }[] }
+// Body: { question: string, context: { accession, name, url, text }[], workspace?: string }
 // Streams OpenRouter tokens to the browser as SSE (text/event-stream) so answers are not cut off mid-way.
 // The key stays in the Vercel environment. If the key is missing or the call fails,
 // returns an error and the app keeps its local NASA-notes answer.
@@ -37,9 +37,14 @@ export default async function handler(req: Req, res: Res) {
     return res.status(503).json({ error: 'No OPENROUTER_API_KEY configured; using local retrieval.' });
   }
 
-  const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) as { question?: string; context?: AskContext[] };
+  const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) as {
+    question?: string;
+    context?: AskContext[];
+    workspace?: string;
+  };
   const question = String(body?.question || '').slice(0, 500);
   const context = Array.isArray(body?.context) ? body.context.slice(0, 6) : [];
+  const workspace = String(body?.workspace || '').slice(0, 900);
   if (!question || !context.length) {
     res.setHeader('Cache-Control', 'no-store');
     return res.status(400).json({ error: 'question and context required' });
@@ -67,6 +72,7 @@ export default async function handler(req: Req, res: Res) {
       model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
       question,
       context,
+      workspace,
     })) {
       full += chunk;
       writeSse(res, { t: chunk });

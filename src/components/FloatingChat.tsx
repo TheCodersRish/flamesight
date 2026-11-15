@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useBurn } from '../lib/burnSession';
 import { plainAnalyst, simplifyText } from '../lib/plainEnglish';
 import { narrateLocal } from '../lib/narrate';
 import { answerLocal, askRemote, SAMPLE_QUESTIONS } from '../lib/retrieval';
+import {
+  describeWorkspace,
+  intentToOpen,
+  stripOpenDirective,
+  workspaceChip,
+  type ScreenAction,
+} from '../lib/screenAware';
 
 interface Turn {
   question: string;
@@ -12,11 +20,14 @@ interface Turn {
   state: 'loading' | 'done';
   caveats: string[];
   hits: { accession: string; label: string }[];
+  opened?: ScreenAction | null;
 }
 
 /** Floating Ask panel available on every page (except the full Analyst deck). */
 export default function FloatingChat() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
+  const burn = useBurn();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -24,25 +35,39 @@ export default function FloatingChat() {
   const listRef = useRef<HTMLDivElement>(null);
   // Full Analyst page already is the chat — skip the bubble there.
   const hide = pathname === '/analyst';
+  const workspace = describeWorkspace({ pathname, search, burn: { input: burn.input, result: burn.result } });
+  const where = workspaceChip(pathname);
+
+  const applyOpen = (action: ScreenAction | null | undefined) => {
+    if (!action) return;
+    navigate(action.path);
+  };
 
   const ask = (question: string) => {
     const text = question.trim();
     if (!text) return;
-    const a = answerLocal(text);
+    const localOpen = intentToOpen(text);
+    if (localOpen) applyOpen(localOpen);
+    const openStudy = pathname.startsWith('/explorer/') ? pathname.split('/')[2]?.toUpperCase() : undefined;
+    const a = answerLocal(text, openStudy);
     const notes = narrateLocal(a);
     const id = ++request.current;
     const hits = a.hits.map(h => ({
       accession: h.inv.accession,
       label: h.inv.hasAcronym ? h.inv.acronym : h.inv.title,
     }));
+    const localNotes = localOpen
+      ? `${notes}\n\nOpened ${localOpen.label} on your screen.`
+      : notes;
     setTurns(t => [{
       question: text,
-      notes,
-      ai: plainAnalyst(text, notes, a.caveats),
+      notes: localNotes,
+      ai: plainAnalyst(text, localNotes, a.caveats),
       source: 'local',
       state: 'loading',
       caveats: a.caveats,
       hits,
+      opened: localOpen,
     }, ...t]);
     setQ('');
     setOpen(true);
@@ -50,15 +75,21 @@ export default function FloatingChat() {
     void (async () => {
       const remote = await askRemote(text, a, undefined, (partial) => {
         if (id !== request.current) return;
+        const { answer } = stripOpenDirective(partial);
         setTurns(list => list.map((turn, i) => (
-          i === 0 ? { ...turn, ai: partial, source: 'gemini', state: 'loading' } : turn
+          i === 0 ? { ...turn, ai: answer || partial, source: 'gemini', state: 'loading' } : turn
         )));
-      });
+      }, workspace);
       if (id !== request.current) return;
       setTurns(list => list.map((turn, i) => {
         if (i !== 0) return turn;
-        if (remote) return { ...turn, ai: remote, source: 'gemini', state: 'done' };
-        return { ...turn, ai: notes, source: 'local', state: 'done' };
+        if (remote) {
+          const { answer, action } = stripOpenDirective(remote);
+          const opened = action || turn.opened || null;
+          if (action && (!turn.opened || turn.opened.path !== action.path)) applyOpen(action);
+          return { ...turn, ai: answer, source: 'gemini', state: 'done', opened };
+        }
+        return { ...turn, ai: turn.notes, source: 'local', state: 'done' };
       }));
     })();
   };
@@ -89,7 +120,7 @@ export default function FloatingChat() {
           <header className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2.5">
             <div>
               <p className="text-sm font-semibold text-white">Ask FlameSight</p>
-              <p className="text-[11px] text-slate-400">NASA notes first, then live AI</p>
+              <p className="text-[11px] text-slate-400">Sees what you are working on · can open pages</p>
             </div>
             <div className="flex items-center gap-1">
               <Link to="/analyst" className="rounded-lg px-2 py-1 text-[11px] text-micro-300 hover:bg-white/10" onClick={() => setOpen(false)}>
@@ -101,15 +132,24 @@ export default function FloatingChat() {
             </div>
           </header>
 
+          <div className="border-b border-white/10 px-3 py-1.5">
+            <p className="truncate text-[11px] text-micro-200/90" title={workspace}>
+              Working on: {where}
+            </p>
+          </div>
+
           <div ref={listRef} className="max-h-[min(50vh,22rem)] space-y-3 overflow-y-auto px-3 py-3 scrollbar-thin">
             {!latest && (
               <div className="space-y-1.5">
-                <p className="text-xs text-slate-400">Try a question, or tap one below:</p>
-                {SAMPLE_QUESTIONS.slice(0, 3).map(s => (
+                <p className="text-xs text-slate-400">Ask about fire in space, or say “pull up FLEX” / “open Will it burn?”:</p>
+                {SAMPLE_QUESTIONS.slice(0, 2).map(s => (
                   <button key={s} type="button" onClick={() => ask(s)} className="block w-full rounded-lg bg-white/5 px-2.5 py-1.5 text-left text-[11px] leading-snug text-slate-200 hover:bg-white/10">
                     {s}
                   </button>
                 ))}
+                <button type="button" onClick={() => ask('Pull up the FLEX study')} className="block w-full rounded-lg bg-white/5 px-2.5 py-1.5 text-left text-[11px] leading-snug text-slate-200 hover:bg-white/10">
+                  Pull up the FLEX study
+                </button>
               </div>
             )}
             {latest && (
@@ -121,20 +161,30 @@ export default function FloatingChat() {
                   {latest.state === 'loading' ? ' · writing…' : ''}
                 </p>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>
+                {latest.opened && (
+                  <p className="rounded-lg bg-micro-500/15 px-2 py-1.5 text-[11px] text-micro-100">
+                    On screen: {latest.opened.label}
+                  </p>
+                )}
                 {latest.caveats.map(c => (
                   <p key={c} className="text-[11px] text-amber-200">⚠ {simplifyText(c)}</p>
                 ))}
                 {latest.hits.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {latest.hits.map(h => (
-                      <Link
+                      <button
                         key={h.accession}
-                        to={`/explorer/${h.accession}`}
-                        onClick={() => setOpen(false)}
+                        type="button"
+                        onClick={() => {
+                          applyOpen({ path: `/explorer/${h.accession}`, label: h.label });
+                          setTurns(list => list.map((turn, i) => (
+                            i === 0 ? { ...turn, opened: { path: `/explorer/${h.accession}`, label: h.label } } : turn
+                          )));
+                        }}
                         className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-micro-200 hover:bg-white/10"
                       >
                         {h.accession}
-                      </Link>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -154,7 +204,7 @@ export default function FloatingChat() {
               id="float-ask"
               value={q}
               onChange={e => setQ(e.target.value)}
-              placeholder="Ask about fire in space…"
+              placeholder="Ask, or say pull up FLEX…"
               className="min-w-0 flex-1 rounded-lg border border-white/15 bg-space-900 px-2.5 py-2 text-sm text-white placeholder:text-slate-500"
             />
             <button type="submit" className="rounded-lg bg-flame-500 px-3 py-2 text-sm font-medium text-white hover:bg-flame-400">

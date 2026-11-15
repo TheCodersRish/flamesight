@@ -43,7 +43,7 @@ function openRouterDev(key: string | undefined, model: string): Plugin {
               res.end(JSON.stringify({ error: 'No OPENROUTER_API_KEY configured; using local retrieval.' }));
               return;
             }
-            const body = (await readJsonBody(req)) as { question?: string; context?: AskContext[] };
+            const body = (await readJsonBody(req)) as { question?: string; context?: AskContext[]; workspace?: string };
             res.writeHead(200, {
               'Content-Type': 'text/event-stream; charset=utf-8',
               'Cache-Control': 'no-store, no-cache',
@@ -56,6 +56,7 @@ function openRouterDev(key: string | undefined, model: string): Plugin {
               model,
               question: String(body.question || ''),
               context: Array.isArray(body.context) ? body.context : [],
+              workspace: String(body.workspace || ''),
             })) {
               full += chunk;
               res.write(`data: ${JSON.stringify({ t: chunk })}\n\n`);

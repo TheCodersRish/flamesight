@@ -14,24 +14,30 @@ const SYSTEM =
   'Cite sources inline like (PSI-69). If the sources do not answer the question, say so. Never invent numbers. ' +
   'Moon/Mars conditions have no partial-gravity combustion data in PSI: label any such statement as extrapolated. ' +
   'The flame animation is illustrative, not a combustion simulation. ' +
+  'You can see what the user is working on from the Workspace line — use it to tailor the answer. ' +
+  'If they ask to open, show, or pull something up on screen, end with exactly one directive on its own line: ' +
+  '[[OPEN:/path|short label]] using an app route such as /simulator, /insights, /scenarios, /scenarios?s=lunar, /explorer, /explorer/PSI-69, /analyst, /overview, /fluid-physics, /about, or /. ' +
+  'Otherwise do not emit [[OPEN:…]]. ' +
   'Write 3–6 short everyday sentences a non-scientist can follow. Prefer plain words; if you must use a technical term, define it in the same sentence.';
 
 const MAX_OUT = 2048;
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-function prepare(opts: { question: string; context: AskContext[] }) {
+function prepare(opts: { question: string; context: AskContext[]; workspace?: string }) {
   const question = opts.question.slice(0, 500);
   const context = opts.context.slice(0, 6);
   if (!question || !context.length) throw new Error('question and context required');
   const sources = context
     .map((c, i) => `[${i + 1}] ${c.name} — ${c.url}\n${String(c.text).slice(0, 1800)}`)
     .join('\n\n');
+  const workspace = String(opts.workspace || '').trim().slice(0, 900);
+  const workspaceLine = workspace ? `Workspace (what they are looking at):\n${workspace}\n\n` : '';
   return {
     question,
     context,
     messages: [
       { role: 'system', content: SYSTEM },
-      { role: 'user', content: `Question: ${question}\n\nSources:\n${sources}` },
+      { role: 'user', content: `${workspaceLine}Question: ${question}\n\nSources:\n${sources}` },
     ],
   };
 }
@@ -56,6 +62,7 @@ export async function* streamAnswerWithOpenRouter(opts: {
   model: string;
   question: string;
   context: AskContext[];
+  workspace?: string;
 }): AsyncGenerator<string> {
   const { messages } = prepare(opts);
   const r = await fetch(OPENROUTER_URL, {
@@ -124,6 +131,7 @@ export async function answerWithOpenRouter(opts: {
   model: string;
   question: string;
   context: AskContext[];
+  workspace?: string;
 }): Promise<string> {
   let out = '';
   for await (const chunk of streamAnswerWithOpenRouter(opts)) out += chunk;

@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Deck, { FlameStage } from '../components/Deck';
 import Flame from '../components/Flame';
 import { Pill, SourceChip } from '../components/ui';
+import { useBurn } from '../lib/burnSession';
 import { analystPhysicsCitations, fluidPhysicsHref, physicsFollowUps } from '../lib/physicsBridge';
 import { plainAnalyst, simplifyText } from '../lib/plainEnglish';
 import { downloadReport, stamp } from '../lib/report';
 import { answerLocal, askRemote, SAMPLE_QUESTIONS, type Answer } from '../lib/retrieval';
 import { narrateLocal } from '../lib/narrate';
+import { describeWorkspace, intentToOpen, stripOpenDirective, type ScreenAction } from '../lib/screenAware';
 
 function bestFact(h: Answer['hits'][number], question: string): string {
   const words = question.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 2);
@@ -23,36 +25,51 @@ interface Turn {
   ai: string;
   source: 'local' | 'gemini';
   state: 'loading' | 'done';
+  opened?: ScreenAction | null;
 }
 
 export default function Analyst() {
   const [sp] = useSearchParams();
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
+  const burn = useBurn();
   const [q, setQ] = useState('');
   const [plain, setPlain] = useState(true);
   const [turns, setTurns] = useState<Turn[]>([]);
   const asked = useRef<string | null>(null);
   const request = useRef(0);
+  const workspace = describeWorkspace({ pathname, search, burn: { input: burn.input, result: burn.result } });
 
   const ask = (question: string) => {
     const text = question.trim();
     if (!text) return;
-    const a = answerLocal(text);
-    const notes = narrateLocal(a);
+    const localOpen = intentToOpen(text);
+    if (localOpen) navigate(localOpen.path);
+    const openStudy = pathname.startsWith('/explorer/') ? pathname.split('/')[2]?.toUpperCase() : undefined;
+    const a = answerLocal(text, openStudy);
+    const notes = localOpen
+      ? `${narrateLocal(a)}\n\nOpened ${localOpen.label} on your screen.`
+      : narrateLocal(a);
     const id = ++request.current;
-    setTurns(t => [{ a, notes, ai: plainAnalyst(text, notes, a.caveats), source: 'local', state: 'loading' }, ...t]);
+    setTurns(t => [{ a, notes, ai: plainAnalyst(text, notes, a.caveats), source: 'local', state: 'loading', opened: localOpen }, ...t]);
     setQ('');
 
     void (async () => {
       const remote = await askRemote(text, a, undefined, (partial) => {
         if (id !== request.current) return;
+        const { answer } = stripOpenDirective(partial);
         setTurns(list => list.map((turn, i) => (
-          i === 0 ? { ...turn, ai: partial, source: 'gemini', state: 'loading' } : turn
+          i === 0 ? { ...turn, ai: answer || partial, source: 'gemini', state: 'loading' } : turn
         )));
-      });
+      }, workspace);
       if (id !== request.current) return;
       setTurns(list => list.map((turn, i) => {
         if (i !== 0) return turn;
-        if (remote) return { ...turn, ai: remote, source: 'gemini', state: 'done' };
+        if (remote) {
+          const { answer, action } = stripOpenDirective(remote);
+          if (action && (!turn.opened || turn.opened.path !== action.path)) navigate(action.path);
+          return { ...turn, ai: answer, source: 'gemini', state: 'done', opened: action || turn.opened || null };
+        }
         return { ...turn, ai: notes, source: 'local', state: 'done' };
       }));
     })();
@@ -111,15 +128,15 @@ export default function Analyst() {
       graphsTitle="How well they match"
       outcomeTitle="Answer"
       stage={(
-        <FlameStage title="Ask FlameSight" caption="Ask in everyday language. We match NASA notes first, then fill in a clear AI answer." controls={(
+        <FlameStage title="Ask FlameSight" caption="Knows what you are working on. Ask in everyday language, or say “pull up FLEX” to open it on screen." controls={(
           <>
             <form className="flex gap-2 sm:col-span-2" onSubmit={e => { e.preventDefault(); ask(q); }}>
               <label htmlFor="q" className="sr-only">Your question</label>
-              <input id="q" value={q} onChange={e => setQ(e.target.value)} placeholder="Which gas puts out fuel fires best in space?" className="min-w-0 flex-1 rounded-lg border border-white/15 bg-space-950 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
+              <input id="q" value={q} onChange={e => setQ(e.target.value)} placeholder="Ask, or say pull up Will it burn…" className="min-w-0 flex-1 rounded-lg border border-white/15 bg-space-950 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
               <button className="rounded-lg bg-flame-500 px-4 py-2 text-sm font-medium text-white">Ask</button>
             </form>
             <p className="text-[11px] leading-relaxed text-slate-400 sm:col-span-2">
-              Tip: ask like you would ask a friend. If the live AI is busy, you still get a NASA-notes answer right away.
+              Tip: the agent sees your current page and Will-it-burn knobs. Say “open lunar risks” or “pull up BASS-II” to bring them up.
             </p>
           </>
         )}>
@@ -178,6 +195,11 @@ export default function Analyst() {
             </p>
           )}
           {latest && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{display}</p>}
+          {latest?.opened && (
+            <p className="mt-2 rounded-lg bg-micro-500/15 px-2 py-1.5 text-xs text-micro-100">
+              On screen: {latest.opened.label}
+            </p>
+          )}
           {!latest && <p className="mt-3 text-sm text-slate-300">Ask anything about fire in space. You will get a short answer grounded in NASA tests.</p>}
           {latest?.a.caveats.map(c => <p key={c} className="mt-2 text-xs text-amber-200">⚠ {plain ? simplifyText(c) : c}</p>)}
           {citations.length > 0 && (

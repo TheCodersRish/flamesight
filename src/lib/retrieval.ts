@@ -77,7 +77,7 @@ function parseConditions(q: string): { o2?: number; atm?: number } {
   return out;
 }
 
-export function answerLocal(question: string): Answer {
+export function answerLocal(question: string, biasAccession?: string): Answer {
   const base = tok(question);
   const q = [...new Set(base.concat(base.flatMap(w => SYN[w] || [])))];
   const cond = parseConditions(question);
@@ -89,6 +89,15 @@ export function answerLocal(question: string): Answer {
     e.score = Math.max(e.score, s) + s * 0.25;
     e.passages.push(p);
     byInv.set(p.accession, e);
+  }
+  // Prefer the study currently open on screen so follow-ups stay on-topic.
+  if (biasAccession && byAccession[biasAccession]) {
+    const e = byInv.get(biasAccession) || {
+      score: 0,
+      passages: PASSAGES.filter(p => p.accession === biasAccession).slice(0, 2),
+    };
+    e.score += 2.5;
+    byInv.set(biasAccession, e);
   }
   // condition-aware boost: investigations whose tested range covers the asked-for O₂ / pressure
   if (cond.o2 !== undefined || cond.atm !== undefined) {
@@ -127,12 +136,13 @@ export async function askRemote(
   a: Answer,
   signal?: AbortSignal,
   onChunk?: (partial: string) => void,
+  workspace?: string,
 ): Promise<string | null> {
   try {
     const r = await fetch('/api/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream, application/json' },
-      body: JSON.stringify({ question, context: contextForLLM(a) }),
+      body: JSON.stringify({ question, context: contextForLLM(a), workspace: workspace || undefined }),
       signal,
     });
     if (!r.ok) return null;
