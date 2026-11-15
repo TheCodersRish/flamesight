@@ -26,7 +26,7 @@ interface Turn {
   opened?: ScreenAction | null;
 }
 
-/** Floating Ask panel available on every page (except the full Analyst deck). */
+/** Floating Ask panel available on every page (except Analyst and Overview). */
 export default function FloatingChat() {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
@@ -36,8 +36,8 @@ export default function FloatingChat() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const request = useRef(0);
   const listRef = useRef<HTMLDivElement>(null);
-  // Full Analyst page already is the chat — skip the bubble there.
-  const hide = pathname === '/analyst';
+  // Full Analyst page already is the chat; Overview keeps the page clean — skip the launcher there.
+  const hide = pathname === '/analyst' || pathname === '/overview';
   const workspace = describeWorkspace({ pathname, search, burn: { input: burn.input, result: burn.result } });
   const where = workspaceChip(pathname);
 
@@ -274,16 +274,14 @@ export default function FloatingChat() {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-flame-500 text-white shadow-lg shadow-flame-500/30 ring-2 ring-white/20 will-change-transform hover:bg-flame-400 hover:scale-110 active:scale-95"
+        className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full bg-flame-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-flame-500/30 ring-2 ring-white/20 will-change-transform hover:bg-flame-400 hover:scale-105 active:scale-95"
         aria-expanded={open}
         aria-label={open ? 'Close Ask FlameSight' : 'Open Ask FlameSight'}
       >
         {open ? (
-          <span className="text-xl leading-none">✕</span>
+          <span className="text-sm leading-none">✕ Close</span>
         ) : (
-          <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19a7 7 0 1 0-6.3-4L4 20l5.2-1.4A7 7 0 0 0 12 19Z" />
-          </svg>
+          <span>FlameSight AI</span>
         )}
       </button>
     </div>
