@@ -86,7 +86,7 @@ npm run build:offline   # optional: one self-contained HTML in dist-offline/ (op
 
 1. Push this folder to a GitHub repo (`git init && git add . && git commit -m "FlameSight" && git push`).
 2. On vercel.com → **Add New… → Project** → import the repo. Vercel detects Vite; `vercel.json` already sets build command `npm run build` and output `dist`.
-3. *(Optional)* For AI-written answers in the Analyst, add an environment variable **`OPENAI_API_KEY`** (and optionally `OPENAI_MODEL`, default `gpt-4o-mini`) under Project → Settings → Environment Variables. The key is only used by the serverless function `api/ask.ts`; it is never sent to the browser. Without it, the app uses local retrieval.
+3. *(Optional)* For AI-written answers in the Analyst, add an environment variable **`OPENROUTER_API_KEY`** (and optionally `OPENROUTER_MODEL`, default `openai/gpt-4o-mini`) under Project → Settings → Environment Variables. The key is only used by the serverless functions `api/ask.ts` and `api/search-study.ts`; it is never sent to the browser. Without it, the app uses local retrieval.
 4. Deploy. Routing uses a hash router (`/#/simulator`), so every page works on any static host.
 
 Also works on Netlify / GitHub Pages: build with `npm run build` and publish `dist/` (`/api/ask` is Vercel-only; the Analyst falls back to local mode).

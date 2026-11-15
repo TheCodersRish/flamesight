@@ -1,6 +1,6 @@
-// Server-only Gemini call. The key is read from the environment and never sent to the browser.
+// Server-only OpenRouter call. The key is read from the environment and never sent to the browser.
 // Lives outside /api so Vercel does not treat it as its own serverless entrypoint.
-// Uses streamGenerateContent so tokens reach the client as they arrive (avoids mid-answer cutoffs).
+// Uses OpenAI-compatible chat completions streaming so tokens reach the client as they arrive.
 
 export interface AskContext {
   accession: string;
@@ -16,76 +16,69 @@ const SYSTEM =
   'The flame animation is illustrative, not a combustion simulation. ' +
   'Write 3–6 short everyday sentences a non-scientist can follow. Prefer plain words; if you must use a technical term, define it in the same sentence.';
 
-// Gemini 3 thinking tokens count against maxOutputTokens. Keep thinking minimal and leave room for a full answer.
-const MAX_OUT = 8192;
-
-function buildBody(question: string, context: AskContext[]) {
-  const sources = context
-    .map((c, i) => `[${i + 1}] ${c.name} — ${c.url}\n${String(c.text).slice(0, 1800)}`)
-    .join('\n\n');
-  return {
-    systemInstruction: { parts: [{ text: SYSTEM }] },
-    contents: [{ role: 'user', parts: [{ text: `Question: ${question}\n\nSources:\n${sources}` }] }],
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: MAX_OUT,
-      // Default Gemini 3 thinking is "high" and can eat the whole token budget, cutting answers mid-sentence.
-      thinkingConfig: { thinkingLevel: 'minimal' },
-    },
-  };
-}
+const MAX_OUT = 2048;
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 function prepare(opts: { question: string; context: AskContext[] }) {
   const question = opts.question.slice(0, 500);
   const context = opts.context.slice(0, 6);
   if (!question || !context.length) throw new Error('question and context required');
-  return { question, context, body: buildBody(question, context) };
+  const sources = context
+    .map((c, i) => `[${i + 1}] ${c.name} — ${c.url}\n${String(c.text).slice(0, 1800)}`)
+    .join('\n\n');
+  return {
+    question,
+    context,
+    messages: [
+      { role: 'system', content: SYSTEM },
+      { role: 'user', content: `Question: ${question}\n\nSources:\n${sources}` },
+    ],
+  };
 }
 
-interface GeminiChunk {
+function openRouterHeaders(key: string): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${key}`,
+    'HTTP-Referer': 'https://flamesight.vercel.app',
+    'X-Title': 'FlameSight',
+  };
+}
+
+interface OpenRouterChunk {
   error?: { message?: string };
-  candidates?: {
-    content?: { parts?: { text?: string; thought?: boolean }[] };
-    finishReason?: string;
-  }[];
+  choices?: { delta?: { content?: string | null }; message?: { content?: string | null } }[];
 }
 
-function partText(j: GeminiChunk): string {
-  // Skip internal "thought" parts so only the user-facing answer streams to the browser.
-  return j.candidates?.[0]?.content?.parts
-    ?.filter(p => !p.thought)
-    .map(p => p.text || '')
-    .join('') || '';
-}
-
-/** Yield incremental text deltas from Gemini SSE streaming. */
-export async function* streamAnswerWithGemini(opts: {
+/** Yield incremental text deltas from OpenRouter SSE streaming. */
+export async function* streamAnswerWithOpenRouter(opts: {
   key: string;
   model: string;
   question: string;
   context: AskContext[];
 }): AsyncGenerator<string> {
-  const { body } = prepare(opts);
-  const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/${opts.model}:streamGenerateContent?alt=sse`;
-  const r = await fetch(url, {
+  const { messages } = prepare(opts);
+  const r = await fetch(OPENROUTER_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': opts.key,
-    },
-    body: JSON.stringify(body),
+    headers: openRouterHeaders(opts.key),
+    body: JSON.stringify({
+      model: opts.model,
+      messages,
+      temperature: 0.2,
+      max_tokens: MAX_OUT,
+      stream: true,
+    }),
   });
 
   if (!r.ok) {
-    let message = `Gemini error ${r.status}`;
+    let message = `OpenRouter error ${r.status}`;
     try {
       const j = (await r.json()) as { error?: { message?: string } };
       if (j.error?.message) message = j.error.message;
     } catch { /* ignore */ }
     throw new Error(message);
   }
-  if (!r.body) throw new Error('Gemini returned an empty stream');
+  if (!r.body) throw new Error('OpenRouter returned an empty stream');
 
   const reader = r.body.getReader();
   const decoder = new TextDecoder();
@@ -107,14 +100,14 @@ export async function* streamAnswerWithGemini(opts: {
         .map(l => l.slice(6))
         .join('');
       if (!json || json === '[DONE]') continue;
-      let parsed: GeminiChunk;
+      let parsed: OpenRouterChunk;
       try {
-        parsed = JSON.parse(json) as GeminiChunk;
+        parsed = JSON.parse(json) as OpenRouterChunk;
       } catch {
         continue;
       }
       if (parsed.error?.message) throw new Error(parsed.error.message);
-      const text = partText(parsed);
+      const text = parsed.choices?.[0]?.delta?.content || '';
       if (text) {
         yielded = true;
         yield text;
@@ -122,20 +115,20 @@ export async function* streamAnswerWithGemini(opts: {
     }
   }
 
-  if (!yielded) throw new Error('Gemini returned an empty answer');
+  if (!yielded) throw new Error('OpenRouter returned an empty answer');
 }
 
 /** Collect a full answer (used when a caller does not need live tokens). */
-export async function answerWithGemini(opts: {
+export async function answerWithOpenRouter(opts: {
   key: string;
   model: string;
   question: string;
   context: AskContext[];
 }): Promise<string> {
   let out = '';
-  for await (const chunk of streamAnswerWithGemini(opts)) out += chunk;
+  for await (const chunk of streamAnswerWithOpenRouter(opts)) out += chunk;
   const text = out.trim();
-  if (!text) throw new Error('Gemini returned an empty answer');
+  if (!text) throw new Error('OpenRouter returned an empty answer');
   return text;
 }
 
@@ -154,7 +147,7 @@ const MATCH_SYSTEM =
   'Pick only from the catalog. Prefer 1–5 matches. If nothing fits, return {"accessions":[]}.';
 
 /** Rank catalog studies for a long free-text query. Returns accession ids best-first. */
-export async function matchStudiesWithGemini(opts: {
+export async function matchStudiesWithOpenRouter(opts: {
   key: string;
   model: string;
   query: string;
@@ -173,31 +166,22 @@ export async function matchStudiesWithGemini(opts: {
     })
     .join('\n');
 
-  const body = {
-    systemInstruction: { parts: [{ text: MATCH_SYSTEM }] },
-    contents: [{
-      role: 'user',
-      parts: [{ text: `User search:\n${query}\n\nCatalog:\n${listing}\n\nJSON:` }],
-    }],
-    generationConfig: {
-      temperature: 0.1,
-      maxOutputTokens: 512,
-      responseMimeType: 'application/json',
-      thinkingConfig: { thinkingLevel: 'minimal' },
-    },
-  };
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${opts.model}:generateContent`;
-  const r = await fetch(url, {
+  const r = await fetch(OPENROUTER_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': opts.key,
-    },
-    body: JSON.stringify(body),
+    headers: openRouterHeaders(opts.key),
+    body: JSON.stringify({
+      model: opts.model,
+      messages: [
+        { role: 'system', content: MATCH_SYSTEM },
+        { role: 'user', content: `User search:\n${query}\n\nCatalog:\n${listing}\n\nJSON:` },
+      ],
+      temperature: 0.1,
+      max_tokens: 512,
+      response_format: { type: 'json_object' },
+    }),
   });
   if (!r.ok) {
-    let message = `Gemini error ${r.status}`;
+    let message = `OpenRouter error ${r.status}`;
     try {
       const j = (await r.json()) as { error?: { message?: string } };
       if (j.error?.message) message = j.error.message;
@@ -205,18 +189,20 @@ export async function matchStudiesWithGemini(opts: {
     throw new Error(message);
   }
 
-  const j = (await r.json()) as GeminiChunk;
+  const j = (await r.json()) as OpenRouterChunk & {
+    choices?: { message?: { content?: string | null } }[];
+    error?: { message?: string };
+  };
   if (j.error?.message) throw new Error(j.error.message);
-  const raw = partText(j).trim();
-  if (!raw) throw new Error('Gemini returned an empty match list');
+  const raw = String(j.choices?.[0]?.message?.content || '').trim();
+  if (!raw) throw new Error('OpenRouter returned an empty match list');
 
   let parsed: { accessions?: unknown };
   try {
     parsed = JSON.parse(raw) as { accessions?: unknown };
   } catch {
-    // Model sometimes wraps JSON in fences or prose — pull the first array-looking blob.
     const m = raw.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('Gemini match response was not JSON');
+    if (!m) throw new Error('OpenRouter match response was not JSON');
     parsed = JSON.parse(m[0]) as { accessions?: unknown };
   }
 
@@ -224,7 +210,6 @@ export async function matchStudiesWithGemini(opts: {
   const out: string[] = [];
   for (const item of list) {
     const acc = String(item || '').trim().toUpperCase();
-    // Catalog uses mixed case like PSI-25; normalize lookup.
     const hit = [...allowed].find(a => a.toUpperCase() === acc);
     if (hit && !out.includes(hit)) out.push(hit);
   }

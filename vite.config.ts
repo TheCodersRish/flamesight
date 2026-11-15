@@ -2,11 +2,11 @@ import { defineConfig, loadEnv, type Plugin } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
 import {
-  matchStudiesWithGemini,
-  streamAnswerWithGemini,
+  matchStudiesWithOpenRouter,
+  streamAnswerWithOpenRouter,
   type AskContext,
   type StudyCatalogEntry,
-} from './lib/geminiServer';
+} from './lib/openrouterServer';
 
 function readJsonBody(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
@@ -23,9 +23,9 @@ function readJsonBody(req: IncomingMessage): Promise<unknown> {
   });
 }
 
-function geminiDev(key: string | undefined, model: string): Plugin {
+function openRouterDev(key: string | undefined, model: string): Plugin {
   return {
-    name: 'flamesight-gemini',
+    name: 'flamesight-openrouter',
     configureServer(server) {
       server.middlewares.use('/api/ask', (req: IncomingMessage, res: ServerResponse) => {
         if (req.method !== 'POST') {
@@ -40,7 +40,7 @@ function geminiDev(key: string | undefined, model: string): Plugin {
               res.statusCode = 503;
               res.setHeader('Content-Type', 'application/json');
               res.setHeader('Cache-Control', 'no-store');
-              res.end(JSON.stringify({ error: 'No GEMINI_API_KEY configured; using local retrieval.' }));
+              res.end(JSON.stringify({ error: 'No OPENROUTER_API_KEY configured; using local retrieval.' }));
               return;
             }
             const body = (await readJsonBody(req)) as { question?: string; context?: AskContext[] };
@@ -51,7 +51,7 @@ function geminiDev(key: string | undefined, model: string): Plugin {
               'X-Accel-Buffering': 'no',
             });
             let full = '';
-            for await (const chunk of streamAnswerWithGemini({
+            for await (const chunk of streamAnswerWithOpenRouter({
               key,
               model,
               question: String(body.question || ''),
@@ -63,7 +63,7 @@ function geminiDev(key: string | undefined, model: string): Plugin {
             res.write(`data: ${JSON.stringify({ done: true, answer: full.trim() })}\n\n`);
             res.end();
           } catch (e) {
-            const message = e instanceof Error ? e.message.slice(0, 300) : 'Gemini request failed';
+            const message = e instanceof Error ? e.message.slice(0, 300) : 'OpenRouter request failed';
             if (res.headersSent) {
               res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
               res.end();
@@ -90,11 +90,11 @@ function geminiDev(key: string | undefined, model: string): Plugin {
               res.statusCode = 503;
               res.setHeader('Content-Type', 'application/json');
               res.setHeader('Cache-Control', 'no-store');
-              res.end(JSON.stringify({ error: 'No GEMINI_API_KEY configured; using local search.' }));
+              res.end(JSON.stringify({ error: 'No OPENROUTER_API_KEY configured; using local search.' }));
               return;
             }
             const body = (await readJsonBody(req)) as { query?: string; catalog?: StudyCatalogEntry[] };
-            const accessions = await matchStudiesWithGemini({
+            const accessions = await matchStudiesWithOpenRouter({
               key,
               model,
               query: String(body.query || ''),
@@ -105,7 +105,7 @@ function geminiDev(key: string | undefined, model: string): Plugin {
             res.setHeader('Cache-Control', 'no-store');
             res.end(JSON.stringify({ accessions }));
           } catch (e) {
-            const message = e instanceof Error ? e.message.slice(0, 300) : 'Gemini study match failed';
+            const message = e instanceof Error ? e.message.slice(0, 300) : 'OpenRouter study match failed';
             res.statusCode = 502;
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Cache-Control', 'no-store');
@@ -121,7 +121,7 @@ function geminiDev(key: string | undefined, model: string): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
-    plugins: [react(), geminiDev(env.GEMINI_API_KEY, env.GEMINI_MODEL || 'gemini-3-flash-preview')],
+    plugins: [react(), openRouterDev(env.OPENROUTER_API_KEY, env.OPENROUTER_MODEL || 'openai/gpt-4o-mini')],
     optimizeDeps: { exclude: ['@huggingface/transformers'] },
     server: { host: true, port: 5173, strictPort: true },
     base: './',

@@ -1,10 +1,10 @@
 // POST /api/ask
 // Body: { question: string, context: { accession, name, url, text }[] }
-// Streams Gemini tokens to the browser as SSE (text/event-stream) so answers are not cut off mid-way.
+// Streams OpenRouter tokens to the browser as SSE (text/event-stream) so answers are not cut off mid-way.
 // The key stays in the Vercel environment. If the key is missing or the call fails,
 // returns an error and the app keeps its local NASA-notes answer.
 
-import { streamAnswerWithGemini, type AskContext } from '../lib/geminiServer.js';
+import { streamAnswerWithOpenRouter, type AskContext } from '../lib/openrouterServer.js';
 
 interface Req { method?: string; body?: unknown }
 interface Res {
@@ -31,10 +31,10 @@ export default async function handler(req: Req, res: Res) {
     res.setHeader('Cache-Control', 'no-store');
     return res.status(405).json({ error: 'POST only' });
   }
-  const key = process.env.GEMINI_API_KEY;
+  const key = process.env.OPENROUTER_API_KEY;
   if (!key) {
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(503).json({ error: 'No GEMINI_API_KEY configured; using local retrieval.' });
+    return res.status(503).json({ error: 'No OPENROUTER_API_KEY configured; using local retrieval.' });
   }
 
   const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) as { question?: string; context?: AskContext[] };
@@ -62,9 +62,9 @@ export default async function handler(req: Req, res: Res) {
     res.flushHeaders?.();
 
     let full = '';
-    for await (const chunk of streamAnswerWithGemini({
+    for await (const chunk of streamAnswerWithOpenRouter({
       key,
-      model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview',
+      model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
       question,
       context,
     })) {
@@ -74,7 +74,7 @@ export default async function handler(req: Req, res: Res) {
     writeSse(res, { done: true, answer: full.trim() });
     res.end();
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Gemini request failed';
+    const message = e instanceof Error ? e.message : 'OpenRouter request failed';
     // If headers already went out as SSE, finish the stream with an error event.
     try {
       writeSse(res, { error: message.slice(0, 300) });

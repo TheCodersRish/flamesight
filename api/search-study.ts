@@ -1,9 +1,9 @@
 // POST /api/search-study
 // Body: { query: string, catalog: StudyCatalogEntry[] }
-// Uses Gemini to rank NASA PSI studies for a long natural-language search string.
+// Uses OpenRouter to rank NASA PSI studies for a long natural-language search string.
 // Key stays in the Vercel environment. On failure the client keeps keyword search.
 
-import { matchStudiesWithGemini, type StudyCatalogEntry } from '../lib/geminiServer.js';
+import { matchStudiesWithOpenRouter, type StudyCatalogEntry } from '../lib/openrouterServer.js';
 
 interface Req { method?: string; body?: unknown }
 interface Res {
@@ -21,10 +21,10 @@ export default async function handler(req: Req, res: Res) {
     res.setHeader('Cache-Control', 'no-store');
     return res.status(405).json({ error: 'POST only' });
   }
-  const key = process.env.GEMINI_API_KEY;
+  const key = process.env.OPENROUTER_API_KEY;
   if (!key) {
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(503).json({ error: 'No GEMINI_API_KEY configured; using local search.' });
+    return res.status(503).json({ error: 'No OPENROUTER_API_KEY configured; using local search.' });
   }
 
   const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) as {
@@ -39,16 +39,16 @@ export default async function handler(req: Req, res: Res) {
   }
 
   try {
-    const accessions = await matchStudiesWithGemini({
+    const accessions = await matchStudiesWithOpenRouter({
       key,
-      model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview',
+      model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
       query,
       catalog,
     });
     res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json({ accessions });
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Gemini study match failed';
+    const message = e instanceof Error ? e.message : 'OpenRouter study match failed';
     res.setHeader('Cache-Control', 'no-store');
     return res.status(502).json({ error: message.slice(0, 300) });
   }
