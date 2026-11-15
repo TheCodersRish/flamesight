@@ -68,13 +68,6 @@ const Icons = {
       <path strokeLinecap="round" d="M12 11v5.5M12 8h.01" />
     </svg>
   ),
-  ui: (
-    <svg className={iconCls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h10M4 17h7" />
-      <circle cx="18" cy="12" r="2" />
-      <circle cx="14" cy="17" r="2" />
-    </svg>
-  ),
 };
 
 const GROUPS: { label: string; items: NavItem[] }[] = [
@@ -100,7 +93,6 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { to: '/explorer', label: 'Browse tests', hint: 'All NASA studies', icon: Icons.browse },
       { to: '/analyst', label: 'Ask a question', hint: 'Plain-language answers', icon: Icons.ask },
       { to: '/about', label: 'About', hint: 'Where numbers come from', icon: Icons.about },
-      { to: '/ui-variations', label: 'UI look', hint: 'Optional skins', icon: Icons.ui },
     ],
   },
 ];
