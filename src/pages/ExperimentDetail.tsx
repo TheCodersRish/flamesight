@@ -179,108 +179,112 @@ function DataTable({ table, tests }: { table: RawTable; tests: TestRecord[] }) {
   return (
     <div>
       <p className="mb-2 text-xs text-slate-400">Click any row for a split view of that test’s values and a plain-English explanation (defaults to simplified).</p>
-      <div className="scrollbar-thin max-h-[480px] overflow-auto rounded-xl border border-white/10">
-        <table className="min-w-full text-left text-xs">
-          <thead className="sticky top-0 bg-space-800">
-            <tr>{table.header.map((h, i) => (
-              <th key={i} scope="col" className="whitespace-nowrap px-3 py-2 font-medium text-slate-300">
-                <button onClick={() => { if (sortCol === i) setAsc(!asc); else { setSortCol(i); setAsc(true); } }} className="hover:text-white" aria-label={`Sort by ${h}`}>
-                  {h || '—'} {sortCol === i ? (asc ? '▲' : '▼') : ''}
-                </button>
-              </th>))}</tr>
-          </thead>
-          <tbody>
-            {rows.slice(0, limit).map(({ row, origIdx }) => {
-              const on = selected === origIdx;
-              return (
-                <tr
-                  key={origIdx}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={on}
-                  onClick={() => { setSelected(s => (s === origIdx ? null : origIdx)); setDetailMode('simple'); }}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(s => (s === origIdx ? null : origIdx)); setDetailMode('simple'); } }}
-                  className={`cursor-pointer border-t border-white/5 odd:bg-white/[0.02] hover:bg-flame-500/10 ${on ? 'bg-flame-500/15 ring-1 ring-inset ring-flame-400/40' : ''}`}
-                >
-                  {row.map((c, j) => <td key={j} className="max-w-[260px] truncate whitespace-nowrap px-3 py-1.5 text-slate-300" title={c}>{c}</td>)}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-        <span>Showing {Math.min(limit, rows.length)} of {rows.length} rows (original NASA table, unmodified values)</span>
-        {limit < rows.length && <button className="rounded bg-white/10 px-2 py-1 text-slate-200 hover:bg-white/20" onClick={() => setLimit(l => l + 100)}>Show more</button>}
-      </div>
-
-      {picked && (
-        <div className="mt-4 rounded-xl border border-flame-400/30 bg-space-900/80 p-4" role="region" aria-label="Selected test details">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-semibold text-white">
-                {pickedTest ? `Test ${pickedTest.id}` : `Row ${picked.origIdx + 1}`}
-              </h3>
-              <p className="mt-0.5 text-[11px] text-slate-400">What this row was about</p>
-            </div>
-            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Detail view">
-              {([
-                ['simple', 'Simplified'],
-                ['both', 'Both'],
-                ['full', 'Big table'],
-              ] as const).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={detailMode === id}
-                  onClick={() => setDetailMode(id)}
-                  className={`rounded-lg px-2.5 py-1 text-xs ${detailMode === id ? 'bg-flame-500/30 text-white ring-1 ring-flame-400' : 'bg-white/5 text-slate-400 hover:text-white'}`}
-                >
-                  {label}
-                </button>
-              ))}
-              <button type="button" onClick={() => setSelected(null)} className="rounded-lg px-2.5 py-1 text-xs text-slate-400 hover:bg-white/10 hover:text-white">
-                Close
-              </button>
-            </div>
+      <div className={picked ? 'grid grid-cols-2 items-start gap-4' : undefined}>
+        <div className="min-w-0">
+          <div className="scrollbar-thin max-h-[480px] overflow-auto rounded-xl border border-white/10">
+            <table className="min-w-full text-left text-xs">
+              <thead className="sticky top-0 bg-space-800">
+                <tr>{table.header.map((h, i) => (
+                  <th key={i} scope="col" className="whitespace-nowrap px-3 py-2 font-medium text-slate-300">
+                    <button onClick={() => { if (sortCol === i) setAsc(!asc); else { setSortCol(i); setAsc(true); } }} className="hover:text-white" aria-label={`Sort by ${h}`}>
+                      {h || '—'} {sortCol === i ? (asc ? '▲' : '▼') : ''}
+                    </button>
+                  </th>))}</tr>
+              </thead>
+              <tbody>
+                {rows.slice(0, limit).map(({ row, origIdx }) => {
+                  const on = selected === origIdx;
+                  return (
+                    <tr
+                      key={origIdx}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={on}
+                      onClick={() => { setSelected(s => (s === origIdx ? null : origIdx)); setDetailMode('simple'); }}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(s => (s === origIdx ? null : origIdx)); setDetailMode('simple'); } }}
+                      className={`cursor-pointer border-t border-white/5 odd:bg-white/[0.02] hover:bg-flame-500/10 ${on ? 'bg-flame-500/15 ring-1 ring-inset ring-flame-400/40' : ''}`}
+                    >
+                      {row.map((c, j) => <td key={j} className="max-w-[260px] truncate whitespace-nowrap px-3 py-1.5 text-slate-300" title={c}>{c}</td>)}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+            <span>Showing {Math.min(limit, rows.length)} of {rows.length} rows (original NASA table, unmodified values)</span>
+            {limit < rows.length && <button className="rounded bg-white/10 px-2 py-1 text-slate-200 hover:bg-white/20" onClick={() => setLimit(l => l + 100)}>Show more</button>}
+          </div>
+        </div>
 
-          {(detailMode === 'both' || detailMode === 'simple') && (
-            <div className="mt-3 grid gap-4 md:grid-cols-2 md:divide-x md:divide-white/10">
-              <div className="md:pr-4">
-                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-micro-300">This row</h4>
-                <dl className="mt-2 grid gap-2 sm:grid-cols-2 text-sm">
-                  {simpleFields.map(([k, v]) => (
-                    <div key={k} className="rounded-lg bg-white/[0.03] px-2.5 py-2">
-                      <dt className="text-[10px] uppercase tracking-wide text-slate-500">{k}</dt>
-                      <dd className="mt-0.5 font-mono text-slate-100">{v}</dd>
+        {picked && (
+          <div className="sticky top-4 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-flame-400/30 bg-space-900/80 p-4" role="region" aria-label="Selected test details">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-white">
+                  {pickedTest ? `Test ${pickedTest.id}` : `Row ${picked.origIdx + 1}`}
+                </h3>
+                <p className="mt-0.5 text-[11px] text-slate-400">What this row was about</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Detail view">
+                {([
+                  ['simple', 'Simplified'],
+                  ['both', 'Both'],
+                  ['full', 'Big table'],
+                ] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={detailMode === id}
+                    onClick={() => setDetailMode(id)}
+                    className={`rounded-lg px-2.5 py-1 text-xs ${detailMode === id ? 'bg-flame-500/30 text-white ring-1 ring-flame-400' : 'bg-white/5 text-slate-400 hover:text-white'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button type="button" onClick={() => setSelected(null)} className="rounded-lg px-2.5 py-1 text-xs text-slate-400 hover:bg-white/10 hover:text-white">
+                  Close
+                </button>
+              </div>
+            </div>
+
+            {(detailMode === 'both' || detailMode === 'simple') && (
+              <div className="mt-3 space-y-3">
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-micro-300">This row</h4>
+                  <dl className="mt-2 grid gap-2 sm:grid-cols-2 text-sm">
+                    {simpleFields.map(([k, v]) => (
+                      <div key={k} className="rounded-lg bg-white/[0.03] px-2.5 py-2">
+                        <dt className="text-[10px] uppercase tracking-wide text-slate-500">{k}</dt>
+                        <dd className="mt-0.5 font-mono text-slate-100">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-micro-300">Explanation</h4>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-100">{simplifyRowBlurb(table.header, picked.row, pickedTest)}</p>
+                </div>
+              </div>
+            )}
+
+            {(detailMode === 'both' || detailMode === 'full') && (
+              <div className={detailMode === 'both' ? 'mt-4 border-t border-white/10 pt-3' : 'mt-3'}>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-flame-300">Big table (full NASA row)</h4>
+                <dl className="mt-2 max-h-64 overflow-y-auto scrollbar-thin divide-y divide-white/5 rounded-lg border border-white/10">
+                  {table.header.map((h, i) => (
+                    <div key={i} className="grid grid-cols-[minmax(8rem,40%)_1fr] gap-2 px-3 py-1.5 text-xs">
+                      <dt className="text-slate-400">{h || `Column ${i + 1}`}</dt>
+                      <dd className="break-words font-mono text-slate-200">{picked.row[i] || '—'}</dd>
                     </div>
                   ))}
                 </dl>
               </div>
-              <div className="md:pl-4">
-                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-micro-300">Explanation</h4>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-100">{simplifyRowBlurb(table.header, picked.row, pickedTest)}</p>
-              </div>
-            </div>
-          )}
-
-          {(detailMode === 'both' || detailMode === 'full') && (
-            <div className={detailMode === 'both' ? 'mt-4 border-t border-white/10 pt-3' : 'mt-3'}>
-              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-flame-300">Big table (full NASA row)</h4>
-              <dl className="mt-2 max-h-64 overflow-y-auto scrollbar-thin divide-y divide-white/5 rounded-lg border border-white/10">
-                {table.header.map((h, i) => (
-                  <div key={i} className="grid grid-cols-[minmax(8rem,40%)_1fr] gap-2 px-3 py-1.5 text-xs">
-                    <dt className="text-slate-400">{h || `Column ${i + 1}`}</dt>
-                    <dd className="break-words font-mono text-slate-200">{picked.row[i] || '—'}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
