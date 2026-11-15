@@ -22,8 +22,7 @@ export default function DbSearch({ className = '' }: { className?: string }) {
   }, []);
 
   const go = (hit: SearchHit) => {
-    const path = hit.kind === 'study' ? `/?case=${encodeURIComponent(hit.id)}` : `/?exp=${encodeURIComponent(hit.acc)}`;
-    nav(path);
+    nav(`/explorer/${hit.acc}`);
     setOpen(false);
     setQ('');
   };
