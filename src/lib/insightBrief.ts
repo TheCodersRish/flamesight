@@ -1,7 +1,7 @@
 import type { InsightId } from './burnSession';
 import { insights } from './data';
 import type { SimInput, SimResult } from './knn';
-import { GRAVITY, psiToAtm } from './scenarios';
+import { cabinGravityLabel, GRAVITY, psiToAtm } from './scenarios';
 
 export interface InsightBrief {
   headline: string;
@@ -38,9 +38,9 @@ export function briefFor(id: InsightId, x: SimInput, result: SimResult): Insight
   const o2 = Math.round(x.o2 * 100);
   const gas = x.diluent === 'CO2' ? 'CO₂' : x.diluent === 'He' ? 'helium' : 'no suppressant gas';
   const gravity = GRAVITY[x.gravity].extrapolated
-    ? `${GRAVITY[x.gravity].label} is not in the NASA tables, so this chart is from microgravity tests.`
+    ? `${cabinGravityLabel(x)} is not in the NASA tables, so this chart is from microgravity tests.`
     : 'These tests were run in microgravity, the same gravity you set.';
-  const score = `Will It Burn calls this ${result.verdict.toLowerCase()} (${Math.round(result.p * 100)}/100, ${result.confidenceLabel.toLowerCase()} confidence).`;
+  const score = `Will It Burn: ${result.verdict.toLowerCase()} to burn — burn score ${Math.round(result.p * 100)}/100, ${result.confidenceLabel.toLowerCase()} confidence (confidence ≠ score).`;
   const none = insights.flex.byDiluent.find(d => d.group.startsWith('No'))!;
   const co2 = insights.flex.byDiluent.find(d => d.group.startsWith('CO2'))!;
   const he = insights.flex.byDiluent.find(d => d.group.startsWith('Helium'))!;

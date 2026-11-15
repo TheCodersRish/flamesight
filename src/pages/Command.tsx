@@ -157,7 +157,10 @@ export default function Command() {
             {result.neighbors.map((n, i) => (
               <li key={n.t.id} className="rounded-xl bg-white/5 px-3 py-2">
                 <span className="flex items-center justify-between gap-2">
-                  <Link to={`/explorer/${n.t.inv}`} className="text-sm font-medium text-white hover:underline">{i + 1}. {invLabel(n.t.inv)}</Link>
+                  <Link to={`/explorer/${n.t.inv}`} className="min-w-0 text-sm font-medium text-white hover:underline">
+                    <span className="block truncate">{i + 1}. {n.t.id}</span>
+                    <span className="block text-[11px] font-normal text-slate-400">{invLabel(n.t.inv)}</span>
+                  </Link>
                   <Pill tone={n.t.burn >= 0.8 ? 'red' : n.t.burn >= 0.5 ? 'amber' : 'micro'}>{n.t.outcome || 'no outcome'}</Pill>
                 </span>
                 <span className="mt-1 block text-xs text-slate-400">{n.t.fuel} · {Math.round((n.t.o2 || 0) * 100)}% oxygen</span>
@@ -193,7 +196,7 @@ export default function Command() {
           </div>
           {savedNote && <p className="mt-2 text-xs text-cyan-200">{savedNote}</p>}
           <p className={`mt-3 text-2xl font-semibold ${result.verdict === 'Likely' ? 'text-flame-300' : result.verdict === 'Borderline' ? 'text-amber-200' : 'text-cyan-200'}`}>{result.verdict} to burn</p>
-          <p className="mt-1 text-sm text-slate-300">{Math.round(result.p * 100)} out of 100 · {result.confidenceLabel} confidence</p>
+          <p className="mt-1 text-sm text-slate-300">Burn score {Math.round(result.p * 100)} out of 100 · {result.confidenceLabel} confidence</p>
           <p className="mt-2 text-sm leading-relaxed text-slate-200">{brief}</p>
           <Link to="/" className="mt-3 inline-block text-sm text-slate-300 hover:text-white">← Back to dashboard</Link>
           <Link to="/insights" className="mt-2 block text-sm text-cyan-200 hover:text-white">See the NASA chart for these settings →</Link>

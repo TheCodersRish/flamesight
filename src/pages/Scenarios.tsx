@@ -7,7 +7,7 @@ import { useBurn } from '../lib/burnSession';
 import { fadeUp, snap, stagger } from '../lib/motion';
 import { physicsTagsFor, fluidPhysicsHref } from '../lib/physicsBridge';
 import {
-  SCENARIOS, GRAVITY, scenarioById, psiToAtm, makeAtmosphere, loadCustomScenarios, saveCustomScenarios,
+  SCENARIOS, GRAVITY, scenarioById, scenarioGravityLabel, psiToAtm, makeAtmosphere, loadCustomScenarios, saveCustomScenarios,
   ROLE_BOOST_OPTIONS, type Scenario,
 } from '../lib/scenarios';
 import { rankForScenario, weightsFor, recommendations, SCALES, UNKNOWN, type Weights, type Scored } from '../lib/scoring';
@@ -416,9 +416,9 @@ export default function Scenarios() {
           <dl className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {[
               { label: 'Oxygen', value: `${Math.round(rankScenario.o2 * 100)}%`, accent: 'text-flame-300' },
-              { label: 'Pressure', value: `${rankScenario.psi} psi`, sub: `${psiToAtm(rankScenario.psi).toFixed(2)} atm`, accent: 'text-flame-300' },
+              { label: 'Pressure', value: `${Number(rankScenario.psi.toFixed(1))} psi`, sub: `${psiToAtm(rankScenario.psi).toFixed(2)} atm`, accent: 'text-flame-300' },
               { label: 'Airflow', value: `${rankScenario.flow} cm/s*`, accent: 'text-micro-300' },
-              { label: 'Gravity', value: GRAVITY[rankScenario.gravity].label, accent: 'text-micro-300' },
+              { label: 'Gravity', value: scenarioGravityLabel(rankScenario), accent: 'text-micro-300' },
             ].map(item => (
               <div key={item.label} className="rounded-xl bg-black/25 p-3 ring-1 ring-white/5">
                 <dt className="text-[10px] uppercase tracking-widest text-slate-500">{item.label}</dt>

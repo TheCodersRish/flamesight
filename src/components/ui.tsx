@@ -52,15 +52,24 @@ export function Stat({ label, value, sub, accent = 'flame' }: { label: string; v
   );
 }
 
+function snapSlider(value: number, step: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(step) || step <= 0) return value;
+  const decimals = Math.min(6, Math.max(0, (String(step).split('.')[1] || '').length));
+  const snapped = Math.round(value / step) * step;
+  return Number(snapped.toFixed(decimals));
+}
+
 export function Slider({ label, value, min, max, step, onChange, format, hint }: { label: string; value: number; min: number; max: number; step: number; onChange: (v: number) => void; format?: (v: number) => string; hint?: string }) {
   const id = `s-${label.replace(/\W+/g, '-')}`;
+  const shown = snapSlider(value, step);
+  const fallback = Number.isInteger(step) ? String(Math.round(shown)) : shown.toFixed(Math.min(2, (String(step).split('.')[1] || '').length || 2));
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
         <label htmlFor={id} className="text-sm text-slate-300">{label}</label>
-        <span className="font-mono text-sm text-white">{format ? format(value) : value}</span>
+        <span className="font-mono text-sm text-white">{format ? format(shown) : fallback}</span>
       </div>
-      <input id={id} type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(parseFloat(e.target.value))} className="mt-1 w-full" />
+      <input id={id} type="range" min={min} max={max} step={step} value={shown} onChange={e => onChange(snapSlider(parseFloat(e.target.value), step))} className="mt-1 w-full" />
       {hint && <p className="text-[11px] text-slate-500">{hint}</p>}
     </div>
   );

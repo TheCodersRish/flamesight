@@ -110,7 +110,7 @@ export function describeWorkspace(opts: {
     parts.push(
       `Will-it-burn knobs: fuel=${input.fuel}, O₂=${o2}%, pressure=${input.psi} psi, flow=${input.flow} cm/s, gravity=${input.gravity}, diluent=${input.diluent}.`,
     );
-    parts.push(`Latest prediction: ${result.verdict} (confidence ${Math.round(result.confidence * 100)}%).`);
+    parts.push(`Latest prediction: ${result.verdict} (burn score ${Math.round(result.p * 100)}/100, confidence ${Math.round(result.confidence * 100)}%).`);
   }
 
   if (path === '/scenarios' && opts.search) {

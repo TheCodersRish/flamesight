@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useBurn } from '../lib/burnSession';
 import { feedingMode } from '../lib/physicsBridge';
-import { GRAVITY } from '../lib/scenarios';
+import { cabinGravityLabel } from '../lib/scenarios';
 import { Pill } from './ui';
 
 /** Shared cabin atmosphere readout — same o₂ / pressure / fan across Will It Burn & Risk Ranking. */
@@ -14,7 +14,7 @@ export default function CabinStrip({ compact }: { compact?: boolean }) {
       <span className="font-mono text-sm text-white">
         {Math.round(input.o2 * 100)}% O₂ · {input.psi.toFixed(1)} psi · {input.flow} cm/s
       </span>
-      <span className="text-xs text-slate-400">{GRAVITY[input.gravity].label}</span>
+      <span className="text-xs text-slate-400">{cabinGravityLabel(input)}</span>
       <Pill tone="slate">{feed.label}</Pill>
       {!compact && (
         <span className="ml-auto flex flex-wrap gap-2 text-xs">

@@ -6,7 +6,7 @@ import Flame from '../components/Flame';
 import { Card, PageHeader, Pill, Slider, SourceChip } from '../components/ui';
 import { fuelOptions, invLabel, stats } from '../lib/data';
 import { predict, type Diluent, type SimInput } from '../lib/knn';
-import { GRAVITY, SCENARIOS, scenarioById } from '../lib/scenarios';
+import { cabinGravityLabel, GRAVITY, SCENARIOS, scenarioById } from '../lib/scenarios';
 import type { Gravity } from '../lib/types';
 
 const clamp = (x: number, a = 0, b = 1) => Math.max(a, Math.min(b, x));
@@ -84,7 +84,7 @@ export default function Simulator() {
 
         <Card className="relative flex flex-col overflow-hidden p-0" glow={x.gravity === 'micro' ? 'micro' : 'flame'}>
           <div className="grid-bg absolute inset-0 opacity-50" />
-          <Flame {...flame} className="h-[360px] w-full flex-1" label={`Flame preview: ${GRAVITY[x.gravity].label}, ${Math.round(x.o2 * 100)}% oxygen`} />
+          <Flame {...flame} className="h-[360px] w-full flex-1" label={`Flame preview: ${cabinGravityLabel(x)}, ${Math.round(x.o2 * 100)}% oxygen`} />
           <div className="relative border-t border-white/5 bg-space-900/70 p-4 text-xs text-slate-400">
             Flame shape is an illustration driven by your inputs: gravity sets the shape (sphere ↔ teardrop), O₂ and the prediction set brightness and size, airflow stretches it, CO₂/He dims it.
           </div>
@@ -94,7 +94,7 @@ export default function Simulator() {
           <motion.div key={r.verdict} initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }} className={`rounded-2xl bg-gradient-to-br ${VERDICT_STYLE[r.verdict]} p-5 text-white`}>
             <p className="text-xs uppercase tracking-widest opacity-80">Prediction{extrap ? ' · extrapolated' : ''}</p>
             <p className="mt-1 text-4xl font-semibold">{r.verdict} to burn</p>
-            <p className="mt-1 font-mono text-sm opacity-90">burn score {(r.p * 100).toFixed(0)}/100 · confidence {r.confidenceLabel} ({Math.round(r.confidence * 100)}%)</p>
+            <p className="mt-1 font-mono text-sm opacity-90">burn score {(r.p * 100).toFixed(0)}/100 · {r.confidenceLabel} confidence ({Math.round(r.confidence * 100)}% — not the burn score)</p>
           </motion.div>
           <p className="mt-2 text-[11px] text-slate-500">Score = {Math.round((1 - r.priorW) * 100)}% nearest NASA tests ({(r.pData * 100).toFixed(0)}) + {Math.round(r.priorW * 100)}% physics prior ({(r.prior * 100).toFixed(0)}). Not a safety certification.</p>
           {r.flags.length > 0 && <ul className="mt-3 space-y-1">{r.flags.map(f => <li key={f} className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-500/30">⚠ {f}</li>)}</ul>}

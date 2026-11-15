@@ -11,7 +11,7 @@ import { predict } from '../lib/knn';
 import { feedingMode, physicsBrief } from '../lib/physicsBridge';
 import { plainInsight } from '../lib/plainEnglish';
 import { downloadReport, stamp } from '../lib/report';
-import { GRAVITY, psiToAtm, scenarioById } from '../lib/scenarios';
+import { cabinGravityLabel, GRAVITY, psiToAtm, scenarioById, scenarioGravityLabel } from '../lib/scenarios';
 import { rankForScenario } from '../lib/scoring';
 
 const COMPARE_PRESETS: [string, string][] = [
@@ -135,13 +135,16 @@ export default function Insights() {
   const bassMats = Array.from(new Set(bassBins.flatMap(r => Object.keys(r).filter(k => k !== 'bin' && k !== 'total'))));
   const yourBassBin = o2 < 15 ? '<15%' : o2 < 17 ? '15–17%' : o2 < 19 ? '17–19%' : o2 < 21 ? '19–21%' : '≥21%';
 
-  // SAFFIRE-II orbit vs Earth burn length (cm)
+  // SAFFIRE-II orbit vs Earth burn length (cm) — keep sample id/thickness so repeats are not opposite "same" bars
   const saff = insights.saffire2.map((s, i) => {
-    const label = (s.material && !/not listed/i.test(s.material) ? s.material : s.id.replace('SAFFIRE-II ', '')).replace('Cotton-Fiberglass (SIBAL)', 'SIBAL');
-    const short = label.length > 14 ? `${label.slice(0, 13)}…` : label;
+    const material = (s.material && !/not listed/i.test(s.material) ? s.material : 'sample').replace('Cotton-Fiberglass (SIBAL)', 'SIBAL');
+    const thick = (s.thickness || '').replace(/^0(?=\d)/, '0.').trim();
+    const sample = s.id.replace(/^SAFFIRE-II\s+/i, '');
+    const label = thick ? `${material} ${thick}` : `${material} ${sample}`;
+    const short = label.length > 16 ? `${label.slice(0, 15)}…` : label;
     return {
       id: short,
-      full: `${s.id}: ${s.material}`,
+      full: `${s.id}: ${s.material}${thick ? ` · ${thick}` : ''}`,
       orbit: burnCm(s.ug),
       earth: burnCm(s.oneG),
       i,
@@ -204,9 +207,9 @@ export default function Insights() {
             {[compare.left, compare.right].map(side => (
               <div key={side.sc.id} className="rounded-xl bg-white/5 px-3 py-2 ring-1 ring-white/10">
                 <p className="font-semibold text-white">{side.sc.name}</p>
-                <p className="font-mono text-[11px] text-flame-300">{Math.round(side.sc.o2 * 100)}% O₂ · {side.sc.psi} psi · {side.sc.flow} cm/s</p>
+                <p className="font-mono text-[11px] text-flame-300">{Math.round(side.sc.o2 * 100)}% O₂ · {side.sc.psi} psi · {side.sc.flow} cm/s · {scenarioGravityLabel(side.sc)}</p>
                 <p className="mt-1 text-xs text-slate-300">
-                  Chance of burning: <span className="text-white">{Math.round(side.burn.p * 100)}</span>/100 · {side.burn.verdict}
+                  Burn score <span className="text-white">{Math.round(side.burn.p * 100)}</span>/100 · {side.burn.verdict} · {side.burn.confidenceLabel} confidence
                 </p>
                 <p className="text-[11px] text-micro-300">Feeding: {side.feedMode.label}</p>
                 <p className="mt-1 text-[11px] text-slate-400">
@@ -223,13 +226,13 @@ export default function Insights() {
       graphsTitle="The NASA measurement"
       outcomeTitle="What to do"
       stage={(
-        <FlameStage title="Insights" caption={brief.headline}>
-          <Flame gravity={GRAVITY[input.gravity].flame} o2={Math.max(0, Math.min(1, (input.o2 - 0.12) / 0.6))} flow={Math.max(0, Math.min(1, input.flow / 40))} dilution={input.diluent === 'none' ? 0 : 0.55} className="h-full w-full" label="Insights flame for the current Will It Burn settings" />
+        <FlameStage title="What NASA found" caption={brief.headline}>
+          <Flame gravity={GRAVITY[input.gravity].flame} o2={Math.max(0, Math.min(1, (input.o2 - 0.12) / 0.6))} flow={Math.max(0, Math.min(1, input.flow / 40))} dilution={input.diluent === 'none' ? 0 : 0.55} className="h-full w-full" label="What NASA found flame for the current Will It Burn settings" />
         </FlameStage>
       )}
       experiments={(
         <div>
-          <p className="text-sm text-white">{o2}% oxygen · {input.psi.toFixed(1)} psi · {input.flow} cm/s · {GRAVITY[input.gravity].label}</p>
+          <p className="text-sm text-white">{o2}% oxygen · {input.psi.toFixed(1)} psi · {input.flow} cm/s · {cabinGravityLabel(input)}</p>
           <p className="mt-1 text-xs text-slate-400">{input.fuel === 'any' ? 'Any fuel' : input.fuel} · {input.diluent === 'none' ? 'no suppressant gas' : input.diluent === 'CO2' ? 'CO₂ added' : 'helium added'}</p>
           <div className="mt-3 flex flex-col gap-1" role="tablist" aria-label="Which question">
             {SECTIONS.map(s => (
@@ -364,7 +367,7 @@ export default function Insights() {
                   'FlameSight — Insights report',
                   `Generated: ${new Date().toLocaleString()}`,
                   `Section: ${SECTIONS.find(s => s.id === section)?.label || section}`,
-                  `Settings: ${o2}% oxygen · ${input.psi.toFixed(1)} psi · ${input.flow} cm/s · ${GRAVITY[input.gravity].label}`,
+                  `Settings: ${o2}% oxygen · ${input.psi.toFixed(1)} psi · ${input.flow} cm/s · ${cabinGravityLabel(input)}`,
                   '',
                   brief.headline,
                   '',

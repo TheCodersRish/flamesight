@@ -67,6 +67,22 @@ export const GRAVITY: Record<Gravity, { label: string; g: number; flame: number;
   earth: { label: 'Earth (1 g)', g: 1, flame: 1, extrapolated: true },
 };
 
+/** Gravity readout that keeps rover / suit / lunar base from looking identical. */
+export function cabinGravityLabel(x: { gravity: Gravity; o2?: number; psi?: number }, scenarioId?: string): string {
+  if (scenarioId === 'rover') return 'Rover on Moon (0.17 g)';
+  if (scenarioId === 'suit') return 'Suit walk on Moon (0.17 g)';
+  if (scenarioId === 'lunar') return GRAVITY.moon.label;
+  if (x.gravity === 'moon') {
+    if (x.o2 != null && x.o2 >= 0.9 && x.psi != null && x.psi <= 5.5) return 'Suit walk on Moon (0.17 g)';
+    if (x.o2 != null && x.o2 >= 0.32 && x.o2 < 0.5 && x.psi != null && x.psi <= 9) return 'Rover on Moon (0.17 g)';
+  }
+  return GRAVITY[x.gravity].label;
+}
+
+export function scenarioGravityLabel(sc: Scenario): string {
+  return cabinGravityLabel(sc, sc.id);
+}
+
 export const EDGE_CASES: Scenario[] = [
   {
     id: 'still', name: 'Still cabin air', short: 'Still air', icon: '🌬️',

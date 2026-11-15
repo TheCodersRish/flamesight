@@ -8,6 +8,18 @@ import { PageHeader, TierBadge, Pill } from '../components/ui';
 
 type Sort = 'tier' | 'tests' | 'newest' | 'size' | 'az';
 
+function cardTitle(i: (typeof investigations)[number]): string {
+  if (i.hasAcronym) return i.acronym;
+  const trimmed = i.title
+    .replace(/^Utilization of the /i, '')
+    .replace(/^Effect of External /i, '')
+    .replace(/^Quantitative Studies of /i, '')
+    .replace(/^Computational and Experimental Analysis of /i, '')
+    .replace(/^Concurrent Flame Spread Modeling using /i, '');
+  if (trimmed.length <= 48) return trimmed;
+  return `${trimmed.slice(0, 46).trim()}…`;
+}
+
 export default function Explorer() {
   const [q, setQ] = useState('');
   const [role, setRole] = useState('All');
@@ -59,7 +71,7 @@ export default function Explorer() {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="font-mono text-xs text-slate-500">{i.accession}</p>
-                <h2 className="text-lg font-semibold text-white">{i.hasAcronym ? i.acronym : 'Ground study'}</h2>
+                <h2 className="text-lg font-semibold text-white">{cardTitle(i)}</h2>
               </div>
               <TierBadge tier={i.tier} label={i.tierLabel} />
             </div>

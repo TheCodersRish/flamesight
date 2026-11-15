@@ -1,11 +1,11 @@
 import type { InsightBrief } from './insightBrief';
 import type { SimInput, SimResult } from './knn';
-import { GRAVITY } from './scenarios';
+import { cabinGravityLabel } from './scenarios';
 
 /** Soften a few dense phrases so a finding is easier to say out loud. */
 export function simplifyText(text: string): string {
   return text
-    .replace(/\bself-extinguished\b/gi, 'went out on their own')
+    .replace(/\bself-extinguished\b/gi, 'ignited, then went out on their own')
     .replace(/\bextinction\b/gi, 'going out')
     .replace(/\bdiluent\b/gi, 'extra gas')
     .replace(/\bmicrogravity\b/gi, 'near-zero gravity')
@@ -21,26 +21,37 @@ export function simplifyText(text: string): string {
     .trim();
 }
 
-/** Short, presentable Will It Burn summary. */
+function shortOutcome(raw: string | null | undefined): string {
+  const o = raw || 'outcome not listed';
+  if (/self-extinguish/i.test(o) || /^extinction$/i.test(o)) return 'ignited, then went out';
+  if (/disruption/i.test(o)) return 'burned until the droplet broke apart';
+  if (/completion|burned out|kept burning|turned off/i.test(o)) return 'kept burning';
+  if (/no (hot )?ignition|no flame|failed/i.test(o)) return 'did not ignite';
+  if (/flash/i.test(o)) return 'brief flash only';
+  return simplifyText(o);
+}
+
+/** Short, presentable Will It Burn summary (no leading verdict — the UI already shows that). */
 export function plainBurn(x: SimInput, result: SimResult): string {
   const fuel = x.fuel === 'any' ? 'this setup' : x.fuel;
   const o2 = Math.round(x.o2 * 100);
   const gas = x.diluent === 'none' ? 'no extra extinguishing gas' : x.diluent === 'CO2' ? 'carbon dioxide added' : 'helium added';
-  const verdict =
-    result.verdict === 'Likely'
-      ? 'A fire is likely.'
-      : result.verdict === 'Borderline'
-        ? 'It is a caution zone — a fire could go either way.'
-        : 'A fire is unlikely.';
-  const near = result.neighbors
-    .slice(0, 2)
-    .map(n => `${n.t.fuel || n.t.id} (${n.t.outcome || 'outcome not listed'})`)
+  const top = result.neighbors.slice(0, 2);
+  const mostlyWentOut = top.length > 0 && top.every(n => n.t.burn > 0 && n.t.burn <= 0.65);
+  const nuance =
+    result.verdict === 'Likely' && mostlyWentOut
+      ? 'Nearest NASA tests still ignited first — they just did not keep burning the whole time.'
+      : result.verdict === 'Unlikely' && top.some(n => n.t.burn >= 0.8)
+        ? 'Some nearby tests burned harder, so treat this as a cautious estimate.'
+        : '';
+  const near = top
+    .map(n => `${n.t.id}: ${shortOutcome(n.t.outcome)}`)
     .join('; ');
   return [
-    verdict,
-    `You tested ${fuel} at ${o2}% oxygen, ${x.psi.toFixed(1)} pounds per square inch, ${x.flow} cm/s airflow, ${GRAVITY[x.gravity].label}, with ${gas}.`,
-    `Score: ${Math.round(result.p * 100)} out of 100, ${result.confidenceLabel.toLowerCase()} confidence.`,
+    `You tested ${fuel} at ${o2}% oxygen, ${x.psi.toFixed(1)} pounds per square inch, ${x.flow} cm/s airflow, ${cabinGravityLabel(x)}, with ${gas}.`,
+    `Burn score ${Math.round(result.p * 100)} out of 100 · ${result.confidenceLabel.toLowerCase()} confidence (how sure the match is, separate from the score).`,
     near ? `Closest NASA tests: ${near}.` : '',
+    nuance,
     ...result.flags.map(simplifyText),
   ].filter(Boolean).join(' ');
 }

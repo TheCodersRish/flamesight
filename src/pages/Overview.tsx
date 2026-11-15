@@ -6,7 +6,7 @@ import Flame from '../components/Flame';
 import { Stat, Card, Pill } from '../components/ui';
 import { stats } from '../lib/data';
 import { fadeUp, stagger } from '../lib/motion';
-import { SCENARIOS, GRAVITY } from '../lib/scenarios';
+import { SCENARIOS, GRAVITY, scenarioGravityLabel } from '../lib/scenarios';
 import { rankForScenario } from '../lib/scoring';
 
 const TOPS = Object.fromEntries(SCENARIOS.map(s => [s.id, rankForScenario(s)[0]]));
@@ -86,7 +86,7 @@ export default function Overview() {
                   <ScenarioIcon id={s.id} className="h-9 w-9 text-flame-300" />
                   <h3 className="mt-2 font-semibold text-white">{s.name}</h3>
                   <p className="mt-1 font-mono text-sm text-flame-300">{Math.round(s.o2 * 100)}% O₂ · {s.psi} psi</p>
-                  <p className="text-xs text-slate-400">{GRAVITY[s.gravity].label}</p>
+                  <p className="text-xs text-slate-400">{scenarioGravityLabel(s)}</p>
                   <p className="mt-2 text-xs text-slate-300">{s.blurb}</p>
                   <div className="mt-3 flex flex-wrap gap-1">
                     {GRAVITY[s.gravity].extrapolated && <Pill tone="amber">extrapolated</Pill>}

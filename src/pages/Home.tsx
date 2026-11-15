@@ -74,7 +74,7 @@ export default function Home() {
   return (
     <div className="workspace-shell">
       <motion.header {...fadeUp} transition={snap} className="mb-8 space-y-2">
-        <p className="text-sm text-flame-300">FlameSight · NASA fire data, in plain words</p>
+        <p className="text-sm text-flame-300">Dashboard · NASA fire data, in plain words</p>
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Would a fire start in this cabin?</h1>
         <p className="max-w-2xl text-base text-slate-300 sm:text-lg">
           Pick a place in space, tweak a few dials, and read the answer top to bottom — no science background needed.
@@ -150,7 +150,7 @@ export default function Home() {
                 <div className="mt-3 h-2 max-w-xs overflow-hidden rounded-full bg-white/10" aria-hidden>
                   <div className={`h-full rounded-full transition-[width] duration-150 ease-out ${verdict.bar}`} style={{ width: `${score}%` }} />
                 </div>
-                <p className="mt-1.5 text-sm text-slate-400">Confidence score: {score} out of 100</p>
+                <p className="mt-1.5 text-sm text-slate-400">Burn score {score} out of 100 · {result.confidenceLabel} confidence</p>
                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-200 sm:text-base">{summary}</p>
                 <Link to="/simulator" className="mt-3 inline-block text-sm text-micro-300 hover:text-white">See the full burn test →</Link>
               </div>

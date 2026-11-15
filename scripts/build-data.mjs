@@ -281,11 +281,18 @@ function envelopeFor(acc) {
   return e;
 }
 
+// PSI catalog dates/platforms are wrong for some SAFFIRE flights (they flew on Cygnus, not ISS).
+const META_FIX = {
+  'PSI-98': { platform: 'Cygnus Spacecraft', start: '03-23-2016', end: '04-22-2016' },
+  'PSI-100': { platform: 'Cygnus Spacecraft', start: '04-18-2017', end: '06-11-2017' },
+};
+
 // ---------- Build investigations ----------
 const investigations = catalog.map(c => {
   const acc = c.accession;
+  const fix = META_FIX[acc] || {};
   const s = summaries[acc] || {};
-  const st = parseDate(c.start), en = parseDate(c.end);
+  const st = parseDate(fix.start || c.start), en = parseDate(fix.end || c.end);
   const ci = countInfo[acc] || null;
   return {
     accession: acc,
@@ -299,7 +306,7 @@ const investigations = catalog.map(c => {
       if (r.startsWith('prevention')) return 'Prevention'; if (r.startsWith('detection')) return 'Detection'; if (r.startsWith('suppression')) return 'Suppression';
       if (/high-o2|partial-gravity/.test(r)) return 'Exploration atmospheres'; if (/cool flame|extinction/.test(r)) return 'Extinction & cool flames';
       if (/model/.test(r)) return 'Modeling'; return 'Combustion fundamentals'; })(),
-    subArea: c.sub_area, platform: c.platform || 'Not listed', hardware: c.hardware,
+    subArea: c.sub_area, platform: fix.platform || c.platform || 'Not listed', hardware: c.hardware,
     start: st?.iso || null, end: en?.iso || null, startYear: st?.year || null, endYear: en?.year || null,
     objectives: c.objectives, keywords: c.keywords.split(';').map(k => k.trim()).filter(Boolean),
     files: num(c.files_listed_all_versions), sizeGB: num(c.total_size_GB), fileTypes: c.main_file_types,

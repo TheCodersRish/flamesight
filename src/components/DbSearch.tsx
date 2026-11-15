@@ -74,9 +74,9 @@ export default function DbSearch({ className = '' }: { className?: string }) {
         className="w-full rounded-md border border-cyan-300/25 bg-space-950/80 px-3 py-1.5 font-mono text-xs text-cyan-50 placeholder:text-slate-500 focus:border-cyan-300/70 focus:outline-none"
       />
       {open && q.trim().length >= 2 && (
-        <div className="absolute right-0 z-50 mt-1 w-[min(24rem,80vw)] overflow-hidden rounded-md border border-cyan-300/25 bg-space-950/95 shadow-glowBlue backdrop-blur-xl" role="listbox">
+        <div className="absolute bottom-full right-0 z-50 mb-1 max-h-[min(20rem,50vh)] w-[min(24rem,80vw)] overflow-y-auto rounded-md border border-cyan-300/25 bg-space-950/95 shadow-glowBlue backdrop-blur-xl" role="listbox">
           {useAi && (
-            <p className="border-b border-cyan-300/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-300/70">
+            <p className="sticky top-0 border-b border-cyan-300/15 bg-space-950/95 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-300/70">
               {aiLoading ? 'AI matching studies…' : aiHits ? 'AI study match' : 'Keyword fallback'}
             </p>
           )}
