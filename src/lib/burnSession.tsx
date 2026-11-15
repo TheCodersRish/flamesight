@@ -30,8 +30,9 @@ export type InsightId = 'flex' | 'bass' | 'cfig' | 'psi117';
 /** Which NASA chart answers the conditions currently set in Will It Burn. */
 export function insightFocus(x: SimInput): { id: InsightId; why: string } {
   const o2 = Math.round(x.o2 * 100);
-  if (/sibal|silicone|pmma|cotton|nomex|fabric/i.test(x.fuel)) {
-    return { id: 'bass', why: `${x.fuel} is a solid. BASS and SAFFIRE are the NASA tests of solid materials.` };
+  if (/sibal|silicone|pmma|cotton|nomex|fabric|acrylic|plexiglass/i.test(x.fuel) || x.fuelClass === 'solid') {
+    const label = x.fuel?.trim() || 'this solid';
+    return { id: 'bass', why: `${label} is treated as a solid. BASS and SAFFIRE are the NASA tests of solid materials.` };
   }
   if (x.o2 >= 0.28) {
     return { id: 'cfig', why: `You set ${o2}% oxygen. ACME CFI-G is the NASA set that reaches oxygen that high.` };
