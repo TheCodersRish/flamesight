@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import SideNav from './components/SideNav';
 import { DemoProvider } from './demo/Demo';
 import { BurnProvider } from './lib/burnSession';
@@ -13,9 +13,10 @@ const Insights = lazy(() => import('./pages/Insights'));
 const FluidPhysics = lazy(() => import('./pages/FluidPhysics'));
 const Analyst = lazy(() => import('./pages/Analyst'));
 const About = lazy(() => import('./pages/About'));
+const NewFeatures = lazy(() => import('./pages/NewFeatures'));
 const FlameLab = lazy(() => import('./pages/FlameLab'));
 
-const DECK = new Set(['/simulator', '/insights', '/analyst']);
+const DECK = new Set(['/', '/insights', '/analyst', '/simulator']);
 
 function Shell() {
   const { pathname } = useLocation();
@@ -28,8 +29,8 @@ function Shell() {
         <div className={deck ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto w-full max-w-7xl px-4 py-8'}>
           <Suspense fallback={<p className="py-20 text-center text-slate-400">Loading…</p>}>
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/overview" element={<Navigate to="/" replace />} />
+              <Route path="/" element={<Command />} />
+              <Route path="/overview" element={<Home />} />
               <Route path="/explorer" element={<Explorer />} />
               <Route path="/explorer/:acc" element={<ExperimentDetail />} />
               <Route path="/scenarios" element={<Scenarios />} />
@@ -38,9 +39,9 @@ function Shell() {
               <Route path="/simulator" element={<Command />} />
               <Route path="/analyst" element={<Analyst />} />
               <Route path="/about" element={<About />} />
-              <Route path="/new-features" element={<Navigate to="/" replace />} />
+              <Route path="/new-features" element={<NewFeatures />} />
               <Route path="/flame-lab" element={<FlameLab />} />
-              <Route path="*" element={<Home />} />
+              <Route path="*" element={<Command />} />
             </Routes>
           </Suspense>
         </div>

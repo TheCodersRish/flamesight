@@ -195,8 +195,7 @@ export default function Command() {
           <p className={`mt-3 text-2xl font-semibold ${result.verdict === 'Likely' ? 'text-flame-300' : result.verdict === 'Borderline' ? 'text-amber-200' : 'text-cyan-200'}`}>{result.verdict} to burn</p>
           <p className="mt-1 text-sm text-slate-300">{Math.round(result.p * 100)} out of 100 · {result.confidenceLabel} confidence</p>
           <p className="mt-2 text-sm leading-relaxed text-slate-200">{brief}</p>
-          <Link to="/" className="mt-3 inline-block text-sm text-slate-300 hover:text-white">← Back to dashboard</Link>
-          <Link to="/insights" className="mt-2 block text-sm text-cyan-200 hover:text-white">See the NASA chart for these settings →</Link>
+          <Link to="/insights" className="mt-3 inline-block text-sm text-cyan-200 hover:text-white">See the NASA chart for these settings →</Link>
           <Link to="/scenarios" className="mt-2 block text-sm text-micro-300 hover:text-white">Rank risks with this same cabin →</Link>
         </>
       )}
