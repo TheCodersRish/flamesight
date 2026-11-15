@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import FloatingChat from './components/FloatingChat';
 import SideNav from './components/SideNav';
 import { DemoProvider } from './demo/Demo';
 import { BurnProvider } from './lib/burnSession';
@@ -49,6 +50,7 @@ function Shell() {
           </Suspense>
         </div>
       </main>
+      <FloatingChat />
     </div>
   );
 }

@@ -89,22 +89,81 @@ function simpleOutcome(r: TestRecord): string {
   return 'no ignition';
 }
 
-function DataTable({ table }: { table: RawTable }) {
+/** Slice of normalized tests that line up with a per-test NASA table (by row order). */
+function alignedTests(acc: string, tables: RawTable[], tab: number, all: TestRecord[]): TestRecord[] {
+  const inv = all.filter(t => t.inv === acc);
+  const current = tables[tab];
+  if (!current || current.kind !== 'per-test') return [];
+  const per = tables.filter(t => t.kind === 'per-test');
+  if (per.length === 1 && inv.length === current.rows.length) return inv;
+  const total = per.reduce((s, t) => s + t.rows.length, 0);
+  if (total === inv.length) {
+    let offset = 0;
+    for (let i = 0; i < tables.length; i++) {
+      if (i === tab) return inv.slice(offset, offset + current.rows.length);
+      if (tables[i].kind === 'per-test') offset += tables[i].rows.length;
+    }
+  }
+  return inv;
+}
+
+function matchTest(row: string[], origIdx: number, pool: TestRecord[], tableRowCount: number): TestRecord | null {
+  // Prefer row-order alignment when this table's tests were sliced 1:1.
+  if (pool.length === tableRowCount && pool[origIdx]) return pool[origIdx];
+  const tokens = row.filter(c => c && String(c).trim().length > 1).slice(0, 5);
+  for (const t of pool) {
+    if (tokens.some(tok => t.id.includes(tok))) return t;
+  }
+  return null;
+}
+
+function simplifyRowBlurb(header: string[], row: string[], test: TestRecord | null): string {
+  if (test) {
+    const bits: string[] = [];
+    bits.push(`This is test ${test.id}.`);
+    if (test.fuel) bits.push(`It used ${test.fuel}${test.fuelClass && test.fuelClass !== 'unknown' ? ` (${test.fuelClass})` : ''}.`);
+    if (test.o2 !== null) bits.push(`Oxygen started at ${(test.o2 * 100).toFixed(test.o2 < 0.1 ? 2 : 1)}%.`);
+    if (test.pAtm !== null) bits.push(`Pressure was ${test.pAtm.toFixed(2)} atm (${(test.pAtm * 14.696).toFixed(1)} psi).`);
+    if (test.flow !== null) bits.push(`Airflow was ${test.flow} cm/s.`);
+    if (test.diluent) bits.push(`Extra gas / diluent: ${test.diluent}.`);
+    const out = simpleOutcome(test);
+    if (out && out !== 'unknown') bits.push(`What happened: ${out}.`);
+    else if (test.outcome) bits.push(`What happened: ${test.outcome}.`);
+    return bits.join(' ');
+  }
+  const pairs = header
+    .map((h, i) => ({ h: (h || '').trim(), v: (row[i] || '').trim() }))
+    .filter(p => p.h && p.v && p.v !== '-' && p.v.toLowerCase() !== 'n/a')
+    .slice(0, 8);
+  if (!pairs.length) return 'No readable values in this row.';
+  return 'In plain words: ' + pairs.map(p => `${p.h.replace(/;/g, ',').replace(/\s+/g, ' ')} was ${p.v}`).join('; ') + '.';
+}
+
+function DataTable({ table, tests }: { table: RawTable; tests: TestRecord[] }) {
   const [sortCol, setSortCol] = useState<number | null>(null);
   const [asc, setAsc] = useState(true);
   const [limit, setLimit] = useState(40);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [detailMode, setDetailMode] = useState<'both' | 'simple' | 'full'>('both');
+
+  const indexed = useMemo(() => table.rows.map((row, origIdx) => ({ row, origIdx })), [table]);
   const rows = useMemo(() => {
-    if (sortCol === null) return table.rows;
+    if (sortCol === null) return indexed;
     const num = (s: string) => { const n = parseFloat(s); return Number.isFinite(n) ? n : null; };
-    return [...table.rows].sort((a, b) => {
-      const x = a[sortCol] ?? '', y = b[sortCol] ?? '';
+    return [...indexed].sort((a, b) => {
+      const x = a.row[sortCol] ?? '', y = b.row[sortCol] ?? '';
       const nx = num(x), ny = num(y);
       const c = nx !== null && ny !== null ? nx - ny : x.localeCompare(y);
       return asc ? c : -c;
     });
-  }, [table, sortCol, asc]);
+  }, [indexed, sortCol, asc]);
+
+  const picked = selected === null ? null : indexed[selected] || null;
+  const pickedTest = picked ? matchTest(picked.row, picked.origIdx, tests, table.rows.length) : null;
+
   return (
     <div>
+      <p className="mb-2 text-xs text-slate-400">Click any row to see what that test was about — simplified and full NASA columns.</p>
       <div className="scrollbar-thin max-h-[480px] overflow-auto rounded-xl border border-white/10">
         <table className="min-w-full text-left text-xs">
           <thead className="sticky top-0 bg-space-800">
@@ -116,9 +175,22 @@ function DataTable({ table }: { table: RawTable }) {
               </th>))}</tr>
           </thead>
           <tbody>
-            {rows.slice(0, limit).map((r, i) => (
-              <tr key={i} className="border-t border-white/5 odd:bg-white/[0.02]">{r.map((c, j) => <td key={j} className="max-w-[260px] truncate whitespace-nowrap px-3 py-1.5 text-slate-300" title={c}>{c}</td>)}</tr>
-            ))}
+            {rows.slice(0, limit).map(({ row, origIdx }) => {
+              const on = selected === origIdx;
+              return (
+                <tr
+                  key={origIdx}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={on}
+                  onClick={() => setSelected(s => (s === origIdx ? null : origIdx))}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(s => (s === origIdx ? null : origIdx)); } }}
+                  className={`cursor-pointer border-t border-white/5 odd:bg-white/[0.02] hover:bg-flame-500/10 ${on ? 'bg-flame-500/15 ring-1 ring-inset ring-flame-400/40' : ''}`}
+                >
+                  {row.map((c, j) => <td key={j} className="max-w-[260px] truncate whitespace-nowrap px-3 py-1.5 text-slate-300" title={c}>{c}</td>)}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -126,6 +198,78 @@ function DataTable({ table }: { table: RawTable }) {
         <span>Showing {Math.min(limit, rows.length)} of {rows.length} rows (original NASA table, unmodified values)</span>
         {limit < rows.length && <button className="rounded bg-white/10 px-2 py-1 text-slate-200 hover:bg-white/20" onClick={() => setLimit(l => l + 100)}>Show more</button>}
       </div>
+
+      {picked && (
+        <div className="mt-4 rounded-xl border border-flame-400/30 bg-space-900/80 p-4" role="region" aria-label="Selected test details">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-semibold text-white">
+                {pickedTest ? `Test ${pickedTest.id}` : `Row ${picked.origIdx + 1}`}
+              </h3>
+              <p className="mt-0.5 text-[11px] text-slate-400">What this row was about</p>
+            </div>
+            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Detail view">
+              {([
+                ['both', 'Both'],
+                ['simple', 'Simplified'],
+                ['full', 'Big table'],
+              ] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={detailMode === id}
+                  onClick={() => setDetailMode(id)}
+                  className={`rounded-lg px-2.5 py-1 text-xs ${detailMode === id ? 'bg-flame-500/30 text-white ring-1 ring-flame-400' : 'bg-white/5 text-slate-400 hover:text-white'}`}
+                >
+                  {label}
+                </button>
+              ))}
+              <button type="button" onClick={() => setSelected(null)} className="rounded-lg px-2.5 py-1 text-xs text-slate-400 hover:bg-white/10 hover:text-white">
+                Close
+              </button>
+            </div>
+          </div>
+
+          {(detailMode === 'both' || detailMode === 'simple') && (
+            <div className="mt-3">
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-micro-300">Simplified</h4>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-100">{simplifyRowBlurb(table.header, picked.row, pickedTest)}</p>
+              {pickedTest && (
+                <dl className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+                  {[
+                    ['Fuel / material', pickedTest.fuel || '—'],
+                    ['Oxygen', pickedTest.o2 !== null ? `${(pickedTest.o2 * 100).toFixed(2)}%` : '—'],
+                    ['Pressure', pickedTest.pAtm !== null ? `${pickedTest.pAtm.toFixed(3)} atm` : '—'],
+                    ['Airflow', pickedTest.flow !== null ? `${pickedTest.flow} cm/s` : '—'],
+                    ['Diluent', pickedTest.diluent || '—'],
+                    ['Outcome', pickedTest.outcome || simpleOutcome(pickedTest)],
+                  ].map(([k, v]) => (
+                    <div key={k} className="rounded-lg bg-white/[0.03] px-2.5 py-2">
+                      <dt className="text-[10px] uppercase tracking-wide text-slate-500">{k}</dt>
+                      <dd className="mt-0.5 font-mono text-slate-100">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </div>
+          )}
+
+          {(detailMode === 'both' || detailMode === 'full') && (
+            <div className={detailMode === 'both' ? 'mt-4 border-t border-white/10 pt-3' : 'mt-3'}>
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-flame-300">Big table (full NASA row)</h4>
+              <dl className="mt-2 max-h-64 overflow-y-auto scrollbar-thin divide-y divide-white/5 rounded-lg border border-white/10">
+                {table.header.map((h, i) => (
+                  <div key={i} className="grid grid-cols-[minmax(8rem,40%)_1fr] gap-2 px-3 py-1.5 text-xs">
+                    <dt className="text-slate-400">{h || `Column ${i + 1}`}</dt>
+                    <dd className="break-words font-mono text-slate-200">{picked.row[i] || '—'}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -232,10 +376,10 @@ export default function ExperimentDetail() {
       </Card>
       <Card className="mt-4">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-slate-300">Test table</h2>
-        {!tables ? <p className="text-sm text-slate-400">Loading…</p> : tables.length === 0 ? <p className="text-sm text-slate-400">No test table for this investigation in the data pack. See the PSI page for its files.</p> : (
+        {!tables || !tests ? <p className="text-sm text-slate-400">Loading…</p> : tables.length === 0 ? <p className="text-sm text-slate-400">No test table for this investigation in the data pack. See the PSI page for its files.</p> : (
           <>
             {tables.length > 1 && <div className="mb-3 flex flex-wrap gap-2" role="tablist">{tables.map((t, i) => <button key={t.name} role="tab" aria-selected={tab === i} onClick={() => setTab(i)} className={`rounded-lg px-3 py-1 text-xs ${tab === i ? 'bg-white/15 text-white' : 'text-slate-400 hover:text-white'}`}>{t.name}</button>)}</div>}
-            <DataTable key={`${acc}-${tab}`} table={tables[tab]} />
+            <DataTable key={`${acc}-${tab}`} table={tables[tab]} tests={alignedTests(acc, tables, tab, tests)} />
           </>
         )}
       </Card>
