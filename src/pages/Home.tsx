@@ -18,7 +18,6 @@ const clamp = (x: number, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 
 const TOOLS = [
   { to: '/simulator', label: 'Full burn test', hint: 'More detail on the same question' },
-  { to: '/impact', label: 'What NASA should test next', hint: 'Gaps, PDF report, Apollo & Mir' },
   { to: '/analyst', label: 'Ask a question', hint: 'Get a plain-language NASA answer' },
   { to: '/insights', label: 'What NASA found', hint: 'Charts without the jargon' },
   { to: '/explorer', label: 'Browse all tests', hint: `${stats.investigations} studies in one list` },

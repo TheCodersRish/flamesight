@@ -451,9 +451,6 @@ export default function Scenarios() {
             >
               Download fire-safety PDF
             </button>
-            <Link to="/impact" className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-slate-200 hover:bg-white/15">
-              Gap finder & case studies →
-            </Link>
             {isCustom && !rankLive && (
               <button
                 type="button"

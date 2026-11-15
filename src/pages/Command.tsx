@@ -303,7 +303,6 @@ export default function Command() {
           <p className="mt-2 text-sm leading-relaxed text-slate-200">{brief}</p>
           <Link to="/" className="mt-3 inline-block text-sm text-slate-300 hover:text-white">← Back to dashboard</Link>
           <Link to="/insights" className="mt-2 block text-sm text-cyan-200 hover:text-white">See the NASA chart for these settings →</Link>
-          <Link to="/impact" className="mt-2 block text-sm text-flame-300 hover:text-white">Gap finder & mission PDF →</Link>
           <Link to="/scenarios" className="mt-2 block text-sm text-micro-300 hover:text-white">Rank risks with this same cabin →</Link>
         </>
       )}

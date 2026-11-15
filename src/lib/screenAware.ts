@@ -36,6 +36,7 @@ const PAGES: { match: RegExp; path: string; label: string; keys: string[] }[] = 
   { match: /^\/scenarios$/, path: '/scenarios', label: 'Rank risks', keys: ['scenarios', 'risk', 'rank risks', 'mission ranking'] },
   { match: /^\/explorer$/, path: '/explorer', label: 'Browse tests', keys: ['explorer', 'browse', 'catalog', 'all studies', 'all tests'] },
   { match: /^\/analyst$/, path: '/analyst', label: 'Ask a question', keys: ['analyst', 'full chat', 'ask page'] },
+  { match: /^\/impact$/, path: '/impact', label: 'Test next', keys: ['test next', 'impact', 'gap finder', 'gaps', 'mission report', 'case studies', 'what nasa should test'] },
   { match: /^\/about$/, path: '/about', label: 'About', keys: ['about', 'credits', 'method'] },
   { match: /^\/changelog$/, path: '/changelog', label: 'Changelog', keys: ['changelog', 'updates', 'what changed', 'release notes'] },
 ];

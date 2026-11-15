@@ -391,7 +391,6 @@ export default function ExperimentDetail() {
               </li>
             ))}
           </ul>
-          <Link to="/impact" className="mt-2 inline-block text-xs text-slate-400 hover:text-white">Browse all impact tools →</Link>
         </Card>
         <Card>
           <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">Tested conditions</h2>
