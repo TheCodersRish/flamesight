@@ -5,6 +5,7 @@ import { DemoProvider } from './demo/Demo';
 import { BurnProvider } from './lib/burnSession';
 import Command from './pages/Command';
 import Home from './pages/Home';
+import Overview from './pages/Overview';
 
 const Explorer = lazy(() => import('./pages/Explorer'));
 const ExperimentDetail = lazy(() => import('./pages/ExperimentDetail'));
@@ -29,7 +30,7 @@ function Shell() {
           <Suspense fallback={<p className="py-20 text-center text-slate-400">Loading…</p>}>
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/overview" element={<Navigate to="/" replace />} />
+              <Route path="/overview" element={<Overview />} />
               <Route path="/explorer" element={<Explorer />} />
               <Route path="/explorer/:acc" element={<ExperimentDetail />} />
               <Route path="/scenarios" element={<Scenarios />} />
