@@ -1,6 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useDemo } from '../demo/Demo';
 import BrandLogo from './BrandLogo';
 import DbSearch from './DbSearch';
 
@@ -13,7 +12,6 @@ type NavItem = {
 };
 
 const iconCls = 'h-4 w-4 shrink-0';
-const NAV_KEY = 'flamesight-nav-collapsed';
 
 const Icons = {
   overview: (
@@ -69,13 +67,6 @@ const Icons = {
       <path strokeLinecap="round" d="M12 11v5.5M12 8h.01" />
     </svg>
   ),
-  changelog: (
-    <svg className={iconCls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 4h9.5A1.5 1.5 0 0 1 19 5.5v14A1.5 1.5 0 0 1 17.5 21H8" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2" />
-      <path strokeLinecap="round" d="M11 9h5M11 13h5M11 17h3" />
-    </svg>
-  ),
 };
 
 const GROUPS: { label: string; items: NavItem[] }[] = [
@@ -83,7 +74,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     label: 'Start here',
     items: [
       { to: '/overview', label: 'Overview', hint: 'The big picture', icon: Icons.overview },
-      { to: '/', label: 'Dashboard', end: true, hint: 'Try a cabin setup', icon: Icons.dashboard },
+      { to: '/dashboard', label: 'Dashboard', end: true, hint: 'Try a cabin setup', icon: Icons.dashboard },
     ],
   },
   {
@@ -101,37 +92,14 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { to: '/explorer', label: 'Browse tests', hint: 'All NASA studies', icon: Icons.browse },
       { to: '/analyst', label: 'Ask a question', hint: 'Plain-language answers', icon: Icons.ask },
       { to: '/about', label: 'About', hint: 'Where numbers come from', icon: Icons.about },
-      { to: '/changelog', label: 'Changelog', hint: 'What changed each update', icon: Icons.changelog },
     ],
   },
 ];
 
-function readCollapsed(): boolean {
-  try {
-    return localStorage.getItem(NAV_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
 export default function SideNav() {
-  const { running, start, stop } = useDemo();
-  const [collapsed, setCollapsed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    setCollapsed(readCollapsed());
-  }, []);
-
-  const toggleCollapsed = () => {
-    setCollapsed(c => {
-      const next = !c;
-      try {
-        localStorage.setItem(NAV_KEY, next ? '1' : '0');
-      } catch { /* ignore */ }
-      return next;
-    });
-  };
+  const collapsed = !expanded;
 
   return (
     <>
@@ -160,6 +128,12 @@ export default function SideNav() {
         }`}
         aria-label="Workspace"
         data-collapsed={collapsed ? 'true' : 'false'}
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => setExpanded(false)}
+        onFocusCapture={() => setExpanded(true)}
+        onBlurCapture={e => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setExpanded(false);
+        }}
       >
         <div className={`mb-3 hidden items-center gap-2 lg:flex ${collapsed ? 'flex-col' : ''}`}>
           <NavLink
@@ -177,22 +151,6 @@ export default function SideNav() {
               </span>
             )}
           </NavLink>
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-300 hover:bg-white/10 hover:text-white"
-            aria-pressed={collapsed}
-            aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
-            title={collapsed ? 'Expand menu' : 'Collapse menu'}
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-              {collapsed ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 6l-6 6 6 6" />
-              )}
-            </svg>
-          </button>
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -250,27 +208,6 @@ export default function SideNav() {
 
         <div className={`mt-4 flex flex-col gap-2 border-t border-white/10 pt-4 ${collapsed ? 'items-stretch' : ''}`}>
           {!collapsed && <DbSearch className="w-full" />}
-          <button
-            type="button"
-            onClick={running ? stop : start}
-            title={running ? 'Stop demo' : 'Guided demo'}
-            className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-              collapsed ? 'px-2 text-center text-xs' : 'text-left'
-            } ${
-              running
-                ? 'border border-white/15 bg-white/10 text-white'
-                : 'border border-flame-500/30 bg-flame-500/10 text-flame-300 hover:border-flame-400/50 hover:bg-flame-500/15 hover:text-flame-200'
-            }`}
-          >
-            {collapsed ? (running ? 'Stop' : 'Demo') : (running ? 'Stop demo' : 'Guided demo')}
-          </button>
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            className="hidden rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400 hover:bg-white/10 hover:text-white lg:block"
-          >
-            {collapsed ? 'Show labels' : 'Collapse menu'}
-          </button>
         </div>
       </nav>
     </>

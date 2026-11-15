@@ -28,8 +28,9 @@ const DEFAULT_SIM: SimInput = {
 export const SIM_FULL_PATH = '/simulator?full=1';
 
 const PAGES: { match: RegExp; path: string; label: string; keys: string[] }[] = [
-  { match: /^\/$/, path: '/', label: 'Dashboard', keys: ['dashboard', 'home', 'cabin', 'mission control'] },
+  { match: /^\/$/, path: '/overview', label: 'Overview', keys: ['overview', 'big picture', 'home'] },
   { match: /^\/overview$/, path: '/overview', label: 'Overview', keys: ['overview', 'big picture'] },
+  { match: /^\/dashboard$/, path: '/dashboard', label: 'Dashboard', keys: ['dashboard', 'cabin', 'mission control'] },
   { match: /^\/simulator$/, path: '/simulator', label: 'Will it burn?', keys: ['simulator', 'will it burn', 'burn test', 'prediction'] },
   { match: /^\/insights$/, path: '/insights', label: 'What NASA found', keys: ['insights', 'nasa found', 'charts', 'takeaways'] },
   { match: /^\/fluid-physics$/, path: '/fluid-physics', label: 'How flames work', keys: ['fluid physics', 'physics', 'freefall', 'how flames'] },

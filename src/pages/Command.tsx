@@ -260,7 +260,7 @@ export default function Command() {
             <p key={f} className="mt-1 text-[11px] text-amber-300/90">{f}</p>
           ))}
           <p className="mt-2 text-sm leading-relaxed text-slate-200">{brief}</p>
-          <Link to="/" className="mt-3 inline-block text-sm text-slate-300 hover:text-white">← Back to dashboard</Link>
+          <Link to="/dashboard" className="mt-3 inline-block text-sm text-slate-300 hover:text-white">← Back to dashboard</Link>
           <Link to="/insights" className="mt-2 block text-sm text-cyan-200 hover:text-white">See the NASA chart for these settings →</Link>
           <Link to="/scenarios" className="mt-2 block text-sm text-micro-300 hover:text-white">Rank risks with this same cabin →</Link>
         </>

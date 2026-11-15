@@ -27,7 +27,7 @@ function Shell() {
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   const deck = DECK.has(location.pathname);
-  const home = location.pathname === '/';
+  const home = location.pathname === '/dashboard';
   const locked = deck || home;
   const simFull = location.pathname === '/simulator' && new URLSearchParams(location.search).get('full') === '1';
   return (
@@ -45,8 +45,9 @@ function Shell() {
                 transition={snap}
               >
                 <Routes location={location}>
-                  <Route path="/" element={<Home />} />
+                  <Route path="/" element={<Navigate to="/overview" replace />} />
                   <Route path="/overview" element={<Overview />} />
+                  <Route path="/dashboard" element={<Home />} />
                   <Route path="/explorer" element={<Explorer />} />
                   <Route path="/explorer/:acc" element={<ExperimentDetail />} />
                   <Route path="/scenarios" element={<Scenarios />} />
@@ -59,7 +60,7 @@ function Shell() {
                   <Route path="/changelog" element={<Changelog />} />
                   <Route path="/new-features" element={<Navigate to="/impact" replace />} />
                   <Route path="/flame-lab" element={<FlameLab />} />
-                  <Route path="*" element={<Home />} />
+                  <Route path="*" element={<Navigate to="/overview" replace />} />
                 </Routes>
               </motion.div>
             </AnimatePresence>
