@@ -12,6 +12,7 @@ const NAV = [
   { to: '/scenarios', label: 'Rank risks' },
   { to: '/analyst', label: 'Ask a question' },
   { to: '/about', label: 'About' },
+  { to: '/ui-variations', label: 'UI variations' },
 ];
 
 export default function SideNav() {
