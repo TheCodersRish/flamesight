@@ -16,6 +16,7 @@ const Scenarios = lazy(() => import('./pages/Scenarios'));
 const Insights = lazy(() => import('./pages/Insights'));
 const FluidPhysics = lazy(() => import('./pages/FluidPhysics'));
 const Analyst = lazy(() => import('./pages/Analyst'));
+const Impact = lazy(() => import('./pages/Impact'));
 const About = lazy(() => import('./pages/About'));
 const FlameLab = lazy(() => import('./pages/FlameLab'));
 
@@ -49,8 +50,9 @@ function Shell() {
                   <Route path="/fluid-physics" element={<FluidPhysics />} />
                   <Route path="/simulator" element={<Command />} />
                   <Route path="/analyst" element={<Analyst />} />
+                  <Route path="/impact" element={<Impact />} />
                   <Route path="/about" element={<About />} />
-                  <Route path="/new-features" element={<Navigate to="/" replace />} />
+                  <Route path="/new-features" element={<Navigate to="/impact" replace />} />
                   <Route path="/flame-lab" element={<FlameLab />} />
                   <Route path="*" element={<Home />} />
                 </Routes>

@@ -78,6 +78,42 @@ function openRouterDev(key: string | undefined, model: string): Plugin {
         })();
       });
 
+      server.middlewares.use('/api/ntrs', (req: IncomingMessage, res: ServerResponse) => {
+        if (req.method !== 'GET') {
+          res.statusCode = 405;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: 'GET only' }));
+          return;
+        }
+        void (async () => {
+          try {
+            const u = new URL(req.url || '', 'http://localhost');
+            const q = u.searchParams.get('q') || '';
+            if (!q) {
+              res.statusCode = 400;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: 'Missing q', results: [] }));
+              return;
+            }
+            const size = Math.min(10, Math.max(1, parseInt(u.searchParams.get('page.size') || '5', 10) || 5));
+            const upstream = await fetch(
+              `https://ntrs.nasa.gov/api/citations/search?q=${encodeURIComponent(q)}&page.size=${size}`,
+              { headers: { Accept: 'application/json', 'User-Agent': 'FlameSight/1.0 (NASA Space Apps)' } },
+            );
+            const text = await upstream.text();
+            res.statusCode = upstream.ok ? 200 : upstream.status;
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
+            res.end(text || JSON.stringify({ results: [] }));
+          } catch (e) {
+            const message = e instanceof Error ? e.message.slice(0, 300) : 'NTRS fetch failed';
+            res.statusCode = 502;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: message, results: [] }));
+          }
+        })();
+      });
+
       server.middlewares.use('/api/search-study', (req: IncomingMessage, res: ServerResponse) => {
         if (req.method !== 'POST') {
           res.statusCode = 405;

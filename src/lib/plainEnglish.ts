@@ -49,10 +49,11 @@ export function plainBurn(x: SimInput, result: SimResult): string {
     .join('; ');
   return [
     `You tested ${fuel} at ${o2}% oxygen, ${x.psi.toFixed(1)} pounds per square inch, ${x.flow} cm/s airflow, ${cabinGravityLabel(x)}, with ${gas}.`,
-    `Burn score ${Math.round(result.p * 100)} out of 100 · ${result.confidenceLabel.toLowerCase()} confidence (how sure the match is, separate from the score).`,
+    `Burn score ${Math.round(result.p * 100)} out of 100 · based on ${result.nTests} NASA tests · range ${Math.round(result.band[0] * 100)}–${Math.round(result.band[1] * 100)} · ${result.confidenceLabel.toLowerCase()} confidence (how sure the match is, separate from the score).`,
     near ? `Closest NASA tests: ${near}.` : '',
     nuance,
-    ...result.flags.map(simplifyText),
+    result.beyondTested ? 'Warning: these settings go beyond what NASA tested.' : '',
+    ...result.flags.filter(f => !f.startsWith('WARNING:')).map(simplifyText),
   ].filter(Boolean).join(' ');
 }
 

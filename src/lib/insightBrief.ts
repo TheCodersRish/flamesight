@@ -40,7 +40,7 @@ export function briefFor(id: InsightId, x: SimInput, result: SimResult): Insight
   const gravity = GRAVITY[x.gravity].extrapolated
     ? `${cabinGravityLabel(x)} is not in the NASA tables, so this chart is from microgravity tests.`
     : 'These tests were run in microgravity, the same gravity you set.';
-  const score = `Will It Burn: ${result.verdict.toLowerCase()} to burn — burn score ${Math.round(result.p * 100)}/100, ${result.confidenceLabel.toLowerCase()} confidence (confidence ≠ score).`;
+  const score = `Will It Burn: ${result.verdict.toLowerCase()} to burn — burn score ${Math.round(result.p * 100)}/100 based on ${result.nTests} tests (band ${Math.round(result.band[0] * 100)}–${Math.round(result.band[1] * 100)}), ${result.confidenceLabel.toLowerCase()} confidence (confidence ≠ score)${result.beyondTested ? '. Warning: settings go beyond what NASA tested' : ''}.`;
   const none = insights.flex.byDiluent.find(d => d.group.startsWith('No'))!;
   const co2 = insights.flex.byDiluent.find(d => d.group.startsWith('CO2'))!;
   const he = insights.flex.byDiluent.find(d => d.group.startsWith('Helium'))!;

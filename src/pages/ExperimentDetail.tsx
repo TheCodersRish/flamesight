@@ -4,6 +4,7 @@ import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContai
 import Flame from '../components/Flame';
 import { byAccession, fmt, insights, loadTables, loadTests } from '../lib/data';
 import { mechById } from '../lib/microMechanisms';
+import { fetchNtrsPapers, type NtrsPaper } from '../lib/ntrs';
 import { extinctionWalkthrough, fluidPhysicsHref, fluidPresetsFor, walkthroughKind } from '../lib/physicsBridge';
 import type { RawTable, TestRecord } from '../lib/types';
 import { Card, PageHeader, Pill, TierBadge } from '../components/ui';
@@ -297,6 +298,7 @@ export default function ExperimentDetail() {
   const [tab, setTab] = useState(0);
   const [walkStep, setWalkStep] = useState(0);
   const [walkPlaying, setWalkPlaying] = useState(true);
+  const [papers, setPapers] = useState<NtrsPaper[]>([]);
   const walkKind = inv ? walkthroughKind(inv.accession, inv.acronym) : null;
   const walk = useMemo(() => (walkKind ? extinctionWalkthrough(walkKind) : null), [walkKind]);
   useEffect(() => { setTab(0); setWalkStep(0); setWalkPlaying(true); loadTables().then(t => setTables(t[acc] || [])); loadTests().then(setTests); }, [acc]);
@@ -306,6 +308,13 @@ export default function ExperimentDetail() {
     const id = window.setInterval(() => setWalkStep(s => (s + 1) % len), 2200);
     return () => window.clearInterval(id);
   }, [walk, walkPlaying]);
+  useEffect(() => {
+    let cancelled = false;
+    void fetchNtrsPapers(acc, inv?.acronym).then(list => {
+      if (!cancelled) setPapers(list);
+    });
+    return () => { cancelled = true; };
+  }, [acc, inv?.acronym]);
   if (!inv) return <p>Unknown investigation. <Link className="underline" to="/explorer">Back to Explorer</Link></p>;
   const e = inv.envelope;
   const presets = fluidPresetsFor(inv);
@@ -373,6 +382,16 @@ export default function ExperimentDetail() {
           <h2 className="mt-5 text-sm font-semibold uppercase tracking-widest text-flame-300">Why it matters for fire safety</h2>
           <p className="mt-2 text-slate-200">{inv.why}</p>
           <p className="mt-4 text-[11px] text-slate-500">Summary written by the FlameSight team with AI assistance from the NASA PSI objectives field for {inv.accession}. <a className="underline" href={inv.psiPage} target="_blank" rel="noreferrer">Read the original on psi.nasa.gov ↗</a></p>
+          <h2 className="mt-5 text-sm font-semibold uppercase tracking-widest text-cyan-300">Linked NASA papers (NTRS)</h2>
+          <ul className="mt-2 space-y-1.5">
+            {papers.map(p => (
+              <li key={p.id}>
+                <a href={p.url} target="_blank" rel="noreferrer" className="text-sm text-cyan-200 hover:underline">{p.title}</a>
+                <span className="ml-2 text-[10px] text-slate-500">{p.source === 'ntrs' ? 'live' : 'curated'}</span>
+              </li>
+            ))}
+          </ul>
+          <Link to="/impact" className="mt-2 inline-block text-xs text-slate-400 hover:text-white">Browse all impact tools →</Link>
         </Card>
         <Card>
           <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-300">Tested conditions</h2>

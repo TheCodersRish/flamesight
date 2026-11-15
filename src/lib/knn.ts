@@ -26,6 +26,12 @@ export interface SimResult {
   verdict: 'Likely' | 'Borderline' | 'Unlikely';
   p: number; pData: number; prior: number; priorW: number;
   confidence: number; confidenceLabel: 'High' | 'Medium' | 'Low';
+  /** Number of nearest NASA outcome tests behind the prediction (k). */
+  nTests: number;
+  /** Inclusive burn-score uncertainty band from neighbor spread + confidence. */
+  band: [number, number];
+  /** True when O₂, pressure, or gravity sit outside what PSI outcome tables cover. */
+  beyondTested: boolean;
   neighbors: Neighbor[];
   nearby: Neighbor[];
   flags: string[];
@@ -86,6 +92,26 @@ export function predict(x: SimInput): SimResult {
   if (x.o2 < 0.12) { conf *= 0.75; flags.push('O₂ below 12% is under the lowest O₂ in the outcome tests.'); }
   if (atm < 0.48 || atm > 3.3) { conf *= 0.8; flags.push(`Pressure ${x.psi.toFixed(1)} psi is outside the tested pressure range (≈7–48 psi).`); }
   if (nb[0] && nb[0].d > 1.5) flags.push('Nearest NASA test is far from these conditions; treat as a rough estimate.');
+  if (outside || GRAVITY[x.gravity].extrapolated) {
+    flags.unshift('WARNING: these settings go beyond what NASA tested in the PSI outcome tables. Treat the score as an estimate, not a certification.');
+  }
   conf = Math.max(0.05, Math.min(0.97, conf));
-  return { verdict, p, pData, prior, priorW, confidence: conf, confidenceLabel: conf >= 0.66 ? 'High' : conf >= 0.4 ? 'Medium' : 'Low', neighbors: nb.slice(0, 3), nearby: nb, flags };
+  const burns = nb.map(n => n.t.burn);
+  const loN = Math.min(...burns);
+  const hiN = Math.max(...burns);
+  const half = Math.max(0.04, (1 - conf) * 0.35);
+  const bandLo = Math.max(0, Math.min(p, loN) - half * 0.25);
+  const bandHi = Math.min(1, Math.max(p, hiN) + half * 0.25);
+  const beyondTested = outside || GRAVITY[x.gravity].extrapolated;
+  return {
+    verdict, p, pData, prior, priorW,
+    confidence: conf,
+    confidenceLabel: conf >= 0.66 ? 'High' : conf >= 0.4 ? 'Medium' : 'Low',
+    nTests: nb.length,
+    band: [bandLo, bandHi],
+    beyondTested,
+    neighbors: nb.slice(0, 3),
+    nearby: nb,
+    flags,
+  };
 }

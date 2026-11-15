@@ -8,7 +8,7 @@ function shortId(id: string): string {
   return (hash || id).slice(0, 12);
 }
 
-export default function BurnCharts({ nearby, o2, p }: { nearby: Neighbor[]; o2: number; p: number }) {
+export default function BurnCharts({ nearby, o2, p, band, nTests }: { nearby: Neighbor[]; o2: number; p: number; band?: [number, number]; nTests?: number }) {
   const rows = nearby.map(n => ({
     name: shortId(n.t.id),
     burn: Math.round(n.t.burn * 100),
@@ -18,10 +18,15 @@ export default function BurnCharts({ nearby, o2, p }: { nearby: Neighbor[]; o2: 
   }));
   const you = Math.round(o2 * 100);
   const score = Math.round(p * 100);
+  const lo = band ? Math.round(band[0] * 100) : null;
+  const hi = band ? Math.round(band[1] * 100) : null;
   return (
     <div className="space-y-3">
       <div>
-        <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-100/80">Nearest tests · burn score</p>
+        <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-100/80">
+          Nearest tests · burn score{nTests != null ? ` · based on ${nTests} tests` : ''}
+          {lo != null && hi != null ? ` · band ${lo}–${hi}` : ''}
+        </p>
         <div className="h-40 w-full">
           <ResponsiveContainer>
             <BarChart data={rows} layout="vertical" margin={{ left: 4, right: 8, top: 4, bottom: 4 }}>
@@ -29,6 +34,8 @@ export default function BurnCharts({ nearby, o2, p }: { nearby: Neighbor[]; o2: 
               <XAxis type="number" domain={[0, 100]} {...axis} />
               <YAxis type="category" dataKey="name" width={64} {...axis} />
               <Tooltip formatter={(v: number, _n, item) => [`${v} · ${(item?.payload as { outcome: string }).outcome}`, 'Burn score']} />
+              {lo != null && <ReferenceLine x={lo} stroke="#facc15" strokeDasharray="2 2" />}
+              {hi != null && <ReferenceLine x={hi} stroke="#facc15" strokeDasharray="2 2" />}
               <ReferenceLine x={score} stroke="#67e8f9" strokeDasharray="4 3" label={{ value: `you ${score}`, fill: '#67e8f9', fontSize: 10, position: 'insideTopRight' }} />
               <Bar dataKey="burn" radius={[0, 3, 3, 0]}>
                 {rows.map(r => <Cell key={r.name} fill={r.burn >= 80 ? '#fb7185' : r.burn >= 50 ? '#facc15' : '#5cb8ff'} />)}

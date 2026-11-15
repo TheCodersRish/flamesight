@@ -83,7 +83,11 @@ export default function Command() {
       'Result',
       `  Verdict: ${result.verdict} to burn`,
       `  Score: ${Math.round(result.p * 100)} / 100`,
+      `  Based on: ${result.nTests} nearest NASA tests`,
+      `  Uncertainty band: ${Math.round(result.band[0] * 100)}–${Math.round(result.band[1] * 100)} / 100`,
       `  Confidence: ${result.confidenceLabel}`,
+      ...(result.beyondTested ? ['  Warning: settings go beyond what NASA tested in PSI outcome tables.'] : []),
+      ...result.flags.map(f => `  ${f}`),
       '',
       'Simpler wording',
       plainBurn(x, result),
@@ -184,7 +188,7 @@ export default function Command() {
           </div>
         </>
       )}
-      graphs={<BurnCharts nearby={result.nearby} o2={x.o2} p={result.p} />}
+      graphs={<BurnCharts nearby={result.nearby} o2={x.o2} p={result.p} band={result.band} nTests={result.nTests} />}
       outcome={(
         <>
           <div className="flex flex-wrap items-center gap-2">
@@ -196,10 +200,20 @@ export default function Command() {
           </div>
           {savedNote && <p className="mt-2 text-xs text-cyan-200">{savedNote}</p>}
           <p className={`mt-3 text-2xl font-semibold ${result.verdict === 'Likely' ? 'text-flame-300' : result.verdict === 'Borderline' ? 'text-amber-200' : 'text-cyan-200'}`}>{result.verdict} to burn</p>
-          <p className="mt-1 text-sm text-slate-300">Burn score {Math.round(result.p * 100)} out of 100 · {result.confidenceLabel} confidence</p>
+          <p className="mt-1 text-sm text-slate-300">Burn score {Math.round(result.p * 100)} out of 100 · based on {result.nTests} tests · {result.confidenceLabel} confidence</p>
+          <p className="mt-1 text-xs text-slate-400">Uncertainty band {Math.round(result.band[0] * 100)}–{Math.round(result.band[1] * 100)} / 100</p>
+          {result.beyondTested && (
+            <p className="mt-2 rounded-lg bg-amber-500/15 px-2.5 py-1.5 text-xs text-amber-200 ring-1 ring-amber-500/30">
+              Warning: these settings go beyond what NASA tested. Treat this as an estimate, not a certification.
+            </p>
+          )}
+          {result.flags.filter(f => !f.startsWith('WARNING:')).slice(0, 2).map(f => (
+            <p key={f} className="mt-1 text-[11px] text-amber-300/90">{f}</p>
+          ))}
           <p className="mt-2 text-sm leading-relaxed text-slate-200">{brief}</p>
           <Link to="/" className="mt-3 inline-block text-sm text-slate-300 hover:text-white">← Back to dashboard</Link>
           <Link to="/insights" className="mt-2 block text-sm text-cyan-200 hover:text-white">See the NASA chart for these settings →</Link>
+          <Link to="/impact" className="mt-2 block text-sm text-flame-300 hover:text-white">Gap finder & mission PDF →</Link>
           <Link to="/scenarios" className="mt-2 block text-sm text-micro-300 hover:text-white">Rank risks with this same cabin →</Link>
         </>
       )}

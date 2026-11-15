@@ -10,6 +10,8 @@ import {
   SCENARIOS, GRAVITY, scenarioById, scenarioGravityLabel, psiToAtm, makeAtmosphere, loadCustomScenarios, saveCustomScenarios,
   ROLE_BOOST_OPTIONS, type Scenario,
 } from '../lib/scenarios';
+import { buildMissionReport } from '../lib/missionReport';
+import { downloadReport, stamp } from '../lib/report';
 import { rankForScenario, weightsFor, recommendations, SCALES, UNKNOWN, type Weights, type Scored } from '../lib/scoring';
 import { Card, PageHeader, Pill, Slider, SourceChip, TierBadge } from '../components/ui';
 import type { Gravity } from '../lib/types';
@@ -441,15 +443,27 @@ export default function Scenarios() {
             {(rankLive ? rankScenario.assumptions : sc.assumptions).map(f => <li key={f}>* {f}</li>)}
           </ul>
 
-          {isCustom && !rankLive && (
+          <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => removeScenario(sc.id)}
-              className="mt-4 rounded-lg bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 ring-1 ring-rose-500/30 hover:bg-rose-500/20"
+              onClick={() => downloadReport(`flamesight-mission-${rankScenario.id}-${stamp()}.pdf`, buildMissionReport(rankScenario))}
+              className="rounded-lg bg-flame-500/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-flame-500"
             >
-              Delete this scenario
+              Download fire-safety PDF
             </button>
-          )}
+            <Link to="/impact" className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-slate-200 hover:bg-white/15">
+              Gap finder & case studies →
+            </Link>
+            {isCustom && !rankLive && (
+              <button
+                type="button"
+                onClick={() => removeScenario(sc.id)}
+                className="rounded-lg bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 ring-1 ring-rose-500/30 hover:bg-rose-500/20"
+              >
+                Delete this scenario
+              </button>
+            )}
+          </div>
         </Card>
 
         <Card glow="micro">

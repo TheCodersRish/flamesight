@@ -18,6 +18,7 @@ const clamp = (x: number, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 
 const TOOLS = [
   { to: '/simulator', label: 'Full burn test', hint: 'More detail on the same question' },
+  { to: '/impact', label: 'What NASA should test next', hint: 'Gaps, PDF report, Apollo & Mir' },
   { to: '/analyst', label: 'Ask a question', hint: 'Get a plain-language NASA answer' },
   { to: '/insights', label: 'What NASA found', hint: 'Charts without the jargon' },
   { to: '/explorer', label: 'Browse all tests', hint: `${stats.investigations} studies in one list` },
@@ -150,7 +151,8 @@ export default function Home() {
                 <div className="mt-3 h-2 max-w-xs overflow-hidden rounded-full bg-white/10" aria-hidden>
                   <div className={`h-full rounded-full transition-[width] duration-150 ease-out ${verdict.bar}`} style={{ width: `${score}%` }} />
                 </div>
-                <p className="mt-1.5 text-sm text-slate-400">Burn score {score} out of 100 · {result.confidenceLabel} confidence</p>
+                <p className="mt-1.5 text-sm text-slate-400">Burn score {score} out of 100 · based on {result.nTests} tests · band {Math.round(result.band[0] * 100)}–{Math.round(result.band[1] * 100)} · {result.confidenceLabel} confidence</p>
+                {result.beyondTested && <p className="mt-1 text-xs text-amber-300">Warning: these settings go beyond what NASA tested.</p>}
                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-200 sm:text-base">{summary}</p>
                 <Link to="/simulator" className="mt-3 inline-block text-sm text-micro-300 hover:text-white">See the full burn test →</Link>
               </div>

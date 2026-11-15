@@ -45,7 +45,7 @@ function isHeading(line: string, next: string | undefined): boolean {
   if (line.includes(':') && line.length > 60) return false;
   if (line.length > 48) return false;
   // Short standalone labels, or a short line followed by indented/blank content
-  if (/^(Settings|Result|Simpler wording|Plain English|Technical notes|Closest NASA tests|Answer|Matching investigations|Caveats|Question|Data)$/i.test(line)) {
+  if (/^(Settings|Result|Simpler wording|Plain English|Technical notes|Closest NASA tests|Answer|Matching investigations|Caveats|Question|Data|Cabin atmosphere|Top risks|Recommended O₂ and pressure limits|Recommended O2 and pressure limits|Suppressant choice|What NASA should test next \(gaps\)|Citations \(PSI investigations\)|Linked NASA papers \(NTRS\))$/i.test(line)) {
     return true;
   }
   if (next !== undefined && (next === '' || next.startsWith(' ') || next.startsWith('\t') || /^[•\-]/.test(next.trim()))) {

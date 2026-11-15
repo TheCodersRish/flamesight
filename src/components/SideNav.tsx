@@ -68,6 +68,13 @@ const Icons = {
       <path strokeLinecap="round" d="M12 11v5.5M12 8h.01" />
     </svg>
   ),
+  impact: (
+    <svg className={iconCls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v4M12 17v4M3 12h4M17 12h4" />
+      <circle cx="12" cy="12" r="3.5" />
+      <path strokeLinecap="round" d="M7.5 7.5l2 2M14.5 14.5l2 2M16.5 7.5l-2 2M9.5 14.5l-2 2" />
+    </svg>
+  ),
 };
 
 const GROUPS: { label: string; items: NavItem[] }[] = [
@@ -85,6 +92,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { to: '/insights', label: 'What NASA found', hint: 'Simple takeaways', icon: Icons.insights },
       { to: '/fluid-physics', label: 'How flames work', hint: 'Why space fire looks odd', icon: Icons.physics },
       { to: '/scenarios', label: 'Rank risks', hint: 'Pick a mission', icon: Icons.risks },
+      { to: '/impact', label: 'Test next', hint: 'Gaps, reports, cases', icon: Icons.impact },
     ],
   },
   {
