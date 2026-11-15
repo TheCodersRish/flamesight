@@ -219,82 +219,109 @@ export default function FloatingChat() {
     <div className="pointer-events-none fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {open && (
         <section
-          className="pointer-events-auto flex w-[min(100vw-2rem,22rem)] flex-col overflow-hidden rounded-2xl border border-white/15 bg-space-950/95 shadow-2xl shadow-black/50 backdrop-blur-md"
+          className="pointer-events-auto flex w-[min(100vw-2rem,23rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-space-950/98 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-xl"
           role="dialog"
           aria-label="Ask FlameSight"
         >
-          <header className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2.5">
+          <header className="flex items-center justify-between gap-2 px-3.5 pt-3 pb-2">
             <div className="flex min-w-0 items-center gap-2.5">
-              <BrandLogo variant="mark" imgClassName="h-8 w-8 shrink-0" />
+              <BrandLogo variant="mark" imgClassName="h-7 w-7 shrink-0" />
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-white">Ask FlameSight</p>
-                <p className="text-[11px] text-slate-400">Sees your workspace · can simulate conditions fullscreen</p>
+                <p className="text-sm font-semibold tracking-wide text-white">FlameSight</p>
+                <p className="truncate text-[11px] text-slate-500" title={workspace}>{where}</p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Link to="/analyst" className="rounded-lg px-2 py-1 text-[11px] text-micro-300 hover:bg-white/10" onClick={() => setOpen(false)}>
+            <div className="flex shrink-0 items-center gap-0.5">
+              <Link to="/analyst" className="rounded-md px-2 py-1 text-[11px] text-slate-400 hover:bg-white/[0.08] hover:text-micro-200" onClick={() => setOpen(false)}>
                 Full page
               </Link>
-              <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-white" aria-label="Close chat">
+              <button type="button" onClick={() => setOpen(false)} className="rounded-md px-2 py-1 text-slate-500 hover:bg-white/[0.08] hover:text-white" aria-label="Close chat">
                 ✕
               </button>
             </div>
           </header>
 
-          <div className="border-b border-white/10 px-3 py-1.5">
-            <p className="truncate text-[11px] text-micro-200/90" title={workspace}>
-              Working on: {where}
-            </p>
-          </div>
-
-          <div ref={listRef} className="max-h-[min(50vh,22rem)] space-y-3 overflow-y-auto px-3 py-3 scrollbar-thin">
+          <div ref={listRef} className="max-h-[min(52vh,24rem)] space-y-4 overflow-y-auto px-3.5 pb-3 scrollbar-thin">
             {!latest && (
-              <div className="space-y-1.5">
-                <p className="text-xs text-slate-400">Ask about fire in space, or say “pull up FLEX” / “open Will it burn?”:</p>
-                {SAMPLE_QUESTIONS.slice(0, 2).map(s => (
-                  <button key={s} type="button" onClick={() => ask(s)} className="block w-full rounded-lg bg-white/5 px-2.5 py-1.5 text-left text-[11px] leading-snug text-slate-200 hover:bg-white/10">
-                    {s}
+              <div className="space-y-2 pt-1">
+                <p className="text-[12px] leading-relaxed text-slate-400">
+                  Ask about fire in space, or say “pull up FLEX” / “simulate lunar base”.
+                </p>
+                <div className="space-y-1">
+                  {SAMPLE_QUESTIONS.slice(0, 2).map(s => (
+                    <button key={s} type="button" onClick={() => ask(s)} className="block w-full rounded-xl px-3 py-2 text-left text-[11px] leading-snug text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white">
+                      {s}
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => ask('Pull up the FLEX study')} className="block w-full rounded-xl px-3 py-2 text-left text-[11px] leading-snug text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white">
+                    Pull up the FLEX study
                   </button>
-                ))}
-                <button type="button" onClick={() => ask('Pull up the FLEX study')} className="block w-full rounded-lg bg-white/5 px-2.5 py-1.5 text-left text-[11px] leading-snug text-slate-200 hover:bg-white/10">
-                  Pull up the FLEX study
-                </button>
+                </div>
               </div>
             )}
             {latest && (
-              <article className="space-y-3">
-                <div className="rounded-xl bg-white/[0.06] px-3 py-2">
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">You asked</p>
-                  <p className="mt-0.5 text-sm font-medium text-white">{latest.question}</p>
+              <article className="space-y-3.5 pt-0.5">
+                <div className="ml-6 rounded-2xl rounded-tr-md bg-white/[0.07] px-3.5 py-2.5">
+                  <p className="text-sm leading-snug text-white">{latest.question}</p>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-transparent px-3 py-2.5">
-                  <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-micro-300/90">
-                    {latest.source === 'gemini' ? 'Live AI answer' : latest.state === 'loading' ? 'AI writing…' : 'AI unavailable'}
-                    {latest.state === 'loading' && latest.source === 'gemini' ? ' · writing…' : ''}
-                  </p>
+
+                <div className="think-window rounded-2xl rounded-tl-md bg-gradient-to-b from-white/[0.04] to-transparent px-3.5 py-3 ring-1 ring-inset ring-white/[0.06]">
+                  <div className="mb-2 flex items-center gap-2">
+                    {latest.state === 'loading' ? (
+                      <>
+                        <span className="think-dots" aria-hidden>
+                          <i /><i /><i />
+                        </span>
+                        <p className="text-[11px] font-medium text-micro-200/90">
+                          {display ? 'Writing answer' : 'Thinking'}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-[11px] font-medium text-slate-500">
+                        {latest.source === 'gemini' ? 'Answer' : 'Unavailable'}
+                      </p>
+                    )}
+                  </div>
                   {display ? (
-                    <AiAnswer text={display} />
+                    <div className={latest.state === 'loading' ? 'think-stream' : undefined}>
+                      <AiAnswer text={display} />
+                    </div>
                   ) : latest.state === 'loading' ? (
-                    <p className="text-sm text-cyan-100/90">Writing the AI answer…</p>
+                    <p className="text-[13px] leading-relaxed text-slate-400">
+                      Matching NASA notes, then drafting a short answer…
+                    </p>
                   ) : (
-                    <p className="text-sm text-slate-400">The AI could not answer right now. Try again in a moment.</p>
+                    <p className="text-[13px] leading-relaxed text-slate-400">
+                      The AI could not answer right now. Try again in a moment.
+                    </p>
                   )}
                 </div>
-                {latest.simulated && !latest.pendingSim && (
-                  <p className="rounded-lg bg-flame-500/15 px-2.5 py-1.5 text-[11px] text-flame-100">
-                    Simulating fullscreen: {latest.simulated.label}
-                  </p>
+
+                {(latest.simulated && !latest.pendingSim) || (latest.opened && !latest.pendingOpen && !latest.pendingSim) ? (
+                  <div className="space-y-1.5">
+                    {latest.simulated && !latest.pendingSim && (
+                      <p className="text-[11px] text-flame-200/90">
+                        Simulating fullscreen · {latest.simulated.label}
+                      </p>
+                    )}
+                    {latest.opened && !latest.pendingOpen && !latest.pendingSim && (
+                      <p className="text-[11px] text-micro-200/90">
+                        On screen · {latest.opened.label}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+
+                {latest.caveats.length > 0 && (
+                  <div className="space-y-1 border-t border-white/[0.06] pt-2.5">
+                    {latest.caveats.map(c => (
+                      <p key={c} className="text-[11px] leading-snug text-amber-200/80">
+                        {simplifyText(c)}
+                      </p>
+                    ))}
+                  </div>
                 )}
-                {latest.opened && !latest.pendingOpen && !latest.pendingSim && (
-                  <p className="rounded-lg bg-micro-500/15 px-2.5 py-1.5 text-[11px] text-micro-100">
-                    On screen: {latest.opened.label}
-                  </p>
-                )}
-                {latest.caveats.map(c => (
-                  <p key={c} className="rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-snug text-amber-100">
-                    ⚠ {simplifyText(c)}
-                  </p>
-                ))}
+
                 {latest.hits.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {latest.hits.map(h => (
@@ -306,22 +333,25 @@ export default function FloatingChat() {
                             i === 0 ? { ...turn, pendingOpen: { path: `/explorer/${h.accession}`, label: h.label } } : turn
                           )));
                         }}
-                        className="rounded-md bg-white/5 px-2 py-1 text-[10px] font-medium text-micro-200 ring-1 ring-white/10 hover:bg-white/10"
+                        className="rounded-lg px-2 py-1 text-[10px] font-medium text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-micro-200"
                       >
                         {h.accession}
                       </button>
                     ))}
                   </div>
                 )}
+
                 {turns.length > 1 && (
-                  <p className="text-[10px] text-slate-500">{turns.length - 1} earlier question{turns.length > 2 ? 's' : ''} this session</p>
+                  <p className="text-[10px] text-slate-600">
+                    {turns.length - 1} earlier this session
+                  </p>
                 )}
               </article>
             )}
           </div>
 
           <form
-            className="flex gap-2 border-t border-white/10 p-2.5"
+            className="flex items-center gap-2 border-t border-white/[0.06] bg-black/20 px-2.5 py-2.5"
             onSubmit={e => { e.preventDefault(); ask(q); }}
           >
             <label htmlFor="float-ask" className="sr-only">Your question</label>
@@ -329,10 +359,10 @@ export default function FloatingChat() {
               id="float-ask"
               value={q}
               onChange={e => setQ(e.target.value)}
-              placeholder="Ask, or say pull up FLEX…"
-              className="min-w-0 flex-1 rounded-lg border border-white/15 bg-space-900 px-2.5 py-2 text-sm text-white placeholder:text-slate-500"
+              placeholder="Ask FlameSight…"
+              className="min-w-0 flex-1 rounded-xl border-0 bg-white/[0.05] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-white/15"
             />
-            <button type="submit" className="rounded-lg bg-flame-500 px-3 py-2 text-sm font-medium text-white hover:bg-flame-400">
+            <button type="submit" className="rounded-xl bg-flame-500 px-3.5 py-2.5 text-sm font-medium text-white hover:bg-flame-400">
               Ask
             </button>
           </form>
