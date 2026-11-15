@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useDemo } from '../demo/Demo';
+import { CLASSIC_UI_VARIATION, OVERHAUL_UI_VARIATION, useUiVariation } from '../lib/uiVariation';
 import DbSearch from './DbSearch';
 
 type NavItem = {
@@ -115,6 +116,7 @@ function readCollapsed(): boolean {
 
 export default function SideNav() {
   const { running, start, stop } = useDemo();
+  const { id: uiId, revert, setId, isOverhaul } = useUiVariation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -146,8 +148,8 @@ export default function SideNav() {
           {mobileOpen ? 'Hide menu' : 'Menu'}
         </button>
         <NavLink to="/overview" className="flex min-w-0 items-center gap-2" aria-label="FlameSight overview">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-flame-400 via-flame-500 to-micro-600 text-xs font-bold text-white">FS</span>
-          <span className="truncate text-sm font-semibold text-white">FlameSight</span>
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-flame-400 via-ember-500 to-micro-600 text-xs font-bold text-white shadow-glow">FS</span>
+          <span className="truncate font-display text-sm font-bold tracking-tight text-white">FlameSight</span>
         </NavLink>
       </div>
 
@@ -168,10 +170,10 @@ export default function SideNav() {
             aria-label="FlameSight overview"
             title="FlameSight"
           >
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-flame-400 via-flame-500 to-micro-600 text-sm font-bold text-white shadow-glow">FS</span>
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-flame-400 via-ember-500 to-micro-600 text-sm font-bold text-white shadow-glow">FS</span>
             {!collapsed && (
               <span className="min-w-0">
-                <span className="block text-[15px] font-semibold tracking-[0.04em] text-white">FlameSight</span>
+                <span className="font-display block text-[15px] font-bold tracking-tight text-white">FlameSight</span>
                 <span className="mt-0.5 block text-[11px] text-slate-400">Fire safety, made clear</span>
               </span>
             )}
@@ -249,6 +251,18 @@ export default function SideNav() {
 
         <div className={`mt-4 flex flex-col gap-2 border-t border-white/10 pt-4 ${collapsed ? 'items-stretch' : ''}`}>
           {!collapsed && <DbSearch className="w-full" />}
+          <button
+            type="button"
+            onClick={() => (isOverhaul ? revert() : setId(OVERHAUL_UI_VARIATION))}
+            title={isOverhaul ? 'Revert to classic FlameSight design' : 'Restore Ember Forge overhaul'}
+            className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
+              collapsed ? 'px-2 text-center text-xs' : 'text-left'
+            } border-white/15 bg-white/5 text-slate-200 hover:border-flame-400/40 hover:bg-flame-500/10 hover:text-white`}
+          >
+            {collapsed
+              ? (isOverhaul ? 'Revert' : 'New UI')
+              : (isOverhaul ? 'Revert design' : uiId === CLASSIC_UI_VARIATION ? 'Restore new design' : 'Revert design')}
+          </button>
           <button
             type="button"
             onClick={running ? stop : start}
