@@ -17,7 +17,13 @@ const SYSTEM =
   'You can see what the user is working on from the Workspace line — use it to tailor the answer. ' +
   'If they ask to open, show, or pull something up on screen, end with exactly one directive on its own line: ' +
   '[[OPEN:/path|short label]] using an app route such as /simulator, /insights, /scenarios, /scenarios?s=lunar, /explorer, /explorer/PSI-69, /analyst, /overview, /fluid-physics, /about, /changelog, or /. ' +
-  'Otherwise do not emit [[OPEN:…]]. ' +
+  'If they ask to simulate, dial in, or try cabin/burn conditions (oxygen, pressure, gravity, airflow, suppressant, fuel, or a mission preset), end with exactly one directive on its own line: ' +
+  '[[SIMULATE:key=value,…|short label]] with keys preset|o2|psi|flow|gravity|diluent|fuel ' +
+  '(examples: [[SIMULATE:preset=lunar|Lunar Base]], [[SIMULATE:o2=0.3,psi=10.2,gravity=moon,flow=20,diluent=none|Moon cabin]]). ' +
+  'o2 may be a fraction (0.3) or percent (30); gravity is micro|moon|mars|earth; diluent is none|CO2|He. ' +
+  'A SIMULATE run always opens Will It Burn in fullscreen — do not also emit [[OPEN:/simulator…]] for the same request. ' +
+  'Emit at most one of [[OPEN:…]] or [[SIMULATE:…]], never both, and only when they asked for that action. ' +
+  'Otherwise do not emit those directives. ' +
   'Write 3–6 short everyday sentences a non-scientist can follow. Prefer plain words; if you must use a technical term, define it in the same sentence.';
 
 const MAX_OUT = 2048;

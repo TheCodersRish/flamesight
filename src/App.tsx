@@ -29,17 +29,18 @@ function Shell() {
   const deck = DECK.has(location.pathname);
   const home = location.pathname === '/';
   const locked = deck || home;
+  const simFull = location.pathname === '/simulator' && new URLSearchParams(location.search).get('full') === '1';
   return (
     <div className="flex h-screen flex-col overflow-hidden lg:flex-row">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-1 focus:text-black">Skip to content</a>
-      <SideNav />
-      <main id="main" className={deck ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden' : home ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:overflow-hidden' : 'min-h-0 min-w-0 flex-1 overflow-y-auto'}>
-        <div className={deck ? 'flex min-h-0 flex-1 flex-col' : home ? 'mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:py-8' : 'mx-auto w-full max-w-7xl px-4 py-6 sm:py-8'}>
+      {!simFull && <SideNav />}
+      <main id="main" className={deck || simFull ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden' : home ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:overflow-hidden' : 'min-h-0 min-w-0 flex-1 overflow-y-auto'}>
+        <div className={deck || simFull ? 'flex min-h-0 flex-1 flex-col' : home ? 'mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:py-8' : 'mx-auto w-full max-w-7xl px-4 py-6 sm:py-8'}>
           <Suspense fallback={<p className="py-20 text-center text-slate-400">Loading…</p>}>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
-                key={location.pathname}
-                className={locked ? 'flex min-h-0 flex-1 flex-col' : undefined}
+                key={location.pathname + (simFull ? '?full=1' : '')}
+                className={locked || simFull ? 'flex min-h-0 flex-1 flex-col' : undefined}
                 {...(reduceMotion ? {} : fadeUp)}
                 transition={snap}
               >
@@ -65,7 +66,7 @@ function Shell() {
           </Suspense>
         </div>
       </main>
-      <FloatingChat />
+      {!simFull && <FloatingChat />}
     </div>
   );
 }

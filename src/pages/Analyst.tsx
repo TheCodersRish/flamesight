@@ -11,7 +11,16 @@ import { simplifyText } from '../lib/plainEnglish';
 import { downloadReport, stamp } from '../lib/report';
 import { answerLocal, askRemote, SAMPLE_QUESTIONS, type Answer } from '../lib/retrieval';
 import { narrateLocal } from '../lib/narrate';
-import { describeWorkspace, intentToOpen, stripOpenDirective, type ScreenAction } from '../lib/screenAware';
+import {
+  describeWorkspace,
+  describeSim,
+  intentToOpen,
+  intentToSimulate,
+  SIM_FULL_PATH,
+  stripOpenDirective,
+  type ScreenAction,
+  type SimAction,
+} from '../lib/screenAware';
 
 function bestFact(h: Answer['hits'][number], question: string): string {
   const words = question.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 2);
@@ -28,7 +37,10 @@ interface Turn {
   state: 'loading' | 'done';
   /** Page the AI wants to open — user must confirm first. */
   pendingOpen?: ScreenAction | null;
+  /** Conditions the AI wants to simulate in fullscreen Will It Burn. */
+  pendingSim?: SimAction | null;
   opened?: ScreenAction | null;
+  simulated?: SimAction | null;
 }
 
 export default function Analyst() {
@@ -50,16 +62,25 @@ export default function Analyst() {
     )));
   };
 
+  const confirmSim = (action: SimAction) => {
+    burn.setInput(action.input);
+    navigate(SIM_FULL_PATH);
+    setTurns(list => list.map((turn, i) => (
+      i === 0 ? { ...turn, pendingSim: null, pendingOpen: null, simulated: action } : turn
+    )));
+  };
+
   const declineOpen = () => {
     setTurns(list => list.map((turn, i) => (
-      i === 0 ? { ...turn, pendingOpen: null } : turn
+      i === 0 ? { ...turn, pendingOpen: null, pendingSim: null } : turn
     )));
   };
 
   const ask = (question: string) => {
     const text = question.trim();
     if (!text) return;
-    const localOpen = intentToOpen(text);
+    const localSim = intentToSimulate(text);
+    const localOpen = localSim ? null : intentToOpen(text);
     const openStudy = pathname.startsWith('/explorer/') ? pathname.split('/')[2]?.toUpperCase() : undefined;
     const a = answerLocal(text, openStudy);
     const notes = narrateLocal(a);
@@ -71,7 +92,9 @@ export default function Analyst() {
       source: 'local',
       state: 'loading',
       pendingOpen: localOpen,
+      pendingSim: localSim,
       opened: null,
+      simulated: null,
     }, ...t]);
     setQ('');
 
@@ -87,11 +110,12 @@ export default function Analyst() {
       setTurns(list => list.map((turn, i) => {
         if (i !== 0) return turn;
         if (remote) {
-          const { answer, action } = stripOpenDirective(remote);
-          const pendingOpen = action && (!turn.opened || turn.opened.path !== action.path)
+          const { answer, action, simulate } = stripOpenDirective(remote);
+          const pendingSim = simulate || turn.pendingSim || null;
+          const pendingOpen = !pendingSim && action && (!turn.opened || turn.opened.path !== action.path)
             ? action
-            : (turn.pendingOpen || null);
-          return { ...turn, ai: answer, source: 'gemini', state: 'done', pendingOpen };
+            : (!pendingSim ? (turn.pendingOpen || null) : null);
+          return { ...turn, ai: answer, source: 'gemini', state: 'done', pendingOpen, pendingSim };
         }
         return { ...turn, ai: '', source: 'local', state: 'done' };
       }));
@@ -145,7 +169,7 @@ export default function Analyst() {
 
   return (
     <>
-    {latest?.pendingOpen && (
+    {(latest?.pendingSim || latest?.pendingOpen) && (
       <div
         className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
         role="presentation"
@@ -158,28 +182,58 @@ export default function Analyst() {
           className="w-full max-w-md rounded-2xl border border-white/15 bg-space-950 p-6 shadow-2xl shadow-black/60"
           onClick={e => e.stopPropagation()}
         >
-          <h2 id="analyst-open-title" className="text-xl font-semibold text-white">
-            Open this page?
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-300">
-            FlameSight wants to open <span className="font-medium text-micro-100">{latest.pendingOpen.label}</span>.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => confirmOpen(latest.pendingOpen!)}
-              className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
-            >
-              Open
-            </button>
-            <button
-              type="button"
-              onClick={declineOpen}
-              className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
-            >
-              Not now
-            </button>
-          </div>
+          {latest.pendingSim ? (
+            <>
+              <h2 id="analyst-open-title" className="text-xl font-semibold text-white">
+                Simulate in fullscreen?
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                FlameSight wants to run <span className="font-medium text-micro-100">{latest.pendingSim.label}</span> on Will It Burn and open the flame fullscreen.
+              </p>
+              <p className="mt-2 text-xs text-slate-400">{describeSim(latest.pendingSim.input)}</p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => confirmSim(latest.pendingSim!)}
+                  className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
+                >
+                  Simulate
+                </button>
+                <button
+                  type="button"
+                  onClick={declineOpen}
+                  className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
+                >
+                  Not now
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 id="analyst-open-title" className="text-xl font-semibold text-white">
+                Open this page?
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                FlameSight wants to open <span className="font-medium text-micro-100">{latest.pendingOpen!.label}</span>.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => confirmOpen(latest.pendingOpen!)}
+                  className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
+                >
+                  Open
+                </button>
+                <button
+                  type="button"
+                  onClick={declineOpen}
+                  className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
+                >
+                  Not now
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     )}
@@ -188,15 +242,15 @@ export default function Analyst() {
       graphsTitle="How well they match"
       outcomeTitle="Answer"
       stage={(
-        <FlameStage title="Ask FlameSight" caption="Knows what you are working on. Ask in everyday language — it will ask before opening another page." controls={(
+        <FlameStage title="Ask FlameSight" caption="Knows what you are working on. Ask in everyday language — it can open pages or simulate cabin conditions in fullscreen." controls={(
           <>
             <form className="flex gap-2 sm:col-span-2" onSubmit={e => { e.preventDefault(); ask(q); }}>
               <label htmlFor="q" className="sr-only">Your question</label>
-              <input id="q" value={q} onChange={e => setQ(e.target.value)} placeholder="Ask, or say pull up Will it burn…" className="min-w-0 flex-1 rounded-lg border border-white/15 bg-space-950 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
+              <input id="q" value={q} onChange={e => setQ(e.target.value)} placeholder="Ask, or say simulate lunar base…" className="min-w-0 flex-1 rounded-lg border border-white/15 bg-space-950 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
               <button className="rounded-lg bg-flame-500 px-4 py-2 text-sm font-medium text-white">Ask</button>
             </form>
             <p className="text-[11px] leading-relaxed text-slate-400 sm:col-span-2">
-              Tip: the agent sees your current page and Will-it-burn knobs. Say “open lunar risks” or “pull up BASS-II” — it asks before switching.
+              Tip: say “simulate lunar base” or “try 30% oxygen at 10 psi” — it asks, then opens Will It Burn fullscreen.
             </p>
           </>
         )}>
@@ -265,7 +319,12 @@ export default function Analyst() {
               <p className="text-sm text-slate-300">Ask anything about fire in space. You will get a short AI answer grounded in NASA tests.</p>
             )}
           </div>
-          {latest?.opened && !latest.pendingOpen && (
+          {latest?.simulated && !latest.pendingSim && (
+            <p className="mt-2 rounded-lg bg-flame-500/15 px-2.5 py-1.5 text-xs text-flame-100">
+              Simulating fullscreen: {latest.simulated.label}
+            </p>
+          )}
+          {latest?.opened && !latest.pendingOpen && !latest.pendingSim && (
             <p className="mt-2 rounded-lg bg-micro-500/15 px-2.5 py-1.5 text-xs text-micro-100">
               On screen: {latest.opened.label}
             </p>

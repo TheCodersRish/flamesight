@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import BurnCharts from '../components/BurnCharts';
 import CabinStrip from '../components/CabinStrip';
 import Deck, { FlameStage } from '../components/Deck';
@@ -14,16 +14,19 @@ import { plainBurn } from '../lib/plainEnglish';
 import { downloadReport, stamp } from '../lib/report';
 import { loadScans, removeScan, saveScan, scanLabel, type SavedScan } from '../lib/scans';
 import { GRAVITY, SCENARIOS, scenarioById } from '../lib/scenarios';
+import { describeSim } from '../lib/screenAware';
 import type { Gravity } from '../lib/types';
 
 const clamp = (x: number, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 
 export default function Command() {
   const [sp] = useSearchParams();
+  const navigate = useNavigate();
   const { input: x, result, setInput: setX } = useBurn();
   const set = <K extends keyof SimInput>(k: K, v: SimInput[K]) => setX({ ...x, [k]: v });
   const preset = sp.get('preset');
   const demo = sp.get('demo') === '1';
+  const fullScreen = sp.get('full') === '1';
   const started = useRef(false);
   const [plain, setPlain] = useState(true);
   const [scans, setScans] = useState<SavedScan[]>(() => (typeof localStorage === 'undefined' ? [] : loadScans()));
@@ -42,6 +45,15 @@ export default function Command() {
     const ids = seq.map((s, i) => window.setTimeout(() => setX(v => ({ ...v, ...s })), 300 + i * 1600));
     return () => ids.forEach(window.clearTimeout);
   }, [demo, setX]);
+
+  useEffect(() => {
+    if (!fullScreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') navigate('/simulator', { replace: true });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [fullScreen, navigate]);
 
   const technical = useMemo(() => narrateBurn(x, result), [x, result]);
   const brief = plain ? plainBurn(x, result) : technical;
@@ -102,6 +114,42 @@ export default function Command() {
     ].join('\n');
     downloadReport(`flamesight-burn-${stamp()}.txt`, body);
   };
+
+  if (fullScreen) {
+    return (
+      <div className="relative flex min-h-0 flex-1 flex-col bg-[#050a14]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(251,146,60,0.12),transparent_55%)]" aria-hidden />
+        <header className="relative z-10 flex shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-flame-300/90">Fullscreen simulation</p>
+            <p className="text-sm text-slate-200">{describeSim(x)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/simulator', { replace: true })}
+            className="rounded-xl bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
+          >
+            Exit fullscreen
+          </button>
+        </header>
+        <div className="relative z-10 grid min-h-0 flex-1 place-items-center px-4">
+          <div className="aspect-square w-[min(78vmin,560px)] overflow-hidden rounded-full border border-white/15 shadow-[0_0_80px_-16px_rgba(251,146,60,0.55)]">
+            <Flame {...flame} className="h-full w-full" label={`Fullscreen Will It Burn: ${GRAVITY[x.gravity].label}, ${Math.round(x.o2 * 100)}% oxygen`} />
+          </div>
+        </div>
+        <footer className="relative z-10 shrink-0 space-y-2 px-4 pb-5 pt-2 text-center sm:px-6">
+          <p className={`text-3xl font-semibold sm:text-4xl ${result.verdict === 'Likely' ? 'text-flame-300' : result.verdict === 'Borderline' ? 'text-amber-200' : 'text-cyan-200'}`}>
+            {result.verdict} to burn
+          </p>
+          <p className="text-sm text-slate-300">
+            Burn score {Math.round(result.p * 100)} / 100 · {result.nTests} nearest NASA tests · {result.confidenceLabel} confidence
+          </p>
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-slate-400">{brief}</p>
+          <p className="text-[11px] text-slate-500">Illustrative flame · Esc to exit</p>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -238,6 +286,7 @@ export default function Command() {
             </button>
             <button type="button" onClick={onSave} className="rounded-lg bg-white/10 px-2.5 py-1 text-xs text-white hover:bg-white/15">Save scan</button>
             <button type="button" onClick={onDownload} className="rounded-lg bg-flame-500/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-flame-500">Download report</button>
+            <button type="button" onClick={() => navigate('/simulator?full=1')} className="rounded-lg bg-white/10 px-2.5 py-1 text-xs text-white hover:bg-white/15">Fullscreen</button>
           </div>
           {savedNote && <p className="mt-2 text-xs text-cyan-200">{savedNote}</p>}
           <p className={`mt-3 text-2xl font-semibold ${result.verdict === 'Likely' ? 'text-flame-300' : result.verdict === 'Borderline' ? 'text-amber-200' : 'text-cyan-200'}`}>{result.verdict} to burn</p>

@@ -7,10 +7,14 @@ import { narrateLocal } from '../lib/narrate';
 import { answerLocal, askRemote, SAMPLE_QUESTIONS } from '../lib/retrieval';
 import {
   describeWorkspace,
+  describeSim,
   intentToOpen,
+  intentToSimulate,
+  SIM_FULL_PATH,
   stripOpenDirective,
   workspaceChip,
   type ScreenAction,
+  type SimAction,
 } from '../lib/screenAware';
 
 interface Turn {
@@ -23,7 +27,10 @@ interface Turn {
   hits: { accession: string; label: string }[];
   /** Page the AI wants to open — user must confirm first. */
   pendingOpen?: ScreenAction | null;
+  /** Conditions the AI wants to simulate in fullscreen Will It Burn. */
+  pendingSim?: SimAction | null;
   opened?: ScreenAction | null;
+  simulated?: SimAction | null;
 }
 
 /** Floating Ask panel available on every page (except Analyst and Overview). */
@@ -48,16 +55,26 @@ export default function FloatingChat() {
     )));
   };
 
+  const confirmSim = (action: SimAction) => {
+    burn.setInput(action.input);
+    navigate(SIM_FULL_PATH);
+    setOpen(false);
+    setTurns(list => list.map((turn, i) => (
+      i === 0 ? { ...turn, pendingSim: null, pendingOpen: null, simulated: action } : turn
+    )));
+  };
+
   const declineOpen = () => {
     setTurns(list => list.map((turn, i) => (
-      i === 0 ? { ...turn, pendingOpen: null } : turn
+      i === 0 ? { ...turn, pendingOpen: null, pendingSim: null } : turn
     )));
   };
 
   const ask = (question: string) => {
     const text = question.trim();
     if (!text) return;
-    const localOpen = intentToOpen(text);
+    const localSim = intentToSimulate(text);
+    const localOpen = localSim ? null : intentToOpen(text);
     const openStudy = pathname.startsWith('/explorer/') ? pathname.split('/')[2]?.toUpperCase() : undefined;
     const a = answerLocal(text, openStudy);
     const notes = narrateLocal(a);
@@ -75,7 +92,9 @@ export default function FloatingChat() {
       caveats: a.caveats,
       hits,
       pendingOpen: localOpen,
+      pendingSim: localSim,
       opened: null,
+      simulated: null,
     }, ...t]);
     setQ('');
     setOpen(true);
@@ -92,11 +111,12 @@ export default function FloatingChat() {
       setTurns(list => list.map((turn, i) => {
         if (i !== 0) return turn;
         if (remote) {
-          const { answer, action } = stripOpenDirective(remote);
-          const pendingOpen = action && (!turn.opened || turn.opened.path !== action.path)
+          const { answer, action, simulate } = stripOpenDirective(remote);
+          const pendingSim = simulate || turn.pendingSim || null;
+          const pendingOpen = !pendingSim && action && (!turn.opened || turn.opened.path !== action.path)
             ? action
-            : (turn.pendingOpen || null);
-          return { ...turn, ai: answer, source: 'gemini', state: 'done', pendingOpen };
+            : (!pendingSim ? (turn.pendingOpen || null) : null);
+          return { ...turn, ai: answer, source: 'gemini', state: 'done', pendingOpen, pendingSim };
         }
         return { ...turn, ai: '', source: 'local', state: 'done' };
       }));
@@ -118,7 +138,7 @@ export default function FloatingChat() {
 
   return (
     <>
-    {latest?.pendingOpen && (
+    {(latest?.pendingSim || latest?.pendingOpen) && (
       <div
         className="pointer-events-auto fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
         role="presentation"
@@ -131,28 +151,58 @@ export default function FloatingChat() {
           className="w-full max-w-md rounded-2xl border border-white/15 bg-space-950 p-6 shadow-2xl shadow-black/60"
           onClick={e => e.stopPropagation()}
         >
-          <h2 id="float-open-title" className="text-xl font-semibold text-white">
-            Open this page?
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-300">
-            FlameSight wants to open <span className="font-medium text-micro-100">{latest.pendingOpen.label}</span>.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => confirmOpen(latest.pendingOpen!)}
-              className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
-            >
-              Open
-            </button>
-            <button
-              type="button"
-              onClick={declineOpen}
-              className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
-            >
-              Not now
-            </button>
-          </div>
+          {latest.pendingSim ? (
+            <>
+              <h2 id="float-open-title" className="text-xl font-semibold text-white">
+                Simulate in fullscreen?
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                FlameSight wants to run <span className="font-medium text-micro-100">{latest.pendingSim.label}</span> on Will It Burn and open the flame fullscreen.
+              </p>
+              <p className="mt-2 text-xs text-slate-400">{describeSim(latest.pendingSim.input)}</p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => confirmSim(latest.pendingSim!)}
+                  className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
+                >
+                  Simulate
+                </button>
+                <button
+                  type="button"
+                  onClick={declineOpen}
+                  className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
+                >
+                  Not now
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 id="float-open-title" className="text-xl font-semibold text-white">
+                Open this page?
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                FlameSight wants to open <span className="font-medium text-micro-100">{latest.pendingOpen!.label}</span>.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => confirmOpen(latest.pendingOpen!)}
+                  className="rounded-xl bg-flame-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-flame-400"
+                >
+                  Open
+                </button>
+                <button
+                  type="button"
+                  onClick={declineOpen}
+                  className="rounded-xl bg-white/10 px-5 py-2.5 text-sm text-slate-200 hover:bg-white/15"
+                >
+                  Not now
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     )}
@@ -166,7 +216,7 @@ export default function FloatingChat() {
           <header className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2.5">
             <div>
               <p className="text-sm font-semibold text-white">Ask FlameSight</p>
-              <p className="text-[11px] text-slate-400">Sees what you are working on · asks before opening pages</p>
+              <p className="text-[11px] text-slate-400">Sees your workspace · can simulate conditions fullscreen</p>
             </div>
             <div className="flex items-center gap-1">
               <Link to="/analyst" className="rounded-lg px-2 py-1 text-[11px] text-micro-300 hover:bg-white/10" onClick={() => setOpen(false)}>
@@ -217,7 +267,12 @@ export default function FloatingChat() {
                     <p className="text-sm text-slate-400">The AI could not answer right now. Try again in a moment.</p>
                   )}
                 </div>
-                {latest.opened && !latest.pendingOpen && (
+                {latest.simulated && !latest.pendingSim && (
+                  <p className="rounded-lg bg-flame-500/15 px-2.5 py-1.5 text-[11px] text-flame-100">
+                    Simulating fullscreen: {latest.simulated.label}
+                  </p>
+                )}
+                {latest.opened && !latest.pendingOpen && !latest.pendingSim && (
                   <p className="rounded-lg bg-micro-500/15 px-2.5 py-1.5 text-[11px] text-micro-100">
                     On screen: {latest.opened.label}
                   </p>
